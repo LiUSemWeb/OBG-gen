@@ -1,23 +1,11 @@
-# Class of ontology
 from collections import defaultdict
+import utils
 
-A = ['Calculation', 'Property', 'CalculatedProperty', 'PhysicalProperty', 'Structure', 'Quantity']
-V = ['xsd:string', 'xsd:double']
-U = ['ID', 'numericalValue', 'PropertyName']
-P = ['hasInputProperty', 'hasOutputProperty', 'hasInputStructure', 'hasOutputStructure', 'relatesToMaterial', 'relatesToStructure']
-#concept2subsumptions = {'CalculationProperty': ['Property'], 'PhysicalProperty': ['Property']}
-subsumptions = [('CalculatedProperty', 'Property'), ('PhysicalProperty', 'Property')]
-assertions = [('Calculation', 'ID', 'xsd:string', '=1'), ('Calculation', 'hasInputStructure','Structure', '>=1')]
-#concept2assertions = {'Calculation':[('ID', 'xsd:String', '=1'),('hasInputStructure','Structure', '>=1')}
+
 V2Scalar = {'xsd:integer':'Int', 'xsd:float':'Float', 'xsd:string':'String', 'xsd:boolean':'Boolean'}
+A, V, U, P, subsumptions, assertions = utils.read_TBox(TBox_file = './TBox.yml')
 
-def map_scalartype(datatype):
-    if datatype == 'xsd:string':
-        return 'String'
-    if datatype == 'xsd:double':
-        return 'Float'
-
-class ELQD(object):
+class ELQ_1_D(object):
     def __init__(self):
         self.A = list()
         self.V = list()
@@ -37,26 +25,23 @@ class ELQD(object):
             self.concept2assertions[assertion[0]]. append(assertion[1:])
     
     def print(self):
-        #print(self.classes)
-        #print(self.concept2subsumptions)
         print(self.concept2assertions)
 
 class GraphQLSchema(object):
     def __init__(self):
-        #self.object_types = list()
-        self.interfaces = list()
-        self.Scalar_types = list()
+        self.I = list()
+        self.SC = list()
+        self.AF = list()
+        self.RF = list()
         self.implementation = defaultdict(list)
         self.fields = defaultdict(dict)
     
     def construct(self, A, V, U, P, concept2subsumptions, concept2assertions):
-        print(self.interfaces)
-        self.interfaces = A
-        self.Scalar_types = V
-        self.U = U
-        self.P = P
+        self.I = A
+        self.SC = V
+        self.AF = U
+        self.RF = P
         self.implementation = concept2subsumptions
-        #self.fields = defaultdict(list)
         for (concept, assertions) in concept2assertions.items():
             for assertion in assertions:
                 min_card = 0
@@ -73,19 +58,14 @@ class GraphQLSchema(object):
                 if assertion[2] == '>=0':
                     min_card = 0
                     max_card = float("inf")
-                print(assertion)
-                #assertion[1] = V2Scalar[assertion[1]]
                 field_type = assertion[1]
                 if assertion[1] in V2Scalar.keys():
                     field_type = V2Scalar[assertion[1]]
-                assertion_dict = {(assertion[0],field_type): (min_card, max_card)}
-                #self.fields[concept].append(assertion_dict)
                 self.fields[concept][(assertion[0],field_type)] = (min_card, max_card)
-        print(self.fields)
 
     def write_schema(self):
         schema = ''
-        for interface in self.interfaces:
+        for interface in self.I:
             interface_schema = 'interface {interface}'.format(interface = interface)
             
             if len(self.implementation[interface]) >0:
@@ -95,6 +75,7 @@ class GraphQLSchema(object):
                     if i < len(self.implementation[interface]) -1:
                         interface_schema += ' & '
             interface_schema += '\n{\n'
+
             for (key, item) in self.fields[interface].items():
                 range = ''
                 if item[0] == 0:
@@ -113,7 +94,7 @@ class GraphQLSchema(object):
         print(schema)
             
 
-elqd = ELQD()
+elqd = ELQ_1_D()
 elqd.construct(A, V, U, P, subsumptions, assertions)
 #elqd.print()
 
