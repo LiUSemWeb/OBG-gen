@@ -113,10 +113,10 @@ class GraphQLSchema(object):
         print(schema)
             
 
-elq_1 = ELQD()
-elq_1.construct(A, V, U, P, subsumptions, assertions)
-#elq_1.print()
+elqd = ELQD()
+elqd.construct(A, V, U, P, subsumptions, assertions)
+#elqd.print()
 
 graphql_schema = GraphQLSchema()
-graphql_schema.construct(elq_1.A, [map_scalartype(t) for t in elq_1.V], elq_1.U, elq_1.P,elq_1.concept2subsumptions, elq_1.concept2assertions)
+graphql_schema.construct(elqd.A, elqd.V, elqd.U, elqd.P,elqd.concept2subsumptions, elqd.concept2assertions)
 graphql_schema.write_schema()
