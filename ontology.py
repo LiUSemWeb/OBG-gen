@@ -20,7 +20,7 @@ class Ontology(object):
         self.object_properties = list()
         self.data_properties = list()
         self.datatypes = list()
-        #self.domains_dict = defaultdict(list)
+        self.domains_dict = defaultdict(list)
         self.ranges_dict = defaultdict(list)
         #self.types_dict = defaultdict(list)
         #self.labels_dict = defaultdict(list)
@@ -47,18 +47,18 @@ class Ontology(object):
         self.axioms = list()
 
     def construct(self, graph):
-        for s in g.subjects(RDF.type, OWL.Class):
+        for s in graph.subjects(RDF.type, OWL.Class):
             s = s.toPython()
             self.classes.append(s)
-        for s in g.subjects(RDF.type, OWL.ObjectProperty):
+        for s in graph.subjects(RDF.type, OWL.ObjectProperty):
             s = s.toPython()
             self.object_properties.append(s)
-        for s in g.subjects(RDF.type, OWL.DatatypeProperty):
+        for s in graph.subjects(RDF.type, OWL.DatatypeProperty):
             s = s.toPython()
             self.data_properties.append(s)
         
         file = open('all_triples.txt', 'w')
-        for s, p, o in g.triples((None, None, None)):
+        for s, p, o in graph.triples((None, None, None)):
             file.writelines('{} {} {}\n'.format(s.toPython(),p.toPython(),o.toPython()))
             s = s.toPython()
             p = p.toPython()
@@ -70,9 +70,9 @@ class Ontology(object):
                 self.labels_dict[s].append(o)
             if p == prefixes['rdf:comment']:
                 self.comments_dict[s].append(o)
+            '''
             if p == prefixes['rdfs:domain']:
                 self.domains_dict[s].append(o)
-            '''
             if p == prefixes['rdfs:range']:
                 self.ranges_dict[s].append(o)
                 if s in self.data_properties and o not in self.datatypes:
@@ -117,7 +117,25 @@ class Ontology(object):
                 #print(anonymous_concept)
                 self.parse_anonymous_concept(concept, anonymous_concept)
                 # not intersection
+        for concept in self.classes:
+            self.axioms.append([concept, 'iri', 'http://www.w3.org/2001/XMLSchema#string', '=1'])
+        self.parse_anonymous_properties()
         return 0
+    
+    def parse_anonymous_properties(self):
+        #print(self.onproperty_dist)
+        for dp in self.data_properties:
+            if dp not in self.onproperty_dist.values():
+                'here maybe update in the future, if property has multiple domains'
+                if len(self.domains_dict[dp]) > 0 and len(self.ranges_dict[dp]) >0:
+                    self.axioms.append([self.domains_dict[dp][0], dp, self.ranges_dict[dp][0], '>0'])
+        for op in self.object_properties:
+            if op not in self.onproperty_dist.values():
+                'here maybe update in the future, if property has multiple domains'
+                if len(self.domains_dict[op]) > 0 and len(self.ranges_dict[op]) >0:
+                    self.axioms.append([self.domains_dict[op][0], op, self.ranges_dict[op][0], '>0'])
+        return 0
+
 
 
     def parse_anonymous_concept(self, concept, anonymous_concept):
@@ -221,7 +239,7 @@ class Ontology(object):
     def output_ontology(self):
         return self.classes, self.datatypes, self.data_properties, self.object_properties, self.subsumption, self.axioms
        
-
+'''
 g = utils.parse_owl('testcoreQ.ttl')
 
 o = Ontology()
@@ -229,3 +247,4 @@ o.construct(g)
 o.parse_general_axioms()
 o.print_subsumption_axiom()
 #print(o.output_ontology())
+'''
