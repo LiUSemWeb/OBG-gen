@@ -48,14 +48,16 @@ class GraphQLSchema(object):
         self.AF = list()
         self.RF = list()
         self.implementation = defaultdict(list)
+        self.implementation_temp = defaultdict(list)
         self.fields = defaultdict(dict)
     
-    def construct(self, A, V, U, P, concept2subsumptions, concept2assertions):
+    def construct(self, A, V, U, P, concept2superconcept, concept2assertions):
         self.I = A
         self.SC = V
         self.AF = U
         self.RF = P
-        self.implementation = concept2subsumptions
+        #self.implementation = concept2subsumptions
+        self.implementation = concept2superconcept
         for (concept, assertions) in concept2assertions.items():
             for assertion in assertions:
                 min_card = 0
@@ -76,37 +78,7 @@ class GraphQLSchema(object):
                 if assertion[1] in V2Scalar.keys():
                     field_type = V2Scalar[assertion[1]]
                 self.fields[concept][(assertion[0],field_type)] = (min_card, max_card)
-    '''
-    def write_schema(self):
-        schema = ''
-        for interface in self.I:
-            interface_schema = 'interface {interface}'.format(interface = interface)
-            
-            if len(self.implementation[interface]) >0:
-                interface_schema += ' implements '
-                for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                    interface_schema += '{implemented_interface}'.format(implemented_interface = implemented_interface)
-                    if i < len(self.implementation[interface]) -1:
-                        interface_schema += ' & '
-            interface_schema += '\n{\n'
-
-            for (key, item) in self.fields[interface].items():
-                range = ''
-                if item[0] == 0:
-                    if item[1] == float('inf'):
-                        range = '[{type}]'.format(type = key[1])
-                    if item[1] == 1:
-                        range = '{type}'.format(type = key[1])
-                if item[0] == 1:
-                    if item[1] == float('inf'):
-                        range = '[{type}]!'.format(type = key[1])
-                    if item[1] == 1:
-                        range = '{type}!'.format(type = key[1])
-                interface_schema += '\t{field}:{type}\n'.format(field = key[0], type = range)
-            interface_schema += '}\n'
-            schema += interface_schema
-        print(schema)
-    '''
+    
     def write_global_schema(self):
         schema = ''
         self.I.sort(key = utils.remove_prefix)
@@ -192,16 +164,16 @@ def main(ontology):
     o.construct(g)
     #o.parse_general_axioms()
     #o.print_subsumption_axiom()
-    elq1d_test = ELQ_1_D()
-    A, V, U, P, subsumptions, assertions = o.output_ontology()
-    #o.print()
+    #elq1d_test = ELQ_1_D()
+    A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
+    o.print()
     #print(len(assertions))
     #print(A, V, U, P, subsumptions, assertions)
-    elq1d_test.construct(A, V, U, P, subsumptions, assertions)
+    #elq1d_test.construct(A, V, U, P, subsumptions, assertions)
     #elq1d.print()
     a = datetime.datetime.now()
     graphql_schema_test = GraphQLSchema()
-    graphql_schema_test.construct(elq1d_test.A, elq1d_test.V, elq1d_test.U, elq1d_test.P,elq1d_test.concept2subsumptions, elq1d_test.concept2assertions)
+    graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.write_global_schema()
     #graphql_schema_test.write_local_schema(['OQMD','MP'])
     b = datetime.datetime.now()
