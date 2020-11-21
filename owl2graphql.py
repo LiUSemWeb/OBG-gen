@@ -109,6 +109,7 @@ class GraphQLSchema(object):
     '''
     def write_global_schema(self):
         schema = ''
+        self.I.sort(key = utils.remove_prefix)
         for interface in self.I:
             interface_schema = 'interface {interface}'.format(interface = utils.remove_prefix(interface))
             
@@ -121,7 +122,6 @@ class GraphQLSchema(object):
             interface_schema += '\n{\n'
 
             for (key, item) in self.fields[interface].items():
-                print('item', item)
                 range = ''
                 if item[0] == 0:
                     if item[1] == float('inf'):
@@ -137,9 +137,11 @@ class GraphQLSchema(object):
             interface_schema += '}\n'
             schema += interface_schema
         print(schema)
+        utils.write_file('global_schema.graphql',schema)
     def write_local_schema(self, local_prefixes):
         for local_prefix in local_prefixes:
             schema = ''
+            self.I.sort(key = utils.remove_prefix)
             for interface in self.I:
                 type_schema = 'type {local_prefix}_{interface}'.format(local_prefix = local_prefix, interface = utils.remove_prefix(interface))
                 
@@ -180,6 +182,7 @@ class GraphQLSchema(object):
                 type_schema += '}\n'
                 schema += type_schema
             print(schema)
+            utils.write_file('{local_prefix}_schema.graphql'.format(local_prefix = local_prefix),schema)
         
             
 def main(ontology):
@@ -187,17 +190,12 @@ def main(ontology):
     g = utils.parse_owl(ontology)
     o = Ontology()
     o.construct(g)
-    o.parse_general_axioms()
+    #o.parse_general_axioms()
     #o.print_subsumption_axiom()
     elq1d_test = ELQ_1_D()
     A, V, U, P, subsumptions, assertions = o.output_ontology()
-    print('A:', A)
-    print(len(A))
-    print('V:', V)
-    print('U:', U)
-    print('P:', P)
-    print('subsumptions:', subsumptions)
-    print('assertions:', assertions)
+    #o.print()
+    #print(len(assertions))
     #print(A, V, U, P, subsumptions, assertions)
     elq1d_test.construct(A, V, U, P, subsumptions, assertions)
     #elq1d.print()
@@ -205,7 +203,7 @@ def main(ontology):
     graphql_schema_test = GraphQLSchema()
     graphql_schema_test.construct(elq1d_test.A, elq1d_test.V, elq1d_test.U, elq1d_test.P,elq1d_test.concept2subsumptions, elq1d_test.concept2assertions)
     graphql_schema_test.write_global_schema()
-    graphql_schema_test.write_local_schema(['OQMD','MP'])
+    #graphql_schema_test.write_local_schema(['OQMD','MP'])
     b = datetime.datetime.now()
     print(b-a)
 

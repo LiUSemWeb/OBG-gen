@@ -42,7 +42,8 @@ class Ontology(object):
         self.onproperty_dist = defaultdict()
         self.onclass_dist = defaultdict()
 
-        self.classes2subsumption = defaultdict(list)
+        self.class2superclass = defaultdict(list)
+        self.class2subclass = defaultdict(list)
         self.classes2axioms = defaultdict(list)
         self.axioms = list()
 
@@ -84,7 +85,8 @@ class Ontology(object):
                     #self.classes2axioms[s].append(o)
                 else:
                     self.subsumption.append([s, o])
-                    self.classes2subsumption[s].append(o)
+                    self.class2superclass[s].append(o)
+                    self.class2subclass[o].append(s)
             if p == prefixes['owl:intersectionOf']:
                 self.intersecctionof_dict[s].append(o)
             if p == prefixes['owl:allValuesFrom']:
@@ -109,21 +111,25 @@ class Ontology(object):
                 self.rest_dict[s] = o
             if p == prefixes['rdf:type'] and o == prefixes['owl:Restriction']:
                 self.restriction_list.append(s)
+        
 
-    def parse_general_axioms(self):
-        #print(self.generalaxioms_dict)
-        for (concept, anonymous_concepts) in self.generalaxioms_dict.items():
-            for anonymous_concept in anonymous_concepts:
-                #print(anonymous_concept)
-                self.parse_anonymous_concept(concept, anonymous_concept)
+        self.class2superclass_flag = {k:-1 for k in self.class2superclass.keys()}
+        self.class2subclass_flag = {k:-1 for k in self.class2subclass.keys()}
+        #The order of following functions
+        self.__parse_tree()
+        self.__parse_general_axioms()
+
+    def __parse_general_axioms(self):
+        for (current_class, anonymous_classes) in self.generalaxioms_dict.items():
+            for anonymous_class in anonymous_classes:
+                self.__parse_anonymous_class(current_class, anonymous_class)
                 # not intersection
-        for concept in self.classes:
-            self.axioms.append([concept, 'iri', 'http://www.w3.org/2001/XMLSchema#string', '=1'])
-        self.parse_anonymous_properties()
-        return 0
+        for current_class in self.classes:
+            self.axioms.append([current_class, 'iri', 'http://www.w3.org/2001/XMLSchema#string', '=1'])
+        self.__parse_anonymous_properties()
     
-    def parse_anonymous_properties(self):
-        #print(self.onproperty_dist)
+    # to parse some property do not appear in any axiom but have both domain and range definition, (for all)
+    def __parse_anonymous_properties(self):
         for dp in self.data_properties:
             if dp not in self.onproperty_dist.values():
                 'here maybe update in the future, if property has multiple domains'
@@ -134,96 +140,164 @@ class Ontology(object):
                 'here maybe update in the future, if property has multiple domains'
                 if len(self.domains_dict[op]) > 0 and len(self.ranges_dict[op]) >0:
                     self.axioms.append([self.domains_dict[op][0], op, self.ranges_dict[op][0], '>0'])
-        return 0
 
-
-
-    def parse_anonymous_concept(self, concept, anonymous_concept):
-        #print('ALL',self.allvaluesfrom_dict)
-        if anonymous_concept in self.intersecctionof_dict.keys():
-            for intersection_element in self.intersecctionof_dict[anonymous_concept]:
-                #print('intersection')
-                #print(intersection_element)
+    # to parse an expression
+    def __parse_anonymous_class(self, current_class, anonymous_class):
+        if anonymous_class in self.intersecctionof_dict.keys():
+            for intersection_element in self.intersecctionof_dict[anonymous_class]:
                 first_element = self.first_dict[intersection_element]
-                #print(concept, first_element)
-                self.parse_anonymous_concept(concept, first_element)
+                self.__parse_anonymous_class(current_class, first_element)
                 rest_element = self.rest_dict[intersection_element]
-                #print(rest_element)
-                self.parse_anonymous_concept(concept, rest_element)
+                self.__parse_anonymous_class(current_class, rest_element)
         else:
-            #print(anonymous_concept, self.maxqc_dict.keys())
-            if anonymous_concept in self.restriction_list:
-                if anonymous_concept in self.allvaluesfrom_dict.keys():
-                    self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.allvaluesfrom_dict[anonymous_concept], '>0'))
-                    self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.allvaluesfrom_dict[anonymous_concept], '>0'])
-                    #assertion = (concept, self.onproperty_dist[anonymous_concept], self.allvaluesfrom_dict[anonymous_concept], '>0')
-                    #print(assertion)
-                    if self.allvaluesfrom_dict[anonymous_concept][0:4] != 'http':
-                        new_anonymous_concept = self.allvaluesfrom_dict[anonymous_concept]
-                        self.classes.append(new_anonymous_concept)
-                        self.parse_anonymous_concept(new_anonymous_concept, new_anonymous_concept)
-                if anonymous_concept in self.somevaluesfrom_dict.keys():
-                    #assertion = (concept, self.onproperty_dist[anonymous_concept], self.somevaluesfrom_dict[anonymous_concept], '>=1')
-                    self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.somevaluesfrom_dict[anonymous_concept], '>=1'))
-                    self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.somevaluesfrom_dict[anonymous_concept], '>=1'])
-                    if self.somevaluesfrom_dict[anonymous_concept][0:4] != 'http':
-                        new_anonymous_concept = self.somevaluesfrom_dict[anonymous_concept]
-                        self.classes.append(new_anonymous_concept)
-                        self.parse_anonymous_concept(new_anonymous_concept, new_anonymous_concept)
-                if anonymous_concept in self.eqc_dict.keys():
-                    if anonymous_concept in self.ondatarange_dict.keys():
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '=' + str(self.eqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '=' + str(self.eqc_dict[anonymous_concept])])
-                        #print((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '=', self.eqc_dict[anonymous_concept]))
+            if anonymous_class in self.restriction_list:
+                if anonymous_class in self.allvaluesfrom_dict.keys():
+                    #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0'))
+                    axiom = [current_class, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0']
+                    if axiom not in self.axioms:
+                        self.axioms.append(axiom)
+                        #add axiom for current_class's sub-current_class
+                        for subclass in self.class2subclass[current_class]:
+                            axiom = [subclass, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0']
+                            if axiom not in self.axioms:
+                                self.axioms.append(axiom)
+                    if self.allvaluesfrom_dict[anonymous_class][0:4] != 'http':
+                        new_anonymous_class = self.allvaluesfrom_dict[anonymous_class]
+                        self.classes.append(new_anonymous_class)
+                        self.__parse_anonymous_class(new_anonymous_class, new_anonymous_class)
+                if anonymous_class in self.somevaluesfrom_dict.keys():
+                    #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.somevaluesfrom_dict[anonymous_class], '>=1'))
+                    axiom = [current_class, self.onproperty_dist[anonymous_class], self.somevaluesfrom_dict[anonymous_class], '>=1']
+                    if axiom not in self.axioms:
+                        self.axioms.append(axiom)
+                        #add axiom for current_class's sub-current_class
+                        for subclass in self.class2subclass[current_class]:
+                            axiom = [subclass, self.onproperty_dist[anonymous_class], self.somevaluesfrom_dict[anonymous_class], '>=1']
+                            if axiom not in self.axioms:
+                                self.axioms.append(axiom)
+                    if self.somevaluesfrom_dict[anonymous_class][0:4] != 'http':
+                        new_anonymous_class = self.somevaluesfrom_dict[anonymous_class]
+                        self.classes.append(new_anonymous_class)
+                        self.__parse_anonymous_class(new_anonymous_class, new_anonymous_class)
+                if anonymous_class in self.eqc_dict.keys():
+                    if anonymous_class in self.ondatarange_dict.keys():
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])))
+                        axiom = [current_class, self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])]
+                        if axiom not in self.axioms:
+                            self.axioms.append(axiom)
+                            #add axiom for current_class's sub-current_class
+                            for subclass in self.class2subclass[current_class]:
+                                axiom = [subclass, self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])]
+                                if axiom not in self.axioms:
+                                    self.axioms.append(axiom)
                     else:
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '=' + str(self.eqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '=' + str(self.eqc_dict[anonymous_concept])])
-                        #assertion = (concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '=', self.eqc_dict[anonymous_concept])
-                        #print(assertion)
-                        if self.onclass_dist[anonymous_concept][0:4] != 'http':
-                            new_anonymous_concept = self.onclass_dist[anonymous_concept]
-                            self.classes.append(new_anonymous_concept)
-                            self.parse_anonymous_concept(new_anonymous_concept, new_anonymous_concept)
-                if anonymous_concept in self.minqc_dict.keys():
-                    if anonymous_concept in self.ondatarange_dict.keys():
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '>=' + str(self.minqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '>=' + str(self.minqc_dict[anonymous_concept])])
-                        #print((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '=', self.minqc_dict[anonymous_concept]))
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])))
+                        axiom = [current_class, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])]
+                        if axiom not in self.axioms:
+                            self.axioms.append(axiom)
+                            #add axiom for current_class's sub-current_class
+                            for subclass in self.class2subclass[current_class]:
+                                axiom = [subclass, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '=' + str(self.eqc_dict[anonymous_class])]
+                                if axiom not in self.axioms:
+                                    self.axioms.append(axiom)
+                        if self.onclass_dist[anonymous_class][0:4] != 'http':
+                            new_anonymous_class = self.onclass_dist[anonymous_class]
+                            self.classes.append(new_anonymous_class)
+                            self.__parse_anonymous_class(new_anonymous_class, new_anonymous_class)
+                if anonymous_class in self.minqc_dict.keys():
+                    if anonymous_class in self.ondatarange_dict.keys():
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '>=' + str(self.minqc_dict[anonymous_class])))
+                        self.axioms.append([current_class, self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '>=' + str(self.minqc_dict[anonymous_class])])
                     else:
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '>=' + str(self.minqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '>=' + str(self.minqc_dict[anonymous_concept])])
-                        #assertion = (concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '>=', self.minqc_dict[anonymous_concept])
-                        #print(assertion)
-                        if self.onclass_dist[anonymous_concept][0:4] != 'http':
-                            new_anonymous_concept = self.onclass_dist[anonymous_concept]
-                            self.classes.append(new_anonymous_concept)
-                            self.parse_anonymous_concept(new_anonymous_concept, new_anonymous_concept)
-                if anonymous_concept in self.maxqc_dict.keys():
-                    if anonymous_concept in self.ondatarange_dict.keys():
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '<=' + str(self.maxqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '<=' + str(self.maxqc_dict[anonymous_concept])])
-                        #print((self.onproperty_dist[anonymous_concept], self.ondatarange_dict[anonymous_concept], '=', self.maxqc_dict[anonymous_concept]))
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '>=' + str(self.minqc_dict[anonymous_class])))
+                        axiom = [current_class, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '>=' + str(self.minqc_dict[anonymous_class])]
+                        if axiom not in self.axioms:
+                            self.axioms.append(axiom)
+                            #add axiom for current_class's sub-current_class
+                            for subclass in self.class2subclass[current_class]:
+                                axiom = [subclass, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '>=' + str(self.minqc_dict[anonymous_class])]
+                                if axiom not in self.axioms:
+                                    self.axioms.append(axiom)
+                        if self.onclass_dist[anonymous_class][0:4] != 'http':
+                            new_anonymous_class = self.onclass_dist[anonymous_class]
+                            self.classes.append(new_anonymous_class)
+                            self.__parse_anonymous_class(new_anonymous_class, new_anonymous_class)
+                if anonymous_class in self.maxqc_dict.keys():
+                    if anonymous_class in self.ondatarange_dict.keys():
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])))
+                        axiom = [current_class, self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])]
+                        if axiom not in self.axioms:
+                            self.axioms.append(axiom)
+                            #add axiom for current_class's sub-current_class
+                            for subclass in self.class2subclass[current_class]:
+                                axiom = [subclass, self.onproperty_dist[anonymous_class], self.ondatarange_dict[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])]
+                                if axiom not in self.axioms:
+                                    self.axioms.append(axiom)
                     else:
-                        self.classes2axioms[concept].append((self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '<=' + str(self.maxqc_dict[anonymous_concept])))
-                        self.axioms.append([concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '<=' + str(self.maxqc_dict[anonymous_concept])])
-                        #assertion = (concept, self.onproperty_dist[anonymous_concept], self.onclass_dist[anonymous_concept], '<=', self.maxqc_dict[anonymous_concept])
-                        #print(assertion)
-                        if self.onclass_dist[anonymous_concept][0:4] != 'http':
-                            new_anonymous_concept = self.onclass_dist[anonymous_concept]
-                            self.classes.append(new_anonymous_concept)
-                            self.parse_anonymous_concept(new_anonymous_concept, new_anonymous_concept)
+                        #self.classes2axioms[current_class].append((self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])))
+                        axiom = [current_class, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])]
+                        if axiom not in self.axioms:
+                            self.axioms.append(axiom)
+                            #add axiom for current_class's sub-current_class
+                            for subclass in self.class2subclass[current_class]:
+                                axiom = [subclass, self.onproperty_dist[anonymous_class], self.onclass_dist[anonymous_class], '<=' + str(self.maxqc_dict[anonymous_class])]
+                                if axiom not in self.axioms:
+                                    self.axioms.append(axiom)
+                        if self.onclass_dist[anonymous_class][0:4] != 'http':
+                            new_anonymous_class = self.onclass_dist[anonymous_class]
+                            self.classes.append(new_anonymous_class)
+                            self.__parse_anonymous_class(new_anonymous_class, new_anonymous_class)
             else:
-                if anonymous_concept in self.first_dict.keys():
-                    first_element = self.first_dict[anonymous_concept]
-                    rest_element = self.rest_dict[anonymous_concept]
-                    self.parse_anonymous_concept(concept, first_element)
+                if anonymous_class in self.first_dict.keys():
+                    first_element = self.first_dict[anonymous_class]
+                    rest_element = self.rest_dict[anonymous_class]
+                    self.__parse_anonymous_class(current_class, first_element)
                     if rest_element != prefixes['rdfs:nil']:
-                        self.parse_anonymous_concept(concept, rest_element)
+                        self.__parse_anonymous_class(current_class, rest_element)
                 else:
-                    self.subsumption.append([concept, anonymous_concept])
-                    self.classes2subsumption[concept].append(anonymous_concept)
+                    self.subsumption.append([current_class, anonymous_class])
+                    self.class2superclass[current_class].append(anonymous_class)
+                    self.class2subclass[anonymous_class].append(current_class)
+    # to parse a super-sub tree
+    def __parse_tree(self):
+        for c in self.classes:
+            if c not in self.class2superclass.keys() and c in self.class2subclass.keys():
+                self.__get_subclasses(c)
+            if c in self.class2superclass.keys() and c not in self.class2subclass.keys():
+                self.__get_superclasses(c)
+        print('TREE',self.class2subclass)
 
-    def print_subsumption_axiom(self):
+    # to get all the super classes by the current class
+    def __get_superclasses(self, current_class):
+        if current_class in self.class2superclass.copy().keys():
+            superclasses = self.class2superclass.copy()[current_class]
+            for superclass in superclasses:
+                temp = self.__get_superclasses(superclass)
+                superclasses = superclasses + temp
+            # the flag is used to ensure each node is recursed only once
+            if self.class2superclass_flag[current_class] == -1:
+                self.class2superclass[current_class] = list(set(self.class2superclass[current_class] + superclasses))
+                self.class2superclass_flag[current_class] = 0
+            return superclasses
+        else:
+            return []
+
+    # to get all the sub classes by the current class
+    def __get_subclasses(self, current_class):
+        if current_class in self.class2subclass.copy().keys():
+            subclasses = self.class2subclass.copy()[current_class]
+            for subclass in subclasses:
+                temp = self.__get_subclasses(subclass)
+                subclasses = subclasses + temp
+            # the flag is used to ensure each node is recursed only once
+            if self.class2subclass_flag[current_class] == -1:
+                self.class2subclass[current_class] = list(set(self.class2subclass[current_class] + subclasses))
+                self.class2subclass_flag[current_class] = 0
+            return subclasses
+        else:
+            return []
+
+    def print(self):
         print('Classes', self.classes)
         print('-------------------')
         print('Data Types', self.datatypes)
@@ -233,6 +307,8 @@ class Ontology(object):
         print('Object Properties', self.object_properties)
         print('-------------------')
         print('Subsumptions', self.subsumption)
+        print(self.class2superclass)
+        print(self.class2subclass)
         print('-------------------')
         print('Axioms', self.axioms)
         return 0
@@ -244,7 +320,7 @@ g = utils.parse_owl('testcoreQ.ttl')
 
 o = Ontology()
 o.construct(g)
-o.parse_general_axioms()
+#o.__parse_general_axioms()
 o.print_subsumption_axiom()
 #print(o.output_ontology())
 '''
