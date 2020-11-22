@@ -125,6 +125,12 @@ class Ontology(object):
                     if (key in self.data_properties or key in self.object_properties) and c in value:
                         self.classes.remove(c)
                         break
+                '''
+                for (key, value) in self.ranges_dict.items():
+                    if (key in self.data_properties or key in self.object_properties) and c in value:
+                        self.classes.remove(c)
+                        break
+                '''
 
     
     def __parse_general_axioms(self):
