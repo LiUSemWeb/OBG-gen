@@ -109,7 +109,8 @@ class GraphQLSchema(object):
             interface_schema += '}\n'
             schema += interface_schema
         print(schema)
-        utils.write_file('global_schema.graphql',schema)
+        utils.write_file('global_' + global_ontolopy_name +'.graphql',schema)
+
     def write_local_schema(self, local_prefixes):
         for local_prefix in local_prefixes:
             schema = ''
@@ -173,16 +174,21 @@ def main(ontology):
     #elq1d.print()
     a = datetime.datetime.now()
     graphql_schema_test = GraphQLSchema()
+    #graphql_schema_test.construct(elq1d_test.A, elq1d_test.V, elq1d_test.U, elq1d_test.P, elq1d_test.concept2subsumptions, elq1d_test.concept2assertions)
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.write_global_schema()
     #graphql_schema_test.write_local_schema(['OQMD','MP'])
+    graphql_schema_test.write_local_schema(databases)
     b = datetime.datetime.now()
     print(b-a)
 
-    
+global_ontolopy_name = ''
+databases = list()
 
 if __name__ == '__main__':
     print(str(sys.argv[1]))
+    global_ontolopy_name = str(sys.argv[1]).split('/')[2].split('.')[0]
+    databases = [str(k) for k in sys.argv[2:]]
     main(str(sys.argv[1]))
 '''
 elq1d = ELQ_1_D()

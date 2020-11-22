@@ -112,13 +112,21 @@ class Ontology(object):
             if p == prefixes['rdf:type'] and o == prefixes['owl:Restriction']:
                 self.restriction_list.append(s)
         
-
+        
         self.class2superclass_flag = {k:-1 for k in self.class2superclass.keys()}
         self.class2subclass_flag = {k:-1 for k in self.class2subclass.keys()}
         #The order of following functions
         self.__parse_tree()
         self.__parse_general_axioms()
+        
+        for c in self.classes:
+            if c[0:4] != 'http':
+                for (key, value) in self.domains_dict.items():
+                    if (key in self.data_properties or key in self.object_properties) and c in value:
+                        self.classes.remove(c)
+                        break
 
+    
     def __parse_general_axioms(self):
         for (current_class, anonymous_classes) in self.generalaxioms_dict.items():
             for anonymous_class in anonymous_classes:

@@ -30,7 +30,7 @@ def read_TBox(TBox_file = './TBox.yml'):
         #print(data)
     return data['concepts'], data['data_types'], data['data_properties'], data['object_properties'], data['subsumptions'], data['axioms']
 def write_file(schema_file, gq_schema):
-    with open(schema_file, 'w') as output_file:
+    with open('./schemas/' + schema_file, 'w') as output_file:
         output_file.write(gq_schema)
 
 def parse_owl(owl_file = 'testcore.ttl', format = 'n3'):
