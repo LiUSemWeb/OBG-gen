@@ -167,7 +167,7 @@ def main(ontology):
     #o.print_subsumption_axiom()
     #elq1d_test = ELQ_1_D()
     A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
-    o.print()
+    #o.print()
     #print(len(assertions))
     #print(A, V, U, P, subsumptions, assertions)
     #elq1d_test.construct(A, V, U, P, subsumptions, assertions)
