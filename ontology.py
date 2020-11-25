@@ -330,12 +330,11 @@ class Ontology(object):
         print('-------------------')
         print('Object Properties', self.object_properties)
         print('-------------------')
-        print('Subsumptions', self.subsumption)
-        print(self.class2superclass)
-        print(self.class2subclass)
+        print('Subsumptions', self.subsumption, len(self.subsumption))
+        #print(self.class2superclass)
+        #print(self.class2subclass)
         print('-------------------')
-        print('Axioms', self.axioms)
-        return 0
+        print('Axioms', self.axioms, len(self.axioms))
     def output_ontology(self):
         return self.classes, self.datatypes, self.data_properties, self.object_properties, self.subsumption, self.axioms, self.class2superclass, self.class2axioms
        
