@@ -1,0 +1,282 @@
+@prefix : <https://w3id.org/mdo/core/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix emmo: <http://emmo.info/domains/emmo-material.owl#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix qudt-unit: <http://qudt.org/vocab/unit/> .
+@base <https://w3id.org/mdo/core/> .
+
+<https://w3id.org/mdo/core/> rdf:type owl:Ontology ;
+                              owl:versionIRI <https://w3id.org/mdo/core/1.0/> ;
+                              dcterms:contributor "Patrick Lambrix"^^xsd:string ,
+                                                  "Rickard Armiento"^^xsd:string ;
+                              dcterms:created "2019-11-07" ;
+                              dcterms:creator "Huanyu Li"^^xsd:string ;
+                              dcterms:license "https://github.com/huanyu-li/Materials-Design-Ontology/blob/master/LICENSE" ;
+                              dcterms:title "Materials Design Ontology - Core Module"@en ;
+                              vann:preferredNamespacePrefix "core" ;
+                              vann:preferredNamespaceUri "https://w3id.org/mdo/core/1.0/" ;
+                              rdfs:comment "This is the core module in Materials Design Ontology."@en ;
+                              rdfs:seeAlso "https://github.com/huanyu-li/Materials-Design-Ontology" ;
+                              owl:versionInfo "1.0"^^xsd:string .
+
+#################################################################
+#    Annotation properties
+#################################################################
+
+###  http://purl.org/dc/terms/contributor
+dcterms:contributor rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/created
+dcterms:created rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/creator
+dcterms:creator rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/license
+dcterms:license rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/dc/terms/title
+dcterms:title rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/vocab/vann/preferredNamespacePrefix
+vann:preferredNamespacePrefix rdf:type owl:AnnotationProperty .
+
+
+###  http://purl.org/vocab/vann/preferredNamespaceUri
+vann:preferredNamespaceUri rdf:type owl:AnnotationProperty .
+
+
+#################################################################
+#    Datatypes
+#################################################################
+
+###  http://www.w3.org/2001/XMLSchema#date
+xsd:date rdf:type rdfs:Datatype .
+
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://qudt.org/schema/qudt/hasQuantityKind
+qudt:hasQuantityKind rdf:type owl:ObjectProperty ;
+                     rdfs:range qudt:QuantityKind .
+
+
+###  http://qudt.org/schema/qudt/quantityValue
+qudt:quantityValue rdf:type owl:ObjectProperty ;
+                   rdfs:range qudt:QuantityValue .
+
+
+###  http://qudt.org/schema/qudt/unit
+qudt:unit rdf:type owl:ObjectProperty ;
+          rdfs:range qudt-unit:Unit .
+
+
+###  https://w3id.org/mdo/core/hasInputProperty
+:hasInputProperty rdf:type owl:ObjectProperty ;
+                  rdfs:domain :Calculation ;
+                  rdfs:range :Property ;
+                  rdfs:comment "hasInputProperty represents the relationship between a calculation and the properties it takes as input."@en ;
+                  rdfs:label "has input property"@en .
+
+
+###  https://w3id.org/mdo/core/hasInputStructure
+:hasInputStructure rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Calculation ;
+                   rdfs:range :Structure ;
+                   rdfs:comment "hasInputStructure represents the relationship between a calculation and the structures it takes as input."@en ;
+                   rdfs:label "has input structure"@en .
+
+
+###  https://w3id.org/mdo/core/hasOutputCalculatedProperty
+:hasOutputCalculatedProperty rdf:type owl:ObjectProperty ;
+                             rdfs:domain :Calculation ;
+                             rdfs:range :CalculatedProperty ;
+                             rdfs:comment "hasOutputCalculatedProperty represents the relationship between a calculation and the calculated properties it outputs."@en ;
+                             rdfs:label "has output calculated property"@en .
+
+
+###  https://w3id.org/mdo/core/hasOutputStructure
+:hasOutputStructure rdf:type owl:ObjectProperty ;
+                    rdfs:domain :Calculation ;
+                    rdfs:range :Structure ;
+                    rdfs:comment "hasOutputStructure represents the relationship between a calculation and the structures it outputs."@en ;
+                    rdfs:label "has output structure"@en .
+
+
+###  https://w3id.org/mdo/core/hasQuantityValue
+:hasQuantityValue rdf:type owl:ObjectProperty ;
+                  rdfs:comment "hasQuantityValue represents the relationship between a property and quantity value it takes."@en ;
+                  rdfs:label "has quantity value"@en .
+
+
+###  https://w3id.org/mdo/core/relatesToMaterial
+:relatesToMaterial rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Structure ;
+                   rdfs:range emmo:EMMO_4207e895_8b83_4318_996a_72cfb32acd94 ;
+                   rdfs:comment "relatesToMaterial represents the relationship between a structure and the materials it comes from."@en ;
+                   rdfs:label "relates to material"@en .
+
+
+###  https://w3id.org/mdo/core/relatesToStructure
+:relatesToStructure rdf:type owl:ObjectProperty ;
+                    rdfs:domain :Property ;
+                    rdfs:range :Structure ;
+                    rdfs:comment "relatesToStructure represents the relationship between a property and the structures it comes from."@en ;
+                    rdfs:label "relates to structure"@en .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://qudt.org/schema/qudt/numericalValue
+qudt:numericalValue rdf:type owl:DatatypeProperty ;
+                    rdfs:range xsd:double .
+
+
+###  https://w3id.org/mdo/core/ID
+:ID rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Calculation ;
+    rdfs:range xsd:string ;
+    rdfs:comment "ID represents that a calculation has the unique ID in a string."@en ;
+    rdfs:label "ID"@en .
+
+
+###  https://w3id.org/mdo/core/PropertyName
+:PropertyName rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Property ;
+              rdfs:range xsd:string ;
+              rdfs:comment "PropertyName represents that a property has the name in a string."@en ;
+              rdfs:label "property name"@en .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://emmo.info/domains/emmo-material.owl#EMMO_4207e895_8b83_4318_996a_72cfb32acd94
+emmo:EMMO_4207e895_8b83_4318_996a_72cfb32acd94 rdf:type owl:Class ;
+                                               rdfs:label "Material"^^xsd:string .
+
+
+###  http://qudt.org/schema/qudt/Quantity
+qudt:Quantity rdf:type owl:Class .
+
+
+###  http://qudt.org/schema/qudt/QuantityKind
+qudt:QuantityKind rdf:type owl:Class .
+
+
+###  http://qudt.org/schema/qudt/QuantityValue
+qudt:QuantityValue rdf:type owl:Class .
+
+
+###  http://qudt.org/vocab/unit/Unit
+qudt-unit:Unit rdf:type owl:Class .
+
+
+###  https://w3id.org/mdo/core/CalculatedProperty
+:CalculatedProperty rdf:type owl:Class ;
+                    rdfs:subClassOf :Property ;
+                    owl:disjointWith :PhysicalProperty ;
+                    rdfs:comment "A calculated property is a proprty that is a result from a calculation."@en ;
+                    rdfs:label "Calculated Property"@en .
+
+
+###  https://w3id.org/mdo/core/Calculation
+:Calculation rdf:type owl:Class ;
+             rdfs:subClassOf [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasInputProperty ;
+                                                      owl:someValuesFrom :Property
+                                                    ]
+                                                    [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasInputProperty ;
+                                                      owl:allValuesFrom :Property
+                                                    ]
+                                                    [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasOutputCalculatedProperty ;
+                                                      owl:allValuesFrom :CalculatedProperty
+                                                    ]
+                                                  ) ;
+                               rdf:type owl:Class
+                             ] ,
+                             [ owl:intersectionOf ( [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasInputStructure ;
+                                                      owl:someValuesFrom :Structure
+                                                    ]
+                                                    [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasInputStructure ;
+                                                      owl:allValuesFrom :Structure
+                                                    ]
+                                                    [ rdf:type owl:Restriction ;
+                                                      owl:onProperty :hasOutputStructure ;
+                                                      owl:allValuesFrom :Structure
+                                                    ]
+                                                  ) ;
+                               rdf:type owl:Class
+                             ] ;
+             rdfs:comment "A calculation is the use of a specific computational method to process structures and/or properties into output structures and/or calculated properties."@en ;
+             rdfs:label "Calculation"@en .
+
+
+###  https://w3id.org/mdo/core/PhysicalProperty
+:PhysicalProperty rdf:type owl:Class ;
+                  owl:equivalentClass :testProperty ;
+                  rdfs:subClassOf :Property ;
+                  rdfs:comment "A physical property is an objective property over a physical system. (ie, a property pertains to the physical reality)"@en ;
+                  rdfs:label "Physical Property"@en .
+
+
+###  https://w3id.org/mdo/core/Property
+:Property rdf:type owl:Class ;
+          rdfs:subClassOf qudt:Quantity ;
+          rdfs:comment "A property in materials design is data pertaining to at least one material or materials system."@en ;
+          rdfs:label "Property"@en .
+
+
+###  https://w3id.org/mdo/core/Structure
+:Structure rdf:type owl:Class ;
+           rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :relatesToMaterial ;
+                             owl:someValuesFrom emmo:EMMO_4207e895_8b83_4318_996a_72cfb32acd94
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty :relatesToMaterial ;
+                             owl:allValuesFrom emmo:EMMO_4207e895_8b83_4318_996a_72cfb32acd94
+                           ] ;
+           rdfs:comment "A structure is the information of the sites and their occupancies in a material or materials system."@en ;
+           rdfs:label "Structure"@en .
+
+
+###  https://w3id.org/mdo/core/testProperty
+:testProperty rdf:type owl:Class .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  http://qudt.org/vocab/unit/EV
+qudt-unit:EV rdf:type owl:NamedIndividual ,
+                      qudt-unit:Unit .
+
+
+###  http://qudt.org/vocab/unit/GM-PER-CentiM3
+qudt-unit:GM-PER-CentiM3 rdf:type owl:NamedIndividual ,
+                                  qudt-unit:Unit .
+
+
+###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
