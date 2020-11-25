@@ -1,0 +1,26 @@
+interface Artifact
+{
+	iri:String!
+}
+interface Building
+{
+	locatedAt:[Location!]!
+	iri:String!
+}
+interface Business_User
+{
+	iri:String!
+}
+interface Customer
+{
+	hasOrder:[Transaction_Document!]!
+	iri:String!
+}
+interface Location
+{
+	iri:String!
+}
+interface Transaction_Document
+{
+	iri:String!
+}

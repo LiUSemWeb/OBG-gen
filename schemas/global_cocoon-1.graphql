@@ -1,0 +1,348 @@
+interface BusinessEntity
+{
+	iri:String!
+}
+interface CDNService implements PaaS & Service & CloudService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface CloudNetworkPriceSpecification implements UnitPriceSpecification & CloudServicePriceSpecification
+{
+	forUsageLessEqual:TypeAndQuantityNode!
+	forUsageMoreThan:TypeAndQuantityNode!
+	specialRateType:String!
+	inRegion:[Region!]!
+	hasCurrencyValue:decimal!
+	iri:String!
+}
+interface CloudOSPriceSpecification implements UnitPriceSpecification & CloudServicePriceSpecification
+{
+	inRegion:[Region!]!
+	hasCurrencyValue:decimal!
+	forCoresLessEqual:decimal
+	chargedPerCore:boolean!
+	forCoresMoreThan:decimal
+	iri:String!
+}
+interface CloudService implements Service
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface CloudServicePriceSpecification implements UnitPriceSpecification
+{
+	inRegion:[Region!]!
+	hasCurrencyValue:decimal!
+	iri:String!
+}
+interface CloudStorageTransactionsPriceSpecification implements UnitPriceSpecification & CloudServicePriceSpecification
+{
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inRegion:[Region!]!
+	hasCurrencyValue:decimal!
+	iri:String!
+}
+interface ComputeService implements Service & CloudService & IaaS
+{
+	hasMemory:TypeAndQuantityNode!
+	hasMaxStorageSize:TypeAndQuantityNode
+	hasStorage:[TypeAndQuantityNode!]!
+	hasCPUcapacity:TypeAndQuantityNode
+	hasMaxNumberOfDisks:TypeAndQuantityNode
+	hasPriceSpecification:CloudStorageTransactionsPriceSpecification
+	numberOfCores:decimal
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface DNSQueryLatency implements Latency & QualityOfService
+{
+	iri:String!
+}
+interface DNSService implements CloudService & Service & NetworkService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface DataRateUnit
+{
+	iri:String!
+}
+interface DataTransferSpeed implements QualityOfService
+{
+	transferedFileSizeMin:TypeAndQuantityNode!
+	transferedFileSizeMax:TypeAndQuantityNode!
+	iri:String!
+}
+interface Database implements Service & SaaS & CloudService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface Device implements Sensor
+{
+	ipv4:[String!]!
+	inPhysicalLocation:Location
+	iri:String!
+}
+interface DownlinkSpeed implements DataTransferSpeed & QualityOfService
+{
+	transferedFileSizeMin:TypeAndQuantityNode!
+	transferedFileSizeMax:TypeAndQuantityNode!
+	iri:String!
+}
+interface Egress implements TrafficDirection
+{
+	iri:String!
+}
+interface Feature
+{
+	iri:String!
+}
+interface FeatureOfInterest
+{
+	iri:String!
+}
+interface ForwardingRule implements IaaS & CloudService & LoadBalancing & Service & NetworkService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface IaaS implements Service & CloudService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface InformationEntropyUnit
+{
+	iri:String!
+}
+interface Ingress implements TrafficDirection
+{
+	iri:String!
+}
+interface InternetService implements CloudService & Service & NetworkService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	excludesDestination:[Location!]!
+	hasDestination:[Location!]!
+	hasDirection:TrafficDirection!
+	iri:String!
+}
+interface Latency implements QualityOfService
+{
+	iri:String!
+}
+interface LoadBalancing implements CloudService & Service & NetworkService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface LoadBalancingData implements IaaS & CloudService & LoadBalancing & Service & NetworkService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	hasDirection:TrafficDirection!
+	iri:String!
+}
+interface LocalStorage implements Service & StorageService & CloudService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	canHaveSnapshot:[StorageService!]!
+	hasStorageThroughputMax:TypeAndQuantityNode
+	hasStorageIOMax:TypeAndQuantityNode
+	hasStorageSize:TypeAndQuantityNode
+	iri:String!
+}
+interface Location
+{
+	iri:String!
+}
+interface Measurement
+{
+	iri:String!
+}
+interface NetworkService implements Service & CloudService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface NetworkStorage implements Service & StorageService & CloudService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	canHaveSnapshot:[StorageService!]!
+	hasStorageThroughputMax:TypeAndQuantityNode
+	hasStorageIOMax:TypeAndQuantityNode
+	hasStorageSize:TypeAndQuantityNode
+	iri:String!
+}
+interface Observation
+{
+	iri:String!
+}
+interface PaaS implements Service & CloudService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface Person
+{
+	iri:String!
+}
+interface Person
+{
+	iri:String!
+}
+interface Place
+{
+	iri:String!
+}
+interface QualityOfService
+{
+	iri:String!
+}
+interface Region implements Location
+{
+	state:String
+	hasProvider:BusinessEntity!
+	inJurisdiction:[Location!]!
+	continent:String
+	inPhysicalLocation:Location
+	city:String
+	iri:String!
+}
+interface SaaS implements Service & CloudService
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface Sensor
+{
+	iri:String!
+}
+interface Service
+{
+	iri:String!
+}
+interface Service
+{
+	iri:String!
+}
+interface StaticIPService implements CloudService & Service & NetworkService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	inUse:boolean!
+	iri:String!
+}
+interface StorageService implements Service & CloudService & IaaS
+{
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	canHaveSnapshot:[StorageService!]!
+	hasStorageThroughputMax:TypeAndQuantityNode
+	hasStorageIOMax:TypeAndQuantityNode
+	hasStorageSize:TypeAndQuantityNode
+	iri:String!
+}
+interface SystemImage implements CloudService & Service & ComputeService & IaaS
+{
+	hasMemory:TypeAndQuantityNode!
+	hasMaxStorageSize:TypeAndQuantityNode
+	hasStorage:[TypeAndQuantityNode!]!
+	hasCPUcapacity:TypeAndQuantityNode
+	hasMaxNumberOfDisks:TypeAndQuantityNode
+	hasPriceSpecification:CloudStorageTransactionsPriceSpecification
+	numberOfCores:decimal
+	hasProvider:BusinessEntity!
+	inRegion:Region!
+	hasPriceSpecification:[UnitPriceSpecification!]!
+	inZone:String
+	iri:String!
+}
+interface SystemProperty
+{
+	iri:String!
+}
+interface TrafficDirection
+{
+	iri:String!
+}
+interface TypeAndQuantityNode
+{
+	iri:String!
+}
+interface Unit
+{
+	iri:String!
+}
+interface UnitOfMeasure
+{
+	iri:String!
+}
+interface UnitPriceSpecification
+{
+	iri:String!
+}
+interface UplinkSpeed implements DataTransferSpeed & QualityOfService
+{
+	transferedFileSizeMin:TypeAndQuantityNode!
+	transferedFileSizeMax:TypeAndQuantityNode!
+	iri:String!
+}
+interface ub1bL842C37
+{
+	iri:String!
+}
+interface ub1bL947C36
+{
+	iri:String!
+}
