@@ -1,6 +1,6 @@
-### OWL2GraphQL
+### ODGSG: Ontology-Driven GraphQL server Generation for Data Access and Integration
 
-A tool to translate a TBox according to ELQ(1)D description logic to a GraphQL schema, which is definied using interface types.
+A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
 ### Contact
 
