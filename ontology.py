@@ -151,7 +151,7 @@ class Ontology(object):
 
     
     def __parse_general_axioms(self):
-        self.__parse_anonymous_properties()
+        #self.__parse_anonymous_properties()
         for (current_class, anonymous_classes) in self.generalaxioms_dict.items():
             for anonymous_class in anonymous_classes:
                 self.__parse_anonymous_class(current_class, anonymous_class)
@@ -167,28 +167,28 @@ class Ontology(object):
             if dp not in self.onproperty_dist.values():
                 'here maybe update in the future, if property has multiple domains'
                 if len(self.domains_dict[dp]) > 0 and len(self.ranges_dict[dp]) >0:
-                    axiom = [self.domains_dict[dp][0], dp, self.ranges_dict[dp][0], '>0']
+                    axiom = [self.domains_dict[dp][0], dp, self.ranges_dict[dp][0], '>=0']
                     if axiom not in self.axioms:
                         self.axioms.append(axiom)
-                        self.class2axioms[self.domains_dict[dp][0]].append([dp, self.ranges_dict[dp][0], '>0'])
+                        self.class2axioms[self.domains_dict[dp][0]].append([dp, self.ranges_dict[dp][0], '>=0'])
                         for subclass in self.class2subclass[self.domains_dict[dp][0]]:
-                            axiom = [subclass, dp, self.ranges_dict[dp][0], '>0']
+                            axiom = [subclass, dp, self.ranges_dict[dp][0], '>=0']
                             if axiom not in self.axioms:
                                 self.axioms.append(axiom)
-                                self.class2axioms[subclass].append([dp, self.ranges_dict[dp][0], '>0'])
+                                self.class2axioms[subclass].append([dp, self.ranges_dict[dp][0], '>=0'])
         for op in self.object_properties:
             if op not in self.onproperty_dist.values():
                 'here maybe update in the future, if property has multiple domains'
                 if len(self.domains_dict[op]) > 0 and len(self.ranges_dict[op]) >0:
-                    axiom = [self.domains_dict[op][0], op, self.ranges_dict[op][0], '>0']
+                    axiom = [self.domains_dict[op][0], op, self.ranges_dict[op][0], '>=0']
                     if axiom not in self.axioms:
                         self.axioms.append(axiom)
-                        self.class2axioms[self.domains_dict[op][0]].append([op, self.ranges_dict[op][0], '>0'])
+                        self.class2axioms[self.domains_dict[op][0]].append([op, self.ranges_dict[op][0], '>=0'])
                         for subclass in self.class2subclass[self.domains_dict[op][0]]:
-                            axiom = [subclass, op, self.ranges_dict[op][0], '>0']
+                            axiom = [subclass, op, self.ranges_dict[op][0], '>=0']
                             if axiom not in self.axioms:
                                 self.axioms.append(axiom)
-                                self.class2axioms[subclass].append([op, self.ranges_dict[op][0], '>0'])
+                                self.class2axioms[subclass].append([op, self.ranges_dict[op][0], '>=0'])
 
 
     # to parse an expression
@@ -202,16 +202,16 @@ class Ontology(object):
         else:
             if anonymous_class in self.restriction_list:
                 if anonymous_class in self.allvaluesfrom_dict.keys():
-                    axiom = [current_class, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0']
+                    axiom = [current_class, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>=0']
                     if axiom not in self.axioms:
                         self.axioms.append(axiom)
-                        self.class2axioms[current_class].append([self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0'])
+                        self.class2axioms[current_class].append([self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>=0'])
                         #add axiom for current_class's sub-current_class
                         for subclass in self.class2subclass[current_class]:
-                            axiom = [subclass, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0']
+                            axiom = [subclass, self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>=0']
                             if axiom not in self.axioms:
                                 self.axioms.append(axiom)
-                                self.class2axioms[subclass].append([self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>0'])
+                                self.class2axioms[subclass].append([self.onproperty_dist[anonymous_class], self.allvaluesfrom_dict[anonymous_class], '>=0'])
                     if self.allvaluesfrom_dict[anonymous_class][0:4] != 'http':
                         new_anonymous_class = self.allvaluesfrom_dict[anonymous_class]
                         self.classes.append(new_anonymous_class)

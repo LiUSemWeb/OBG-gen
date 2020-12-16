@@ -5,7 +5,7 @@ from ontology import Ontology
 import datetime
 import sys
 
-V2Scalar = {'xsd:integer':'Int', 'xsd:float':'Float', 'xsd:string':'String', 'xsd:boolean':'Boolean',
+V2Scalar = {'http://www.w3.org/2001/XMLSchema#integer':'Int', 'xsd:float':'Float', 'xsd:string':'String', 'xsd:boolean':'Boolean',
             'http://www.w3.org/2001/XMLSchema#string': 'String', 'http://www.w3.org/2001/XMLSchema#double': 'Float'}
 #A, V, U, P, subsumptions, assertions = utils.read_TBox(TBox_file = './TBox.yml')
 '''
@@ -66,38 +66,52 @@ class GraphQLSchema(object):
                     min_card = 1
                     max_card = 1
                 if assertion[2] == '>=1':
-                    min_card = 1
-                    max_card = float("inf")
+                    continue
+                    #should skip
+                    #min_card = 1
+                    #max_card = float("inf")
                 if assertion[2] == '<=1':
-                    min_card = 0
-                    max_card = 1
+                    continue
+                    #should skip
+                    #min_card = 0
+                    #max_card = 1
                 if assertion[2] == '>=0':
                     min_card = 0
                     max_card = float("inf")
+
                 field_type = assertion[1]
                 if assertion[1] in V2Scalar.keys():
                     field_type = V2Scalar[assertion[1]]
                 self.fields[concept][(assertion[0],field_type)] = (min_card, max_card)
     
     def write_global_schema(self):
-        schema = ''
+        interfacetype_schema = ''
+        objecttype_schema = ''
+        querytype_schema = 'type Query {\n\t'
+
         self.I.sort(key = utils.remove_prefix)
         for interface in self.I:
-            interface_schema = 'interface {interface}'.format(interface = utils.remove_prefix(interface))
-            
+            interfacetype_schema += 'interface {interface}'.format(interface = utils.remove_prefix(interface))
+            objecttype_schema += 'type {interface}_obj implements {interface}'.format(interface = utils.remove_prefix(interface))
+
+            querytype_schema += '{interface}List('.format(interface = utils.remove_prefix(interface))
             if len(self.implementation[interface]) >0:
-                interface_schema += ' implements '
+                interfacetype_schema += ' implements '
+                #objecttype_schema += ' implements {interface} & '.format(interface = utils.remove_prefix(interface))
                 for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                    interface_schema += '{implemented_interface}'.format(implemented_interface = utils.remove_prefix(implemented_interface))
+                    interfacetype_schema += '{implemented_interface}'.format(implemented_interface = utils.remove_prefix(implemented_interface))
+                    objecttype_schema += ' & {implemented_interface}'.format(implemented_interface = utils.remove_prefix(implemented_interface))
                     if i < len(self.implementation[interface]) -1:
-                        interface_schema += ' & '
-            interface_schema += '\n{\n'
+                        interfacetype_schema += ' & '
+                        #objecttype_schema += ' & '
+            interfacetype_schema += '\n{\n'
+            objecttype_schema += '\n{\n'
 
             for (key, item) in self.fields[interface].items():
                 range = ''
                 if item[0] == 0:
                     if item[1] == float('inf'):
-                        range = '[{type}]'.format(type = utils.remove_prefix(key[1]))
+                        range = '[{type}!]'.format(type = utils.remove_prefix(key[1]))
                     if item[1] == 1:
                         range = '{type}'.format(type = utils.remove_prefix(key[1]))
                 if item[0] == 1:
@@ -105,11 +119,21 @@ class GraphQLSchema(object):
                         range = '[{type}!]!'.format(type = utils.remove_prefix(key[1]))
                     if item[1] == 1:
                         range = '{type}!'.format(type = utils.remove_prefix(key[1]))
-                interface_schema += '\t{field}:{type}\n'.format(field = utils.remove_prefix(key[0]), type = range)
-            interface_schema += '}\n'
-            schema += interface_schema
-        print(schema)
-        utils.write_file('global_' + global_ontolopy_name +'.graphql',schema)
+                interfacetype_schema += '\t{field}:{type}\n'.format(field = utils.remove_prefix(key[0]), type = range)
+                objecttype_schema += '\t{field}:{type}\n'.format(field = utils.remove_prefix(key[0]), type = range)
+                if(key[1] in V2Scalar.values()):
+                    querytype_schema += '{field}:[{type}],'.format(field = utils.remove_prefix(key[0]), type = range)
+            querytype_schema = querytype_schema[0:-1]
+            querytype_schema += '): [{interface}]\n\t'.format(interface = utils.remove_prefix(interface))
+            interfacetype_schema += '}\n'
+            objecttype_schema += '}\n'
+        querytype_schema += '}\n'
+            #schema += interfacetype_schema
+        print(interfacetype_schema)
+        print(objecttype_schema)
+        print(querytype_schema)
+        utils.write_file('schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
+        utils.write_file('schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
 
     def write_local_schema(self, local_prefixes):
         for local_prefix in local_prefixes:
@@ -167,7 +191,7 @@ def main(ontology):
     #o.print_subsumption_axiom()
     #elq1d_test = ELQ_1_D()
     A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
-    o.print()
+    #o.print()
     #print(len(assertions))
     #print(A, V, U, P, subsumptions, assertions)
     #elq1d_test.construct(A, V, U, P, subsumptions, assertions)
@@ -178,7 +202,7 @@ def main(ontology):
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.write_global_schema()
     #graphql_schema_test.write_local_schema(['OQMD','MP'])
-    graphql_schema_test.write_local_schema(databases)
+    #graphql_schema_test.write_local_schema(databases)
     b = datetime.datetime.now()
     print(b-a)
 
