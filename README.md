@@ -3,9 +3,11 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## The Framework of ODGSG
 ### GraphQL Server Generation
+![entities](https://huanyu-li.github.io/figures/odgsg/generic-framework.png "The framework of ODGSG")
+
 * (c): Ontology-based GraphQL schema generation
 * (d): Semantic mappings-based GraphQL resolvers generation
-![entities](https://huanyu-li.github.io/figures/odgsg/generic-framework.png "The framework of ODGSG")
+
 
 ## Getting Started
 
