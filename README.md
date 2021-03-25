@@ -26,11 +26,14 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 	pip install rdflib
     python -m pip install "graphql-core>=3"
 
+    pip install ariadne
+
 ## Usage
 
-* TO UPDATE
 
 	python graphql_schema_gen.py ./domain_ontologies/mdofull.ttl
+	export FLASK_ENV=development
+	python app.py
 
 
 ## A demo on Heroku of ODGSG for the materials design domain
