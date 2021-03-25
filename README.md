@@ -30,6 +30,8 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
 ## Usage
 
+* TO UPDATE
+
 Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
 
 	python graphql_schema_gen.py ./domain_ontologies/mdofull.ttl
