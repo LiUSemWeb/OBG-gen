@@ -19,24 +19,20 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Installation
 
+* TO UPDATE
+
 GraphQL-core 3 can be installed from PyPI using the built-in pip command:
-
+	
+	pip install rdflib
     python -m pip install "graphql-core>=3"
-
-Alternatively, you can also use [pipenv](https://docs.pipenv.org/) for installation in a
-virtual environment:
-
-    pipenv install "graphql-core>=3"
 
 ## Usage
 
-```python
-iii
-```
+* TO UPDATE
+
+	python graphql_schema_gen.py ./domain_ontologies/mdofull.ttl
+
 
 ## A demo on Heroku of ODGSG for the materials design domain
+* TO UPDATE
 [ODGSG-Demo](https://odgsg-demo.herokuapp.com)
-
-## Contact
-
-* [Huanyu Li](https://www.ida.liu.se/~huali50/)

@@ -1,5 +1,4 @@
 from collections import defaultdict
-import utils
 from rdflib.namespace import RDF, RDFS,OWL
 
 prefixes = {'rdf:type': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'rdf:comment':'http://www.w3.org/2000/01/rdf-schema#comment', 'rdfs:subClassOf': 'http://www.w3.org/2000/01/rdf-schema#subClassOf',
