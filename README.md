@@ -1,8 +1,8 @@
-# ODGSG: Ontology-Driven GraphQL server Generation for Data Access and Integration
+# ODGSG: Ontology-Driven GraphQL Server Generation for Data Access and Integration
 A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
 #### The framework of ODGSG
-![entities](https://huanyu-li.github.io/figures/odgsg/framework.png "The framework of ODGSG")
+![entities](https://huanyu-li.github.io/figures/odgsg/generic-framework.png "The framework of ODGSG")
 
 #### Getting started
 
