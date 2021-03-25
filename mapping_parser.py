@@ -1,4 +1,5 @@
 import sys
+import json
 from collections import defaultdict
 from rdflib import Graph
 from graphql import build_schema, is_object_type, get_named_type, is_interface_type, assert_valid_schema, is_input_type, is_union_type
@@ -22,6 +23,9 @@ referenceFormulation_dict = defaultdict()
 source_dict = defaultdict()
 subjectMap_dict = defaultdict()
 templateMap_dict = defaultdict()
+joinCondition_dict = defaultdict()
+child_dict = defaultdict()
+parent_dict = defaultdict()
 
 def print_info():
     print(class_dict, '\n', constant_dict, '\n', datatype_dict, '\n', subjectMap_dict)
@@ -48,37 +52,59 @@ def parse_mapping(mapping_file = 'venue-mapper.ttl', format = 'n3'):
     for subj, pred, obj in g:
         subj = remove_prefix(subj.toPython())
         pred = remove_prefix(pred.toPython())
-        obj = remove_prefix(obj.toPython())
+        #obj = remove_prefix(obj.toPython())
         triples[pred][subj].append(obj)
         file.writelines('{} {} {}\n'.format(subj, pred, obj))
         if pred == 'class':
+            obj = remove_prefix(obj.toPython())
             class_dict[subj] = obj
         if pred == 'constant':
+            obj = remove_prefix(obj.toPython())
             constant_dict[subj] = obj
         if pred == 'datatype':
+            obj = remove_prefix(obj.toPython())
             datatype_dict[subj] = obj
         if pred == 'iterator':
+            obj = remove_prefix(obj.toPython())
             iterator_dict[subj] = obj
         if pred == 'logicalSource':
+            obj = remove_prefix(obj.toPython())
             logicalSource_dict[subj] = obj
         if pred == 'objectMap':
+            obj = remove_prefix(obj.toPython())
             objectMap_dict[subj] = obj
         if pred == 'parentTriplesMap':
+            obj = remove_prefix(obj.toPython())
             parentTriplesMap_dict[subj] = obj
         if pred == 'predicate':
+            obj = remove_prefix(obj.toPython())
             predicate_dict[subj] = obj
         if pred == 'predicateObjectMap':
+            obj = remove_prefix(obj.toPython())
             predicateObjectMap_dict[subj].append(obj)
         if pred == 'reference':
+            obj = remove_prefix(obj.toPython())
             reference_dict[subj] = obj
         if pred == 'referenceFormulation':
+            obj = remove_prefix(obj.toPython())
             referenceFormulation_dict[subj] = obj
         if pred == 'source':
-            source_dict[subj] = obj
+            source_dict[subj] = obj.toPython()
         if pred == 'subjectMap':
+            obj = remove_prefix(obj.toPython())
             subjectMap_dict[subj] = obj
         if pred == 'template':
-            templateMap_dict[subj] = obj
+            #obj = remove_prefix(obj.toPython())
+            templateMap_dict[subj] = obj.toPython()
+        if pred == 'joinCondition':
+            obj = remove_prefix(obj.toPython())
+            joinCondition_dict[subj] = obj
+        if pred == 'child':
+            obj = remove_prefix(obj.toPython())
+            child_dict[subj] = obj
+        if pred == 'parent':
+            obj = remove_prefix(obj.toPython())
+            parent_dict[subj] = obj
     #print_info()
 
     return g
@@ -153,8 +179,56 @@ def resolver_gen(interface_field_dict):
         print('---------------------------------------------------------------')
     return 0
 
+def generateLogicalSourceList():
+    logicalSource_lst = []
+    for (key, value) in source_dict.items():
+        if key in iterator_dict.keys():
+            iterator_str = iterator_dict[key]
+        else:
+            iterator_str = ''
+        ls_record = {'name': key, 'source': value, 'referenceFormulation': 'ql:' + referenceFormulation_dict[key], 'iterator': iterator_str}
+        logicalSource_lst.append(ls_record)
+    return  logicalSource_lst
 
+def generateMappingList():
+    mappings_lst = []
+    for (key, value) in logicalSource_dict.items():
+        mapping_dict = dict()
+        # render 'name' and 'logicalSource' fields
+        mapping_dict['name'] = key
+        mapping_dict['logicalSource'] = value
+        # render 'subjectMap' field
+        subjecMap_key = subjectMap_dict[key]
+        template = templateMap_dict[subjecMap_key]
+        classOf = class_dict[subjecMap_key]
+        poms_lst = []
+        for pom_anonymou_name in predicateObjectMap_dict[key]:
+            pom_dict = dict()
+            pom_dict['predicate'] = predicate_dict[pom_anonymou_name]
+            om_anonymous_name = objectMap_dict[pom_anonymou_name]
+            if om_anonymous_name in reference_dict.keys():
+                reference_field = reference_dict[om_anonymous_name]
+                data_type = datatype_dict[om_anonymous_name]
+                pom_dict['objectMap'] = {'reference': reference_field, 'datatype': data_type}
+            if om_anonymous_name in constant_dict.keys():
+                #this if block is not yet tested
+                constant_value = constant_dict[om_anonymous_name]
+                pom_dict['objectMap'] = {'constant': constant_value}
+            if om_anonymous_name in parentTriplesMap_dict.keys():
+                parentMapping_name = parentTriplesMap_dict[om_anonymous_name]
+                jc_anonymous_name = joinCondition_dict[om_anonymous_name]
+                child_filed = child_dict[jc_anonymous_name]
+                parent_field = parent_dict[jc_anonymous_name]
+                pom_dict['objectMap'] = {'parentTriplesMap': parentMapping_name, 'joinCondition': {'child': child_filed, 'parent': parent_field}}
+            poms_lst.append(pom_dict)
+        mapping_dict['subjectMap'] = {'template': template, 'class': classOf}
+        mapping_dict['predicateObjectMap'] = poms_lst
+        mappings_lst.append(mapping_dict)
+    return mappings_lst
 
+def write_json(mapping):
+    with open('mappings.json', 'w') as fp:
+        json.dump(mapping, fp)
 
 if __name__ == '__main__':
     g = parse_mapping(str(sys.argv[1])) 
@@ -163,7 +237,13 @@ if __name__ == '__main__':
     #resolver_gen(interface_field_dict)
     #print(class_dict)
     #print(subjectMap_dict)
-    #print(logicalSource_dict)
+    logicalSource_lst = generateLogicalSourceList()
+    mappings_lst = generateMappingList()
+    #print(logicalSource_lst)
+    #print(mappings_lst)
+    rml_mapping = {'sources': logicalSource_lst, 'mappings': mappings_lst}
+    write_json(rml_mapping)
+    
     #print(predicate_dict)
     #print(predicateObjectMap_dict)
         

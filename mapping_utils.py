@@ -1,53 +1,19 @@
 from collections import defaultdict
+import json
 
-'''
-<#CalculationMapping>
-    rml:logicalSource <CalculationSource>;
-    rr:subjectMap [
-        rr:template "http://www.mdo.com/calculation/{id}";
-        rr:class ex:Calculation;
-    ].
+def read_mappings(file): 
+    with open(file) as f:
+      data = json.load(f)
+    return data
 
-
-<#BandGapCalculatedPropertyMapping>
-    rml:logicalSource <BandGapPropertySource>;
-    rr:subjectMap [
-        rr:template "http://www.mdo.com/calculatedproperty_bandgap/{FK_entry_id}";
-        rr:class ex:CalculatedProperty;
-    ];
-    rr:predicateObjectMap [
-        rr:predicate ex:quantityValue;
-        rr:objectMap [
-            rr:parentTriplesMap <#BandGapQuantityValueMapping>;
-            rr:joinCondition [
-                rr:child "FK_entry_id";
-                rr:parent "FK_entry_id";
-            ];
-        ];
-    ].
-
-<#BandGapQuantityValueMapping>
-    rml:logicalSource <BandGapPropertySource>;
-    rr:subjectMap [
-        rr:template "http://www.mdo.com/calculatedproperty_bandgap_quantityvalue/{FK_entry_id}";
-        rr:class ex:QuantityValue;
-    ];
-    rr:predicateObjectMap [
-        rr:predicate ex:numericValue;
-        rr:objectMap [
-            rml:reference "band_gap";
-            rr:datatype xsd:float;
-        ];
-    ].
-'''
 logical_sources = [
-    {'name': 'Calculation_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/calculation1.csv', 'referenceFormulation': 'ql:csv', 'iterator': ''},
+    {'name': 'Calculation_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/calculation1.csv', 'referenceFormulation': 'ql:CSV', 'iterator': ''},
     {'name': 'Calculation_JSONSource_1', 'source': 'https://huanyu-li.github.io/data/calculation1.json', 'referenceFormulation': 'ql:JSONPath', 'iterator': '$.Calculations[*]'},
-    {'name': 'Structure_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/structure1.csv', 'referenceFormulation': 'ql:csv', 'iterator': ''},
+    {'name': 'Structure_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/structure1.csv', 'referenceFormulation': 'ql:CSV', 'iterator': ''},
     {'name': 'Structure_JSONSource_1', 'source': 'https://huanyu-li.github.io/data/structure1.json', 'referenceFormulation': 'ql:JSONPath', 'iterator': '$.Structures[*]'},
-    {'name': 'Composition_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/composition1.csv', 'referenceFormulation': 'ql:csv', 'iterator': ''},
+    {'name': 'Composition_CSVSource_1', 'source': 'https://huanyu-li.github.io/data/composition1.csv', 'referenceFormulation': 'ql:CSV', 'iterator': ''},
     {'name': 'Composition_JSONSource_1', 'source': 'https://huanyu-li.github.io/data/composition1.json', 'referenceFormulation': 'ql:JSONPath', 'iterator': '$.Compositions[*]'},
-    {'name': 'Composition_CSVSource_2', 'source': 'https://huanyu-li.github.io/data/composition2.csv', 'referenceFormulation': 'ql:csv', 'iterator': ''},
+    {'name': 'Composition_CSVSource_2', 'source': 'https://huanyu-li.github.io/data/composition2.csv', 'referenceFormulation': 'ql:CSV', 'iterator': ''},
     {'name': 'Composition_JSONSource_2', 'source': 'https://huanyu-li.github.io/data/composition2.json', 'referenceFormulation': 'ql:JSONPath', 'iterator': '$.data.Compositions[*]'}
 
 ]
@@ -137,6 +103,13 @@ mappings = [
         ]
     }
 ]
+
+rml_mapping = read_mappings('./mappings.json')
+logical_sources = rml_mapping['sources']
+mappings = rml_mapping['mappings']
+
+print('here')
+print(logical_sources, mappings)
 
 def getMappingsByType(Type):
     result_mappings = []

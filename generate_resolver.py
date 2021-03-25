@@ -2,7 +2,7 @@ import requests
 import csv
 import codecs
 from contextlib import closing
-import resolver_utils as ru
+import mapping_utils as mu
 from collections import defaultdict
 
 #map between ontology's terms  and GraphQL schema's terms
@@ -79,13 +79,13 @@ def getSubAST(AST, predicate):
     return newAST
 
 def getMappings(concept_type):
-    return ru.getMappingsByType(concept_type)
+    return mu.getMappingsByType(concept_type)
 
 def getLogicalSource(mapping):
-    return ru.getLogicalSourceByMapping(mapping)    
+    return mu.getLogicalSourceByMapping(mapping)    
 
 def getTemplate(mapping):
-    return ru.getSubjectTemplateByMapping(mapping)
+    return mu.getSubjectTemplateByMapping(mapping)
 
 
 def Phi(ontology_term):
@@ -101,30 +101,30 @@ def Translate(queryFields):
     return predicates
 
 def Execute(logicalSource, ref = None):
-    source_type = ru.getLSType(logicalSource)
-    source_request = ru.getSource(logicalSource)
+    source_type = mu.getLSType(logicalSource)
+    source_request = mu.getSource(logicalSource)
     result = []
-    if source_type == 'ql:csv':
+    if source_type == 'ql:CSV':
         result = getCSVData(source_request, ref)
     if source_type == 'ql:JSONPath':
-        iterator = ru.getJSONIterator(logicalSource)
+        iterator = mu.getJSONIterator(logicalSource)
         result = getJSONData(source_request, iterator, ref)
     return result
 
 def getPredicateObjectMap(mapping, predicates):
-    return ru.getPredicateObjectMapByPred(mapping, predicates)
+    return mu.getPredicateObjectMapByPred(mapping, predicates)
 
 def parsePOM(pom):
-    return ru.parsePOM(pom)
+    return mu.parsePOM(pom)
 
 def parseROM(objectMap):
-    return ru.parseROM(objectMap)
+    return mu.parseROM(objectMap)
 
 def getReference(termMap):
-    return ru.getReference(termMap)
+    return mu.getReference(termMap)
 
 def parseJoinCondition(joinCondition):
-    return ru.parseJoinCondition(joinCondition)
+    return mu.parseJoinCondition(joinCondition)
 
 def getChildData(tempResult, childField):
     return [ {childField: record[childField]} for record in tempResult ]
@@ -177,7 +177,7 @@ def DuplicateDetectionFusion(result):
     return result
 
 def TypeOfObjectMap(objectMap):
-    return ru.TypeOfObjectMap(objectMap)
+    return mu.TypeOfObjectMap(objectMap)
 
 def DataFetcher(AST, mapping = None, ref= None):
     result, mappings = [], []

@@ -11,8 +11,7 @@ import graphql_utils as gu
 
 # Define types using Schema Definition Language (https://graphql.org/learn/schema/)
 # Wrapping string in gql function provides validation and better error traceback
-
-type_defs = load_schema_from_path("./schema.graphql")
+global type_defs
 
 # Map resolver functions to Query fields using QueryType
 query = QueryType()
@@ -55,15 +54,17 @@ def CalculationList(_, info):
 query.set_field("CalculationList", CalculationList)
 
 # Map resolver functions to custom type fields using ObjectType
+'''
 person = ObjectType("Person")
 
 @person.field("fullName")
 def resolve_person_fullname(person, *_):
     return "%s %s" % (person["firstName"], person["lastName"])
+'''
 
 
-# Create executable GraphQL schema
-schema = make_executable_schema(type_defs, query, person)
+
+
 
 # Create an ASGI app using the schema, running in debug mode
 #app = GraphQL(schema, debug=True)
@@ -97,5 +98,11 @@ def graphql_server():
 
 
 if __name__ == "__main__":
+    schema_file = (str(sys.argv[1])) 
+    mapping_file = (str(sys.argv[2])) 
     #app.run(debug=True, PYTHONUNBUFFERED =1, FLASK_ENV='development')
+    type_defs = load_schema_from_path(schema_file)
+    # Create executable GraphQL schema
+    #schema = make_executable_schema(type_defs, query, person)
+    schema = make_executable_schema(type_defs, query)
     app.run(debug=True)

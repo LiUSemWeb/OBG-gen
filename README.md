@@ -36,12 +36,12 @@ Generate GraphQL schema from an ontology and output a schema.graphql file in cur
 
 Parse a RML mapping file and output a mappings.json file in current folder:
 
-	python mapping_parser.py ./semantic_mappings/venue-mapper.ttl
+	python mapping_parser.py ./semantic_mappings/rml_mapping.ttl
 
 Run GraphQL server:
 
 	export FLASK_ENV=development
-	python app.py
+	python app.py ./schema.graphql ./mappings.json
 
 
 ## A demo on Heroku of ODGSG for the materials design domain
