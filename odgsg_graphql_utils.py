@@ -6,6 +6,9 @@ from mapping_utils import RML_Mapping
 from collections import defaultdict
 from graphql import parse
 import json
+import pymongo
+import urllib.parse
+
 
 
 
@@ -146,6 +149,7 @@ class Resolver_Utils(object):
         newtemplate = template.replace(key,'')
         return key, newtemplate
 
+    # need to update
     def Refine(self, tempResult, attr_pred_lst, constant, template):
         key, template = self.parseTemplate(template)
         for record in tempResult:
@@ -160,7 +164,8 @@ class Resolver_Utils(object):
                     record[attr_pred_tuple[1]] = temp_data
                 else:
                     if attr_pred_tuple[0] in record.keys():
-                        record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
+                        #record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
+                        record[attr_pred_tuple[1]] = record[attr_pred_tuple[0]]
         return tempResult
 
     def IncrementalJoin(self, tempResult, result2join):
@@ -169,6 +174,9 @@ class Resolver_Utils(object):
             for (joinData, joinCondition, field, AST) in result2join:
                 for join_record in joinData: 
                     for record in tempResult:
+                        #print(joinCondition)
+                        #print(record)
+                        #print(join_record)
                         if record[joinCondition['child']] == join_record[joinCondition['parent']]:
                             new_record = record
                             # if field returns a list
