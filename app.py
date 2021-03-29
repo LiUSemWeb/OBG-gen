@@ -79,6 +79,7 @@ if __name__ == "__main__":
     mapping_file = (str(sys.argv[2]))
     type_defs = load_schema_from_path(schema_file)
     ru.set_mappings(mapping_file)
+    ru.set_Phi('o2graphql.json')
     register_queries(ru.getQueryEntries(type_defs))
     schema = make_executable_schema(type_defs, query)
     app.run(debug=True)

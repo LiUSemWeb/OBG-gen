@@ -2,13 +2,15 @@ import requests
 import csv
 import codecs
 from contextlib import closing
-from mapping_utils_template import RML_Mapping
+from mapping_utils import RML_Mapping
 from collections import defaultdict
 from graphql import parse
+import json
 
 
 
 class Resolver_Utils(object):
+    '''
     def __init__(self):
         self.ontology_GraphQLschema = {'Calculation': 'Calculation', 'CalculatedProperty':'CalculatedProperty', 'Structure':'Structure', 'Composition':'Composition', 'QuantityValue': 'QuantityValue',
                           'hasOutputStructure': 'hasOutputStructure', 'hasComposition': 'hasComposition', 'hasOutputCalculatedProperty': 'hasOutputCalculatedProperty','quantityValue': 'quantityValue',
@@ -17,9 +19,11 @@ class Resolver_Utils(object):
                           'hasOutputStructure': 'hasOutputStructure', 'hasComposition': 'hasComposition', 'hasOutputCalculatedProperty': 'hasOutputCalculatedProperty','quantityValue': 'quantityValue',
                           'ID': 'ID', 'ReducedFormula': 'ReducedFormula', 'AnonymousFormula': 'AnonymousFormula', 'PropertyName': 'PropertyName', 'numericValue': 'numericValue'}
         self.scalar_types = ['Int', 'Float', 'String', 'Boolean', 'ID', 'CUSTOM_SCALAR_TYPE']
-    
-    def set_Phi(self):
-        return 0
+    '''
+    def set_Phi(self, file = 'o2graphql.json'):
+        with open(file) as f:
+            self.ontology_GraphQLschema = json.load(f)
+            self.GraphQLschema_Ontology = self.ontology_GraphQLschema
 
     def set_mappings(self, mapping_file):
         self.mu = RML_Mapping(mapping_file)

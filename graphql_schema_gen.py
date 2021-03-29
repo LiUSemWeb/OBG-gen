@@ -2,6 +2,7 @@ from collections import defaultdict
 import schema_utils as su
 from rdflib.namespace import RDF, RDFS,OWL
 from ontology import Ontology
+import json
 import datetime
 import sys
 
@@ -84,6 +85,18 @@ class GraphQLSchema(object):
                     field_type = V2Scalar[assertion[1]]
                 self.fields[concept][(assertion[0],field_type)] = (min_card, max_card)
     
+    def write_OntologyGraphQLSchemaMapping(self, A, U, P):
+        temp_data = dict()
+        for concept in A:
+            temp_data[su.remove_prefix(concept)] = su.remove_prefix(concept)
+        for data_property in U:
+            temp_data[su.remove_prefix(data_property)] = su.remove_prefix(data_property)
+        for object_property in P:
+            temp_data[su.remove_prefix(object_property)] = su.remove_prefix(object_property)
+        with open('o2graphql.json', 'w') as fp:
+            json.dump(temp_data, fp)
+
+
     def write_global_schema(self):
         interfacetype_schema = ''
         objecttype_schema = ''
@@ -201,6 +214,7 @@ def main(ontology):
     #graphql_schema_test.construct(elq1d_test.A, elq1d_test.V, elq1d_test.U, elq1d_test.P, elq1d_test.concept2subsumptions, elq1d_test.concept2assertions)
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.write_global_schema()
+    graphql_schema_test.write_OntologyGraphQLSchemaMapping(A, U, P)
     #graphql_schema_test.write_local_schema(['OQMD','MP'])
     #graphql_schema_test.write_local_schema(databases)
     b = datetime.datetime.now()
