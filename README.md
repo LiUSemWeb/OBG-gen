@@ -45,6 +45,15 @@ Run GraphQL server:
 	export FLASK_ENV=development
 	python app.py ./schema.graphql ./mappings.json
 
+	* Serving Flask app "app" (lazy loading)
+	* Environment: development
+	* Debug mode: on
+	* Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+	* Restarting with stat
+	* Debugger is active!
+	* Debugger PIN: 540-041-748
+
+Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql.
 
 ## A demo on Heroku of ODGSG for the materials design domain
 * TO UPDATE
