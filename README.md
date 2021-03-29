@@ -15,7 +15,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 * [mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser.py) takes a RML mapping file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
 * [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 * [ontology.py](https://github.com/huanyu-li/ODGSG/blob/main/ontology.py) is used to parse an OWL ontology.
-* [schema_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_utils.py), [mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_utils.py), [graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/graphql_utils.py) define helper functions used to generating GraphQL schema, extracting mappings' structures, and generating resolvers, respectively.
+* [schema_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_utils.py), [mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_utils.py), [odgsg_graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/odgsg_graphql_utils.py) define helper functions used to generating GraphQL schema, extracting mappings' structures, and generating resolvers, respectively.
 
 ## Installation
 
