@@ -8,6 +8,8 @@ from graphql import parse
 import json
 import pymongo
 import urllib.parse
+import pymongo
+import ast
 
 
 
@@ -35,7 +37,7 @@ class Resolver_Utils(object):
         iterator_elements = iterator.split('.')
         iterator_elements = list(filter(None, iterator_elements))
         return iterator_elements
-
+    
     def getJSONData(self, URL, iterator = None, ref = None):
         r = requests.get(url = URL)
         data = r.json()
@@ -73,6 +75,26 @@ class Resolver_Utils(object):
                 for i in range(num_fields):
                     element[header[i]] = record[i]
             result.append(element)
+        return result
+    
+    def getMongoDBData(self, server_info, query, iterator = None, ref = None):
+        result = []
+        parameters = query.split(';')
+        mongodb_client_address = server_info['server'] 
+        database = parameters[2]
+        collection_name = parameters[1]
+        projection = ast.literal_eval(parameters[0])
+        dbclient = pymongo.MongoClient(mongodb_client_address)
+        mongodb = dbclient[database]
+        mongodb_collection = mongodb[collection_name]
+        if ref == None:
+            result = list(mongodb_collection.find({}, projection))
+            #print(result['data'])
+            temp_data = result[0]
+            keys = self.parseIterator(iterator)
+            for i in range(len(keys)):
+                temp_data = temp_data[keys[i]]
+            result = temp_data
         return result
 
     def parseAST(self, AST):
@@ -115,13 +137,20 @@ class Resolver_Utils(object):
 
     def Execute(self, logicalSource, ref = None):
         source_type = self.mu.getLSType(logicalSource)
-        source_request = self.mu.getSource(logicalSource)
         result = []
         if source_type == 'ql:CSV':
+            source_request = self.mu.getSource(logicalSource)
             result = self.getCSVData(source_request, ref)
         if source_type == 'ql:JSONPath':
+            source_request = self.mu.getSource(logicalSource)
             iterator = self.mu.getJSONIterator(logicalSource)
             result = self.getJSONData(source_request, iterator, ref)
+        if source_type == 'mydb:mongodb':
+            iterator = self.mu.getJSONIterator(logicalSource)
+            server_info, query = self.mu.getDBSource(logicalSource)
+            print('mongodb', server_info, query)
+            result = self.getMongoDBData(server_info, query, iterator)
+            #print(result)
         return result
 
     def getPredicateObjectMap(self, mapping, predicates):
@@ -158,9 +187,10 @@ class Resolver_Utils(object):
                 if '.' in attr_pred_tuple[0]:
                     keys = self.parseIterator(attr_pred_tuple[0])
                     temp_data = record
+                    #print(temp_data)
                     for i in range(len(keys)):
                         temp_data = temp_data[keys[i]]
-                    del record[keys[0]]
+                    #del record[keys[0]]
                     record[attr_pred_tuple[1]] = temp_data
                 else:
                     if attr_pred_tuple[0] in record.keys():

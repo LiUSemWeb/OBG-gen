@@ -4,8 +4,9 @@ import json
 class RML_Mapping(object):
 	def __init__(self, mapping_file):
 		self.rml_mapping = self.__read_mappings(mapping_file)
-		self.logical_sources = self.rml_mapping['sources']
-		self.mappings = self.rml_mapping['mappings']
+		self.dbsources = self.rml_mapping['DBSources']
+		self.logical_sources = self.rml_mapping['LogicalSources']
+		self.mappings = self.rml_mapping['Mappings']
 	
 	def __read_mappings(self, file): 
 		with open(file) as f:
@@ -20,12 +21,12 @@ class RML_Mapping(object):
 		return result_mappings
 
 	def getLogicalSourceByMapping(self, mapping):
-	    logical_source = None
-	    for ls in self.logical_sources:
-	        if ls['name'] == mapping['logicalSource']:
-	            logical_source = ls
-	            break
-	    return logical_source
+		logical_source = None
+		for ls in self.logical_sources:
+			if ls['name'] == mapping['logicalSource']:
+				logical_source = ls
+				break
+		return logical_source
 	
 	def getSubjectTemplateByMapping(self,mapping):
 		return mapping['subjectMap']['template']
@@ -36,6 +37,15 @@ class RML_Mapping(object):
 	def getSource(self, logicalSource):
 		return logicalSource['source']
 	
+	def getDBSource(self, logicalsource):
+		query = logicalsource['query']
+		server_info = None
+		for db_source in self.dbsources:
+			if db_source['name'] == logicalsource['source']:
+				server_info = db_source
+				break
+		return server_info, query
+
 	def getJSONIterator(self, logicalSource):
 		iterator = logicalSource['iterator']
 		if '[*]' in iterator:

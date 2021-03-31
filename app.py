@@ -1,10 +1,11 @@
+import sys
+import datetime
 from ariadne import ObjectType, QueryType, gql, make_executable_schema, graphql_sync, load_schema_from_path
 from ariadne.asgi import GraphQL
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from graphql import parse
 from graphql.language.ast import *
-import sys
 from odgsg_graphql_utils import Resolver_Utils
 
 global ru
@@ -17,12 +18,15 @@ global query
 # Resolvers are simple python functions
 
 def Generic_Resolver(_, info):
+    a = datetime.datetime.now()
     #global ru
     #print(schemaAST)
     queryAST = ru.getAST(type_defs, info) 
     #print(queryAST)
     result = ru.DataFetcher(queryAST['fields'][0])
     #print(result)
+    b = datetime.datetime.now()
+    print('Response Time:', (b-a))
     return result
 
 # Create an ASGI app using the schema, running in debug mode
