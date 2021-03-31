@@ -148,7 +148,7 @@ class Resolver_Utils(object):
         if source_type == 'mydb:mongodb':
             iterator = self.mu.getJSONIterator(logicalSource)
             server_info, query = self.mu.getDBSource(logicalSource)
-            print('mongodb', server_info, query)
+            #print('mongodb', server_info, query)
             result = self.getMongoDBData(server_info, query, iterator)
             #print(result)
         return result
