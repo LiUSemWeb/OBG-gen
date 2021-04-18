@@ -85,6 +85,13 @@
         rr:class core:Structure
     ];
     rr:predicateObjectMap [
+        rr:predicate core:StructureID;
+        rr:objectMap [
+            rml:reference "material_id";
+            rr:datatype xsd:string
+        ];
+    ];
+    rr:predicateObjectMap [
         rr:predicate structure:hasComposition;
         rr:objectMap[
             rr:parentTriplesMap <Composition_Mapping_1>;
@@ -141,6 +148,13 @@
     rr:subjectMap [
         rr:template "http://example.com/structure/{entry_id}";
         rr:class core:Structure
+    ];
+    rr:predicateObjectMap [
+        rr:predicate core:StructureID;
+        rr:objectMap [
+            rml:reference "entry_id";
+            rr:datatype xsd:string
+        ];
     ];
     rr:predicateObjectMap [
         rr:predicate structure:hasComposition;

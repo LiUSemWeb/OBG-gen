@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify
 from graphql import parse
 from graphql.language.ast import *
 from odgsg_graphql_utils import Resolver_Utils
+from moesifwsgi import MoesifMiddleware
+
 
 global ru
 global type_defs
@@ -17,11 +19,15 @@ global query
 
 # Resolvers are simple python functions
 
-def Generic_Resolver(_, info):
+def Generic_Resolver(_, info, **kwargs):
     a = datetime.datetime.now()
+    print(info)
+    filter_condition = kwargs
+    print('OFC', filter_condition)
     #global ru
     #print(schemaAST)
-    queryAST = ru.getAST(type_defs, info) 
+    queryAST = ru.getAST(type_defs, info, filter_condition)
+    #ru.checkinputtype(type_defs)
     #print(queryAST)
     result = ru.DataFetcher(queryAST['fields'][0])
     #print(result)
@@ -31,7 +37,7 @@ def Generic_Resolver(_, info):
 
 # Create an ASGI app using the schema, running in debug mode
 #app = GraphQL(schema, debug=True)
-app = Flask(__name__)
+app = Flask("__name__")
 
 @app.route("/graphql", methods=["GET"])
 def graphql_playground():
@@ -59,6 +65,11 @@ def graphql_server():
     status_code = 200 if success else 400
     return jsonify(result), status_code
 
+moesif_settings = {
+    'APPLICATION_ID': 'eyJhcHAiOiIxOTg6MTM2NyIsInZlciI6IjIuMCIsIm9yZyI6Ijg4OjE4NjgiLCJpYXQiOjE2MTcyMzUyMDB9.-5RPUC5FFb4QTUCWSoII35La-cQWp7VYZ-y27ewVh4Q',
+    'CAPTURE_OUTGOING_REQUESTS': False, # Set to True to also capture outgoing calls to 3rd parties.
+}
+
 '''
 def CalculationList(_, info):
     print('In Calculation')
@@ -77,6 +88,7 @@ def register_queries(query_entries):
 
 #main function
 if __name__ == "__main__":
+    app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
     query = QueryType()
     ru = Resolver_Utils()
     schema_file = (str(sys.argv[1])) 

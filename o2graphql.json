@@ -99,5 +99,6 @@
     "hasFractionalCoordinates": "hasFractionalCoordinates",
     "hasSpaceGroup": "hasSpaceGroup",
     "hasSite": "hasSite",
-    "hasComposition": "hasComposition"
+    "hasComposition": "hasComposition",
+    "StructureID": "StructureID"
 }

@@ -25,7 +25,14 @@ class Resolver_Utils(object):
                           'ID': 'ID', 'ReducedFormula': 'ReducedFormula', 'AnonymousFormula': 'AnonymousFormula', 'PropertyName': 'PropertyName', 'numericValue': 'numericValue'}
         self.scalar_types = ['Int', 'Float', 'String', 'Boolean', 'ID', 'CUSTOM_SCALAR_TYPE']
     '''
-    def set_Phi(self, file = 'o2graphql.json'):
+    def __init__(self):
+        self.ontology_GraphQLschema = dict()
+        self.GraphQLschema_Ontology = dict()
+        self.mu = None
+        self.operator_1 = ['_and', '_or', '_not']
+        self.operator_2 = ['_eq', '_neq', '_gt']
+
+    def set_Phi(self, file='o2graphql.json'):
         with open(file) as f:
             self.ontology_GraphQLschema = json.load(f)
             self.GraphQLschema_Ontology = self.ontology_GraphQLschema
@@ -38,8 +45,8 @@ class Resolver_Utils(object):
         iterator_elements = list(filter(None, iterator_elements))
         return iterator_elements
     
-    def getJSONData(self, URL, iterator = None, ref = None):
-        r = requests.get(url = URL)
+    def getJSONData(self, URL, iterator = None, ref=None):
+        r = requests.get(url=URL)
         data = r.json()
         if iterator is not None:
             keys = self.parseIterator(iterator)
@@ -54,7 +61,7 @@ class Resolver_Utils(object):
         ref_condition, ref_data = [], []
         if ref is not None:
             ref_condition = ref[1]
-            ref_data = [ record[ref_condition['child']] for record in ref[0] ]
+            ref_data = [record[ref_condition['child']] for record in ref[0]]
         records = []
         result = []
         with closing(requests.get(URL, stream=True)) as r:
@@ -232,7 +239,7 @@ class Resolver_Utils(object):
     def DataFetcher(self, AST, mapping = None, ref= None):
         result, mappings = [], []
         concept_type, queryFields = self.parseAST(AST)
-        if mapping == None:
+        if mapping is None:
             mappings = self.getMappings(concept_type)
         else:
             mappings.append(mapping)
@@ -263,7 +270,7 @@ class Resolver_Utils(object):
             result = self.Merge(result, tempResult)
         return self.DuplicateDetectionFusion(result)
 
-    def checkNodeType(self, Node):
+    def check_node_type(self, Node):
         if Node.kind == 'non_null_type':
             return 'non_null_type'
         if Node.kind == 'named_type':
@@ -272,17 +279,17 @@ class Resolver_Utils(object):
             return 'list_type'
         return 0
 
-    def parseField(self, field):
+    def parse_field(self, field):
         named_type_value = ''
         encode_labels = ''
         if 'type' in field.keys:
             # named_type: 0, list_type: 2, non_null_type 1
-            if self.checkNodeType(field.type) == 'non_null_type':
-                value, labels = self.parseField(field.type)
+            if self.check_node_type(field.type) == 'non_null_type':
+                value, labels = self.parse_field(field.type)
                 named_type_value = value
                 encode_labels = '1' + labels
-            elif self.checkNodeType(field.type) == 'list_type':
-                value, labels = self.parseField(field.type)
+            elif self.check_node_type(field.type) == 'list_type':
+                value, labels = self.parse_field(field.type)
                 named_type_value = value
                 encode_labels = '2' + labels
             else:
@@ -292,44 +299,84 @@ class Resolver_Utils(object):
 
     def getSchemaAST(self, schema):
         schema_ast = dict()
+        filter_ast = dict()
         document = parse(schema)
         for definition in document.definitions:
-            schema_ast[definition.name.value] = dict()
-            for wrapped_field in definition.fields:
-                named_type_value, encode_labels = self.parseField(wrapped_field)
-                schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value, 'wrapping_label': encode_labels}
+            if definition.kind == 'object_type_definition':
+                schema_ast[definition.name.value] = dict()
+                for wrapped_field in definition.fields:
+                    named_type_value, encode_labels = self.parse_field(wrapped_field)
+                    schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value, 'wrapping_label': encode_labels}
+            if definition.kind == 'input_object_type_definition':
+                #print(definition.name.value)
+                schema_ast[definition.name.value] = dict()
+                for wrapped_field in definition.fields:
+                    named_type_value, encode_labels = self.parse_field(wrapped_field)
+                    schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value, 'wrapping_label': encode_labels}
+        #print(filter_ast)
         return schema_ast
-    
+    def checkinputtype(self, schema):
+        document = parse(schema)
+        print('Input')
+        print(document)
+        for definition in document.definitions:
+            print(definition.name.value, definition.kind)
+        return 0
     def getQueryEntries(self, schema):
         query_entries = []
         schema_AST = self.getSchemaAST(schema)
         query_entries = list(schema_AST['Query'].keys())
         return query_entries
 
-    def getAST(self, schema, query_info):
+    def getAST(self, schema, query_info, filter_condition):
         queryAST = dict()
         schemaAST = self.getSchemaAST(schema)
         root = query_info.field_name
         queryFieldsNodes = query_info.field_nodes
-        queryAST = self.parseQueryFields('Query',queryFieldsNodes)
+        queryAST = self.parse_query_fields('Query',queryFieldsNodes, filter_condition)
+        #self.parse_filter_condition(queryAST,filter_condition)
         query_entry_name = queryAST['fields'][0]['name']
         queryAST['fields'][0]['type'] = schemaAST['Query'][query_entry_name]['base_type']
         queryAST['fields'][0]['wrapping_label'] = schemaAST['Query'][query_entry_name]['wrapping_label']
-        newAST = self.fillQueryAST(queryAST['fields'][0], schemaAST, queryAST['fields'][0]['type'])
+        newAST = self.fill_return_type(queryAST['fields'][0], schemaAST, queryAST['fields'][0]['type'])
+        print('queryAST', queryAST)
         return queryAST
 
-    def fillQueryAST(self, queryAST, schemaAST, parentType):
+    @staticmethod
+    def get_filter_field(bool_exp_list, filed):
+        for bool_exp in bool_exp_list:
+            return 0
+        return 0
+
+    def fill_return_type(self, queryAST, schemaAST, parentType):
         if len(queryAST['fields']) > 0:
             temp_fields = []
             for subAST in queryAST['fields']:
+                #subAST['name']
+
                 subAST['type'] = schemaAST[parentType][subAST['name']]['base_type']
                 subAST['wrapping_label'] = schemaAST[parentType][subAST['name']]['wrapping_label']
-                new_subAST = self.fillQueryAST(subAST, schemaAST, subAST['type'])
+                new_subAST = self.fill_return_type(subAST, schemaAST, subAST['type'])
                 temp_fields.append(new_subAST)
             queryAST['fields'] = temp_fields
         return queryAST
 
-    def parseQueryFields(self, root_name, query_field_notes):
+    @staticmethod
+    def check_filter_type(filter_condition):
+        new_filter = dict()
+        new_filter['_and'] = []
+        if len(filter_condition) is 1:
+            keys = filter_condition.keys()
+            if '_and' in keys or '_or' in keys:
+                new_filter = filter_condition
+            else:
+                new_filter['_and'].append(filter_condition)
+        else:
+            for key, value in filter_condition.items():
+                new_filter['_and'].append({key:value})
+        return new_filter
+
+    def parse_query_fields(self, root_name, query_field_notes, filter_condition):
         result = dict()
         result['name'] = root_name
         result['type'] = ''
@@ -337,10 +384,21 @@ class Resolver_Utils(object):
         for qfn in query_field_notes:
             if qfn.selection_set is not None:
                 next_level_qfns = qfn.selection_set.selections
-                temp_result = self.parseQueryFields(qfn.name.value, next_level_qfns)
+                temp_result = self.parse_query_fields(qfn.name.value, next_level_qfns, filter_condition)
                 fields.append(temp_result)
             else:
                 field = {'name': qfn.name.value, 'type': '', 'fields': []}
                 fields.append(field)
         result['fields'] = fields
         return result
+
+    def parse_filter_condition(self, queryAST, filter_condition):
+        for (filter_field, filter_type) in filter_condition['filter'].items():
+            if filter_field in self.operator_1:
+                print(filter_field)
+            else:
+                print('-')
+        print('asd')
+        print('qast', queryAST)
+        print('fc', filter_condition)
+        return 0
