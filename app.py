@@ -7,26 +7,46 @@ from flask import Flask, request, jsonify
 from graphql import parse
 from graphql.language.ast import *
 from odgsg_graphql_utils import Resolver_Utils
+from filter_utils import Filter_Utils
 from moesifwsgi import MoesifMiddleware
 
 
 global ru
+global fu
 global type_defs
 global query
 # Define types using Schema Definition Language (https://graphql.org/learn/schema/)
 # Wrapping string in gql function provides validation and better error traceback
 
+def test_Generic_resolver():
+    return
 
 # Resolvers are simple python functions
 
 def Generic_Resolver(_, info, **kwargs):
     a = datetime.datetime.now()
-    print(info)
+    #print('info', info)
     filter_condition = kwargs
-    print('OFC', filter_condition)
+    dnf_expression = ''
+    if len(filter_condition) > 0:
+        fu = Filter_Utils()
+        fu.parse_cond(filter_condition)
+        dnf_lst = fu.simplify()
+        ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
+        filter_ASTs, common_prefix, repeated_single_exp = ru.generateFilterASTs(ru.filter_fields_map, ru.symbol_field_exp, dnf_lst, 'CalculationList')
+
+        #ru.set_common_exp_symbols()
+        #for conjunctive_expression in fu.simplify():
+            #queryAST = ru.getAST(type_defs, info)
+            #print('queryAST', queryAST)
+            #ru.generateFilterAST(type_defs,info,conjunctive_expression)
+            #ru.fetcher(queryAST['fields'][0], conjunctive_expression)
+        #print('result', fu.simplify())
+        #fu.simplify2DNF(filter_condition)
+        #print('OFC', filter_condition)
     #global ru
     #print(schemaAST)
-    queryAST = ru.getAST(type_defs, info, filter_condition)
+    queryAST = ru.getAST(type_defs, info)
     #ru.checkinputtype(type_defs)
     #print(queryAST)
     result = ru.DataFetcher(queryAST['fields'][0])
@@ -88,7 +108,7 @@ def register_queries(query_entries):
 
 #main function
 if __name__ == "__main__":
-    app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
+    #app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
     query = QueryType()
     ru = Resolver_Utils()
     schema_file = (str(sys.argv[1])) 
@@ -97,5 +117,6 @@ if __name__ == "__main__":
     ru.set_mappings(mapping_file)
     ru.set_Phi('o2graphql.json')
     register_queries(ru.getQueryEntries(type_defs))
+    #print('ru', ru.filter_fields_map)
     schema = make_executable_schema(type_defs, query)
     app.run(debug=True)
