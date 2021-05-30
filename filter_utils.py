@@ -22,7 +22,7 @@ logger.info('\n')
 logger.info('----------NEW LOG----------')
 #logging.basicConfig(filename ='filter.log',level = logging.DEBUG,format='%(asctime)s:%(levelname)s:%(message)s')
 
-class Filter_Utils(object):
+class FilterUtils(object):
     def __init__(self):
         self.operator_stack = ['EOS']
         self.fields_stack = ['EOS']
@@ -226,7 +226,6 @@ class Filter_Utils(object):
                 self.operator_stack1.append('_and')
                 # expression_str.append('(')
                 for key, value in cond.items():
-                    # print({key: value}, expression)
                     i += 1
                     if key.startswith('_'):
                         self.parse_cond({key: value})
@@ -267,14 +266,12 @@ class Filter_Utils(object):
                         for field in self.fields_stack1[1:]:
                             field_name += field
                             field_name += '.'
-                        # print(field_name[0:-1],key, value)
                         self.expression_str.append(field_name[0:-1])
                         self.expression_str.append(key)
                         self.expression_str.append(value)
                         new_symbol = self.translate_field_exp((field_name[0:-1], key, value))
                         self.translated_expression_str.append(new_symbol)
                 else:
-                    # print(value)
                     # no need to append field_stack here
                     if key not in ['_and', '_or', '_not']:
                         # if fields_stack1[-1] is not key:
@@ -336,7 +333,6 @@ class Filter_Utils(object):
         simplified_exp_str = str(to_dnf(exp_str, True))
         # result = satisfiable(dnf_obj)
         # dnf_exp_lst = str(simplified_exp).split('|')
-        # print(str(simplified_exp))
         if '|' not in simplified_exp_str:
             cnf_lst = simplified_exp_str.split('&')
             cnf_lst = [x.strip() for x in cnf_lst]
@@ -344,7 +340,6 @@ class Filter_Utils(object):
         else:
             #common_symbols_set = set(self.symbol_field_exp.keys())
             for cnf in simplified_exp_str.split('|'):
-                #print('cnf', cnf.strip()[1:-1])
                 cnf_lst = cnf.strip()[1:-1].split('&')
                 cnf_lst = [x.strip() for x in cnf_lst]
                 dnf_exp_lst.append(cnf_lst)

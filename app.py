@@ -6,8 +6,8 @@ from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from graphql import parse
 from graphql.language.ast import *
-from odgsg_graphql_utils import Resolver_Utils
-from filter_utils import Filter_Utils
+from odgsg_graphql_utils import ResolverUtils
+from filter_utils import FilterUtils
 from moesifwsgi import MoesifMiddleware
 
 
@@ -29,31 +29,24 @@ def Generic_Resolver(_, info, **kwargs):
     filter_condition = kwargs
     dnf_expression = ''
     if len(filter_condition) > 0:
-        fu = Filter_Utils()
+        fu = FilterUtils()
         fu.parse_cond(filter_condition)
         dnf_lst = fu.simplify()
         ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
         filter_ASTs, common_prefix, repeated_single_exp = ru.generateFilterASTs(ru.filter_fields_map, ru.symbol_field_exp, dnf_lst, 'CalculationList')
-
-        #ru.set_common_exp_symbols()
-        #for conjunctive_expression in fu.simplify():
-            #queryAST = ru.getAST(type_defs, info)
-            #print('queryAST', queryAST)
-            #ru.generateFilterAST(type_defs,info,conjunctive_expression)
-            #ru.fetcher(queryAST['fields'][0], conjunctive_expression)
-        #print('result', fu.simplify())
-        #fu.simplify2DNF(filter_condition)
-        #print('OFC', filter_condition)
-    #global ru
-    #print(schemaAST)
+        #filtered_object_iri = dict()
+        for filter_ast in filter_ASTs:
+            filter_df = ru.FilterEvaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
+            for key, value in filter_df.items():
+                ru.filtered_object_iri[key] = value['iri'].tolist()[0:5]
+        print(ru.filtered_object_iri)
     queryAST = ru.getAST(type_defs, info)
-    #ru.checkinputtype(type_defs)
-    #print(queryAST)
     result = ru.DataFetcher(queryAST['fields'][0])
-    #print(result)
+    result1 = ru.QueryEvaluator(queryAST['fields'][0], None ,None, True)
+    print('result1', len(result1), result1)
     b = datetime.datetime.now()
     print('Response Time:', (b-a))
-    return result
+    return result1
 
 # Create an ASGI app using the schema, running in debug mode
 #app = GraphQL(schema, debug=True)
@@ -110,12 +103,14 @@ def register_queries(query_entries):
 if __name__ == "__main__":
     #app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
     query = QueryType()
-    ru = Resolver_Utils()
+
     schema_file = (str(sys.argv[1])) 
     mapping_file = (str(sys.argv[2]))
     type_defs = load_schema_from_path(schema_file)
-    ru.set_mappings(mapping_file)
-    ru.set_Phi('o2graphql.json')
+
+    ru = ResolverUtils(mapping_file, 'o2graphql.json')
+    #ru.set_mappings(mapping_file)
+    #ru.set_Phi()
     register_queries(ru.getQueryEntries(type_defs))
     #print('ru', ru.filter_fields_map)
     schema = make_executable_schema(type_defs, query)
