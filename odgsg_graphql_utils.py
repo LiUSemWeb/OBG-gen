@@ -9,7 +9,6 @@ import json
 import pymongo
 import urllib.parse
 import pymongo
-import ast
 from collections import defaultdict
 import pandas as pd
 from filter_AST import FilterAST
@@ -127,23 +126,21 @@ class Resolver_Utils(object):
             result.append(temp_dict)
         result = pd.json_normalize(result)
         if filter is not None:
-            print('filter here')
-            print('in get json data', filter)
-            print('shape', result.shape[0])
+            #print('shape', result.shape[0])
             result = self.filter_data_frame(result, filter)
-            print('shape', result.shape[0])
+            #print('shape', result.shape[0])
         return result
 
     @staticmethod
-    def transform_operator(operator):
+    def transform_operator(operator, negation_flag=False):
         if operator == '_eq':
-            return '=='
+            return '==' if not negation_flag else '!='
         elif operator == '_gt':
-            return '>'
+            return '>' if not negation_flag else '<='
         elif operator == '_lt':
-            return '<'
+            return '<' if not negation_flag else '>='
         elif operator == '_in':
-            return 'in'
+            return 'in' if not negation_flag else ' not in'
         elif operator == '_like':
             return 'like'
         elif operator == '_ilike':
@@ -151,36 +148,59 @@ class Resolver_Utils(object):
         else:
             return operator
 
+    @staticmethod
+    def convert_data_type(column_name, old_type):
+        convert_type_dict = dict()
+        if old_type == 'String':
+            convert_type_dict = {column_name: 'str'}
+        if old_type == 'Int':
+            convert_type_dict = {column_name: 'int64'}
+        if old_type == 'Float':
+            convert_type_dict = {column_name: 'float64'}
+        return convert_type_dict
+
     def filter_data_frame(self, df, filter_dict):
-        print(filter_dict)
         for pred, filter_dict_value  in filter_dict.items():
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
+            #print('before type', df.dtypes)
+            #new_type_dict = self.convert_data_type(local_name, attr_type)
+            #if len(new_type_dict) != 0:
+                #df = df.astype(new_type_dict)
+            #print('after type', df.dtypes, df.head)
             for atom_filter in filter_dict_value['filter']:
-                filter_str = self.generate_filter_str(local_name, atom_filter['operator'], atom_filter['value'], atom_filter['negation'], attr_type)
+                df_col_type = df.dtypes[local_name]
+                filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'], atom_filter['value'], atom_filter['negation'], attr_type)
                 df = df.query(filter_str)
         return df
 
-    def generate_filter_str(self, attribute, operator_str, value_str, negation_flag, attr_type):
+    def generate_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
+        new_operator = self.transform_operator(operator_str, negation_flag)
         if operator_str in ['_in', '_nin']:
-            print('list here')
-            new_operator = self.transform_operator(operator_str)
             #new_value = ast.literal_eval(value)
-            filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator,
+            if column_type == 'int64':
+                new_value = ast.literal_eval(value_str)
+                new_value = [int(x) for x in new_value if x.isnumeric() == True]
+                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                                                                   value=new_value)
+            else:
+                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
                                                                    value=value_str)
-            print(filter_str)
         else:
-            new_operator = self.transform_operator(operator_str)
             if attr_type == 'String' or 'ID':
-                new_value = str(value_str)
-                filter_str = "{column} {operator} \"{value}\" ".format(column=attribute, operator=new_operator, value=new_value)
+                if column_type == 'int64':
+                    new_value = int(value_str)
+                    filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator, value=new_value)
+                else:
+                    new_value = str(value_str)
+                    filter_str = "{column} {operator} \"{value}\" ".format(column=attribute_name, operator=new_operator, value=new_value)
             if attr_type == 'Int':
                 new_value = int(value_str)
-                filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator, value=new_value)
+                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator, value=new_value)
             if attr_type == 'Float':
                 new_value = float(value_str)
-                filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator, value=new_value)
+                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator, value=new_value)
         return filter_str
 
     @staticmethod
@@ -337,7 +357,7 @@ class Resolver_Utils(object):
         while i < len(temp_result):
             iri = template.format(temp_result[i][key])
             if root_type_flag == True:
-                if iri in self.filtered_object_iri[mapping_name]:
+                if mapping_name in self.filtered_object_iri.keys() and iri in self.filtered_object_iri[mapping_name] or self.filtered_object_iri['filter'] == False:
                     temp_result[i]['iri'] = iri
                     for attr_pred_tuple in attr_pred_lst:
                         if '.' in attr_pred_tuple[0]:
@@ -464,7 +484,6 @@ class Resolver_Utils(object):
             #result = self.getJSONData(source_request, iterator, ref)
             if filter_flag == True:
                 #data frame here
-                #print('in executor', filter)
                 result = self.get_json_data(source_request, iterator, key_attrs, filter)
             else:
                 result = self.getJSONData(source_request, iterator, ref)
@@ -487,13 +506,14 @@ class Resolver_Utils(object):
     @staticmethod
     def generate_filter_asts(filter_fields_map, symbol_exp_dict, conjunctive_exp_lst, entry='CalculationList'):
         filter_asts = []
-        common_prefix = frozenset()
+        common_prefix = set()
+        prefix_dict = defaultdict(int)
+        single_exp_dict = defaultdict(int)
         repeated_single_exp = set()
         all_ast_exp = set()
         for conjunctive_expression in conjunctive_exp_lst:
             fields_filter_dict = defaultdict(list)
             for exp in conjunctive_expression:
-                #print('conjunctive_exp', conjunctive_expression)
                 if exp[0] == '~':
                     cond = symbol_exp_dict[exp[1]]
                     field = cond[0]
@@ -527,10 +547,20 @@ class Resolver_Utils(object):
                     root_type = filter_fields_map[(root_type, f)]
             filter_asts.append(filter_ast)
             prefix = filter_ast.get_prefix_expressions()
-            common_prefix -= frozenset(prefix)
+            prefix_dict[tuple(sorted(prefix))] +=1
             all_exp = filter_ast.get_all_expression()
-            repeated_single_exp = set.union(repeated_single_exp, all_ast_exp.intersection(all_exp))
-            all_ast_exp = set.union(all_ast_exp, all_exp)
+            for exp in all_exp:
+                key = []
+                key.append(exp)
+                single_exp_dict[tuple(sorted(key))] +=1
+            #repeated_single_exp = set.union(repeated_single_exp, all_ast_exp.intersection(all_exp))
+            #all_ast_exp = set.union(all_ast_exp, all_exp)
+        for key, value in prefix_dict.items():
+            if value > 1:
+                common_prefix.add(key)
+        for key, value in single_exp_dict.items():
+            if value>1:
+                repeated_single_exp.add(key)
         return filter_asts, common_prefix, repeated_single_exp
 
     @staticmethod
@@ -538,13 +568,15 @@ class Resolver_Utils(object):
         super_filters.update(current_filter)
         return super_filters
 
-    def get_cache(self, filter_exp):
-        return
+    def get_cache(self, symbolic_filter):
+        if symbolic_filter in self.cache.keys():
+            return self.cache[symbolic_filter]
+        else:
+            return None
 
 
     def localize_filter(self, entity_type, pred_attr, filter_fields = None, query_fields = None):
         if len(filter_fields) == 0:
-            #print('pred_attr', pred_attr)
             query_fields = []
             return
         else:
@@ -559,7 +591,6 @@ class Resolver_Utils(object):
         result = defaultdict()
         if len(super_mappings_name) == 0:
             mappings = self.get_mappings(entity_type)
-            #print('mappings',mappings)
         else:
             mappings = []
         query_fields = filter_fields.keys()
@@ -581,23 +612,34 @@ class Resolver_Utils(object):
                 if self.type_of_object_map(object_map) == 2:
                     print('Constant')
             localized_filter = self.localize_filter(entity_type ,pred_attr, filter_fields, query_fields)
-            #print('local filter', localized_filter)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter)
-            #temp_result = self.refine(temp_result, pred_attr, None, template)
             temp_result = self.refine_data_frame(temp_result, pred_attr, None, template)
             result[mapping_name] = temp_result
         return result
 
-    def check_cpe(self, filter, CPE):
-        exp_symbols = set()
-        if len(filter) >0:
-            for key, value in filter.items():
-                for exp in value:
-                    exp_symbols.add(exp['symbol'])
-            if exp_symbols in CPE:
-                return True
+    @staticmethod
+    def symbolic_filter(filter):
+        exp = []
+        for key, value in filter.items():
+            if len(value) == 0:
+                exp.append(key)
             else:
-                return False
+                for atom_filter in value:
+                    exp.append(atom_filter['symbol'])
+        exp = tuple(sorted(exp))
+        return exp
+
+    def check_cpe(self, filter, CPE):
+        exp = []
+        for key, value in filter.items():
+            if len(value) == 0:
+                exp.append(key)
+            else:
+                for atom_filter in value:
+                    exp.append(atom_filter['symbol'])
+        exp = tuple(sorted(exp))
+        if exp in CPE:
+            return True
         else:
             return False
 
@@ -613,33 +655,35 @@ class Resolver_Utils(object):
 
     def filter_evaluator(self, filter_ast, CPE, RSE, super_filters ={}, super_result=None):
         root_node_filter = filter_ast.get_current_filter()
-        #print('root_filter', root_node_filter)
         if len(root_node_filter) == 0:
             root_node_filter = {filter_ast.name + '-ALL':{}}
         new_filter = self.new_filter(super_filters, root_node_filter)
-        joined_result = self.get_cache(new_filter)
+        symbolic_new_filter = self.symbolic_filter(new_filter)
+        joined_result = self.get_cache(symbolic_new_filter)
         if joined_result is None:
-            temp_result = self.get_cache(root_node_filter)
+            symbolic_root_filter = self.symbolic_filter(root_node_filter)
+            temp_result = self.get_cache(symbolic_root_filter)
             if temp_result is None:
                 entity_type = filter_ast.name
                 filter_fields = filter_ast.filter_dict
-                #print('type', type)
-                #print('filter_fields', filter_fields)
                 super_mappings_name = []
                 temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name)
-                if self.check_rse(root_node_filter, RSE) == True:
-                    self.cache[root_node_filter] = temp_result
+                if symbolic_root_filter in RSE:
+                    self.cache[symbolic_root_filter] = temp_result
             super_node_type = filter_ast.parent.name
             current_node_type = filter_ast.name
             super_field = filter_ast.parent_edge
-            #print('temp_result here', current_node_type)
             if super_field != 'filter':
-                print('Join here')
+                #print('Join here')
                 super_result = self.filter_join(super_result, temp_result, super_node_type, current_node_type, super_field)
             else:
                 super_result = temp_result
-            if self.check_cpe(new_filter, CPE) == True:
-                self.cache[new_filter] = super_result
+
+            #check CPE
+            if symbolic_new_filter in CPE:
+                #print('CPE TRUE')
+                self.cache[symbolic_new_filter] = super_result
+                #print('cache', self.cache)
 
         else:
             super_result = joined_result
@@ -661,17 +705,18 @@ class Resolver_Utils(object):
                     right_df = current_node_result[parent_mapping['name']].drop(['iri'], axis=1)
                     for key in super_result.keys():
                         if child_field in list(super_result[key].columns):
-                            super_result[key] = right_df.join(super_result[key].set_index([child_field], verify_integrity = True), on= [parent_field], how='left')
+                            super_result[key] = pd.merge(super_result[key], right_df, how='left', left_on=child_field, right_on=parent_field)
+                            #super_result[key] = right_df.join(super_result[key].set_index([child_field], verify_integrity = True), on= [parent_field], how='left')
         return super_result
 
     def query_evaluator(self, ast, mapping = None, ref= None, root_type_flag = False, filtered_root_mappings = []):
         result, mappings = [], []
         concept_type, query_fields = self.parse_ast(ast)
         if mapping is None:
-            mappings = self.get_mappings_by_names(filtered_root_mappings)
-            #mappings = self.get_mappings(concept_type)
-            #print('refmappings', filtered_root_mappings,ref_mappings)
-            print('mappings', mappings)
+            if len(filtered_root_mappings) >0:
+                mappings = self.get_mappings_by_names(filtered_root_mappings)
+            else:
+                mappings = self.get_mappings(concept_type)
         else:
             mappings.append(mapping)
         predicates = self.translate(query_fields)
@@ -692,7 +737,6 @@ class Resolver_Utils(object):
                     print('Constant')
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
-
             if root_type_flag == True:
                 temp_result = self.refine_json(temp_result, attr_pred, constant, template, True, mapping['name'])
             else:

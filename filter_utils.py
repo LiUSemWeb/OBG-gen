@@ -266,7 +266,7 @@ class Filter_Utils(object):
     def simplify(self):
         dnf_exp_lst = []
         exp_str = ''
-        #print('self translated_expression_str', self.translated_expression_str)
+        print('self translated_expression_str', self.translated_expression_str)
         for element in self.translated_expression_str:
             if element == '_and':
                 exp_str += ' & '
@@ -278,6 +278,7 @@ class Filter_Utils(object):
                 exp_str += element
         #print('exp_str', exp_str)
         simplified_exp_str = str(to_dnf(exp_str, True))
+        print('DNF_STR', simplified_exp_str)
         # result = satisfiable(dnf_obj)
         # dnf_exp_lst = str(simplified_exp).split('|')
         if '|' not in simplified_exp_str:
@@ -289,8 +290,11 @@ class Filter_Utils(object):
             #common_symbols_set = set(self.symbol_field_exp.keys())
             for cnf in simplified_exp_str.split('|'):
                 #print('cnf', cnf)
-                cnf_lst = cnf.strip()[1:-1].split('&')
-                cnf_lst = [x.strip() for x in cnf_lst]
+                if '&' in cnf:
+                    cnf_lst = cnf.strip()[1:-1].split('&')
+                    cnf_lst = [x.strip() for x in cnf_lst]
+                else:
+                    cnf_lst = [cnf.strip()]
                 dnf_exp_lst.append(cnf_lst)
                 #common_symbols_set = set(common_symbols_set.intersection(set(cnf_lst)))
         #print(dnf_exp_lst)

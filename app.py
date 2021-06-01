@@ -9,6 +9,7 @@ from graphql.language.ast import *
 from odgsg_graphql_utils import Resolver_Utils
 from filter_utils import Filter_Utils
 from moesifwsgi import MoesifMiddleware
+import numpy as np
 
 
 global ru
@@ -33,24 +34,33 @@ def generic_resolver(_, info, **kwargs):
         fu = Filter_Utils()
         fu.parse_cond(filter_condition)
         dnf_lst = fu.simplify()
-        #print('dnf_lst', dnf_lst)
         ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
+        print('DNF', dnf_lst)
         filter_asts, common_prefix, repeated_single_exp = ru.generate_filter_asts(ru.filter_fields_map, ru.symbol_field_exp, dnf_lst, 'CalculationList')
-        #filtered_object_iri = dict()
+        print('CP:', common_prefix)
+        print('RSP:', repeated_single_exp)
         for filter_ast in filter_asts:
             filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
             for key, value in filter_df.items():
                 object_iri_lst = value['iri'].tolist()
                 if len(object_iri_lst) > 0:
                     ru.filtered_object_iri[key] = object_iri_lst
+            print('cache', ru.cache.keys())
         print(ru.filtered_object_iri)
-    if len(ru.filtered_object_iri.keys()) > 0:
+        if len(ru.filtered_object_iri.keys()) > 0:
+            ru.filtered_object_iri['filter'] = True
+            query_ast = ru.generate_query_ast(type_defs, info)
+            #result = ru.DataFetcher(query_ast['fields'][0])
+            result = ru.query_evaluator(query_ast['fields'][0], None ,None, True, ru.filtered_object_iri.keys())
+            b = datetime.datetime.now()
+            print('Response Time:', (b-a))
+    else:
+        ru.filtered_object_iri['filter'] = False
         query_ast = ru.generate_query_ast(type_defs, info)
-        #result = ru.DataFetcher(query_ast['fields'][0])
-        result = ru.query_evaluator(query_ast['fields'][0], None ,None, True, ru.filtered_object_iri.keys())
-        print('result1', len(result), result)
+        # result = ru.DataFetcher(query_ast['fields'][0])
+        result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
         b = datetime.datetime.now()
-        print('Response Time:', (b-a))
+        print('Response Time:', (b - a))
     return result
 
 # Create an ASGI app using the schema, running in debug mode
