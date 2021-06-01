@@ -11,89 +11,13 @@ import urllib.parse
 import pymongo
 import ast
 from collections import defaultdict
-from sympy.logic.boolalg import to_dnf
-from sympy.logic.inference import satisfiable
 import pandas as pd
-from pandas import json_normalize
+from filter_AST import FilterAST
+import ast
 
 
-class FilterAST(object):
-    def __init__(self, name, children = None, parent = None, parent_edge = None, filter_dict = None):
-        #data in the form of list of (field name: symbol (with negation or not))
-        self.name = name
-        self.children = children or []
-        self.parent = parent
-        self.parent_edge = parent_edge
-        self.children_edges = []
-        self.filter_dict = filter_dict or {}
-        self.parent_edge_chain = ''
 
-    def add_child(self, child_name, edge):
-        new_child = FilterAST(child_name, parent=self, parent_edge=edge)
-        new_child.parent_edge_chain = self.parent_edge_chain + '.' + edge
-        self.children.append(new_child)
-        self.children_edges.append(edge)
-        return new_child
-
-    def add_child_edge(self, child_edge):
-        self.children_edges.append(child_edge)
-
-    def add_attribute_filter(self, attr_symbol, filter_dict):
-        self.filter_dict[attr_symbol] = filter_dict
-
-    def is_root(self):
-        return self.parent is None
-
-    def is_leaf(self):
-        return not self.children
-
-    def getSubTrees(self):
-        return self.children
-
-    def getSubTree(self, edge):
-        return_child = None
-        for child in self.children:
-            if child.parent_edge == edge:
-                return_child = child
-                break
-        return return_child
-
-    def getCurrentFilter(self):
-        if len(self.filter_dict) > 0:
-            return self.filter_dict
-        else:
-            return {}
-    def getCurrentExpSymbols(self):
-        exp_symbols = set()
-        current_filter = self.getCurrentFilter()
-        if current_filter is not None:
-            for key, value in current_filter.items():
-                for exp in value:
-                    exp_symbols.add(exp['symbol'])
-        else:
-            if self.name is not 'root':
-                exp_symbols.add(self.name + '-ALL')
-        return exp_symbols
-
-    def getPrefixExps(self):
-        if len(self.children) > 0:
-            exp_symbols = self.getCurrentExpSymbols()
-            for child in self.children:
-                child_prefix_exp_symbols = child.getPrefixExps()
-                exp_symbols = set.union(exp_symbols, child_prefix_exp_symbols)
-            return exp_symbols
-        else:
-            return set()
-
-    def getAllExps(self):
-        exp_symbols = self.getCurrentExpSymbols()
-        for child in self.children:
-            child_prefix_exp_symbols = child.getAllExps()
-            exp_symbols = set.union(exp_symbols, child_prefix_exp_symbols)
-        return exp_symbols
-
-
-class ResolverUtils(object):
+class Resolver_Utils(object):
     '''
     def __init__(self):
         self.ontology_GraphQLschema = {'Calculation': 'Calculation', 'CalculatedProperty':'CalculatedProperty', 'Structure':'Structure', 'Composition':'Composition', 'QuantityValue': 'QuantityValue',
@@ -110,7 +34,7 @@ class ResolverUtils(object):
         self.operator_2 = ['_eq', '_neq', '_gt']
         self.field_exp_symbol = dict()
         self.symbol_field_exp = dict()
-        self.schemaAST = dict()
+        self.schema_ast = dict()
         self.cache = dict()
         self.common_exp_symbols = []
         self.filter_fields_map = dict()
@@ -124,17 +48,11 @@ class ResolverUtils(object):
         self.field_exp_symbol = field_exp_symbol
         self.symbol_field_exp = symbol_field_exp
 
-    
-    def parseIterator(self, iterator):
-        iterator_elements = iterator.split('.')
-        iterator_elements = list(filter(None, iterator_elements))
-        return iterator_elements
-    
-    def getJSONData(self, URL, iterator = None, ref=None):
-        r = requests.get(url=URL)
+    def getJSONData(self, url, iterator=None, ref=None):
+        r = requests.get(url=url)
         data = r.json()
         if iterator is not None:
-            keys = self.parseIterator(iterator)
+            keys = self.parse_iterator(iterator)
             temp_data = data
             for i in range(len(keys)):
                 temp_data = temp_data[keys[i]]
@@ -179,218 +97,109 @@ class ResolverUtils(object):
         dbclient = pymongo.MongoClient(mongodb_client_address)
         mongodb = dbclient[database]
         mongodb_collection = mongodb[collection_name]
-        if ref == None:
+        if ref is None:
             result = list(mongodb_collection.find({}, projection))
             temp_data = result[0]
-            keys = self.parseIterator(iterator)
+            keys = self.parse_iterator(iterator)
             for i in range(len(keys)):
                 temp_data = temp_data[keys[i]]
             result = temp_data
         return result
 
-    def parseAST(self, AST):
-        concept_type = AST['type']
-        queryFields = []
-        for field in AST['fields']:
-            queryFields.append(field['name'])
-        return concept_type, queryFields
+    def get_json_data(self, url, iterator, key_attrs, filter=None):
+        r = requests.get(url=url)
+        if filter is not None:
+            for key, value in filter.items():
+                if value['local_name'] not in key_attrs:
+                    key_attrs.append(value['local_name'])
+        data = r.json()
+        temp_data = data
+        if iterator is not None:
+            keys = self.parse_iterator(iterator)
+            for i in range(len(keys)):
+                temp_data = temp_data[keys[i]]
+        result = []
+        for data_record in temp_data:
+            temp_dict = dict()
+            for k,v in data_record.items():
+                if k in key_attrs:
+                    temp_dict[k] = v
+            result.append(temp_dict)
+        result = pd.json_normalize(result)
+        if filter is not None:
+            print('filter here')
+            print('in get json data', filter)
+            print('shape', result.shape[0])
+            result = self.filter_data_frame(result, filter)
+            print('shape', result.shape[0])
+        return result
 
-    def getSubAST(self, AST, predicate):
-        fields = AST['fields']
-        newAST = None
+    @staticmethod
+    def transform_operator(operator):
+        if operator == '_eq':
+            return '=='
+        elif operator == '_gt':
+            return '>'
+        elif operator == '_lt':
+            return '<'
+        elif operator == '_in':
+            return 'in'
+        elif operator == '_like':
+            return 'like'
+        elif operator == '_ilike':
+            return 'ilike'
+        else:
+            return operator
+
+    def filter_data_frame(self, df, filter_dict):
+        print(filter_dict)
+        for pred, filter_dict_value  in filter_dict.items():
+            local_name = filter_dict_value['local_name']
+            attr_type = filter_dict_value['attribute_type']
+            for atom_filter in filter_dict_value['filter']:
+                filter_str = self.generate_filter_str(local_name, atom_filter['operator'], atom_filter['value'], atom_filter['negation'], attr_type)
+                df = df.query(filter_str)
+        return df
+
+    def generate_filter_str(self, attribute, operator_str, value_str, negation_flag, attr_type):
+        filter_str = ''
+        if operator_str in ['_in', '_nin']:
+            print('list here')
+            new_operator = self.transform_operator(operator_str)
+            #new_value = ast.literal_eval(value)
+            filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator,
+                                                                   value=value_str)
+            print(filter_str)
+        else:
+            new_operator = self.transform_operator(operator_str)
+            if attr_type == 'String' or 'ID':
+                new_value = str(value_str)
+                filter_str = "{column} {operator} \"{value}\" ".format(column=attribute, operator=new_operator, value=new_value)
+            if attr_type == 'Int':
+                new_value = int(value_str)
+                filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator, value=new_value)
+            if attr_type == 'Float':
+                new_value = float(value_str)
+                filter_str = "{column} {operator} {value} ".format(column=attribute, operator=new_operator, value=new_value)
+        return filter_str
+
+    @staticmethod
+    def parse_ast(ast):
+        entity_type = ast['type']
+        query_fields = []
+        for field in ast['fields']:
+            query_fields.append(field['name'])
+        return entity_type, query_fields
+
+    @staticmethod
+    def get_sub_ast(ast, predicate):
+        fields = ast['fields']
+        new_ast = None
         for field in fields:
             if field['name'] == predicate:
-                newAST = field
+                new_ast = field
                 break
-        return newAST
-
-    def getMappings(self, concept_type):
-        return self.mu.getMappingsByType(concept_type)
-
-    def getLogicalSource(self, mapping):
-        return self.mu.getLogicalSourceByMapping(mapping)    
-
-    def getTemplate(self, mapping):
-        return self.mu.getSubjectTemplateByMapping(mapping)
-
-
-    def Phi(self, ontology_term):
-        return self.ontology_GraphQLschema[ontology_term]
-
-    def Phi_inverse(self, GraphQL_term):
-        return self.GraphQLschema_Ontology[GraphQL_term]
-
-    def Translate(self, queryFields):
-        predicates = []
-        for field in queryFields:
-            predicates.append(self.Phi_inverse(field))
-        return predicates
-
-    def Execute(self, logicalSource, ref = None, filter = None):
-        source_type = self.mu.getLSType(logicalSource)
-        result = []
-        if source_type == 'ql:CSV':
-            source_request = self.mu.getSource(logicalSource)
-            result = self.getCSVData(source_request, ref)
-        if source_type == 'ql:JSONPath':
-            source_request = self.mu.getSource(logicalSource)
-            iterator = self.mu.getJSONIterator(logicalSource)
-            result = self.getJSONData(source_request, iterator, ref)
-        if source_type == 'mydb:mongodb':
-            iterator = self.mu.getJSONIterator(logicalSource)
-            server_info, query = self.mu.getDBSource(logicalSource)
-            result = self.getMongoDBData(server_info, query, iterator)
-        return result
-
-    def getPredicateObjectMap(self, mapping, predicates):
-        return self.mu.getPredicateObjectMapByPred(mapping, predicates)
-
-    def parsePOM(self, pom):
-        return self.mu.parsePOM(pom)
-
-    def parseROM(self, objectMap):
-        return self.mu.parseROM(objectMap)
-
-    def getReference(self, termMap):
-        return self.mu.getReference(termMap)
-
-    def parseJoinCondition(self, joinCondition):
-        return self.mu.parseJoinCondition(joinCondition)
-
-    def getChildData(self, tempResult, childField):
-        return [ {childField: record[childField]} for record in tempResult ]
-
-    def parseTemplate(self, template):
-        start_pos = template.index('{')
-        end_pos = template.index('}')
-        key = template[start_pos + 1: end_pos]
-        newtemplate = template.replace(key,'')
-        return key, newtemplate
-
-    # need to update
-    def RefineJSON(self, tempResult, attr_pred_lst, constant, template, root_type = False, mapping_name = ''):
-        key, template = self.parseTemplate(template)
-        i=0
-        while i < len(tempResult):
-            iri = template.format(tempResult[i][key])
-            if root_type is True:
-                if iri in self.filtered_object_iri[mapping_name]:
-                    tempResult[i]['iri'] = iri
-                    for attr_pred_tuple in attr_pred_lst:
-                        if '.' in attr_pred_tuple[0]:
-                            keys = self.parseIterator(attr_pred_tuple[0])
-                            temp_data = tempResult[i]
-                            for i in range(len(keys)):
-                                temp_data = temp_data[keys[i]]
-                                tempResult[i][attr_pred_tuple[1]] = temp_data
-                        else:
-                            if attr_pred_tuple[0] in tempResult[i].keys():
-                                # record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
-                                tempResult[i][attr_pred_tuple[1]] = tempResult[i][attr_pred_tuple[0]]
-                    i+=1
-                else:
-                    del tempResult[i]
-            else:
-                tempResult[i]['iri'] = iri
-                for attr_pred_tuple in attr_pred_lst:
-                    if '.' in attr_pred_tuple[0]:
-                        keys = self.parseIterator(attr_pred_tuple[0])
-                        temp_data = tempResult[i]
-                        for i in range(len(keys)):
-                            temp_data = temp_data[keys[i]]
-                            tempResult[i][attr_pred_tuple[1]] = temp_data
-                    else:
-                        if attr_pred_tuple[0] in tempResult[i].keys():
-                            # record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
-                            tempResult[i][attr_pred_tuple[1]] = tempResult[i][attr_pred_tuple[0]]
-                i += 1
-        '''
-        for record in tempResult:
-            record['iri'] = template.format(record[key])
-            for attr_pred_tuple in attr_pred_lst:
-                if '.' in attr_pred_tuple[0]:
-                    keys = self.parseIterator(attr_pred_tuple[0])
-                    temp_data = record
-                    for i in range(len(keys)):
-                        temp_data = temp_data[keys[i]]
-                    record[attr_pred_tuple[1]] = temp_data
-                else:
-                    if attr_pred_tuple[0] in record.keys():
-                        #record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
-                        record[attr_pred_tuple[1]] = record[attr_pred_tuple[0]]
-        
-        '''
-        #print('length', len(tempResult))
-        return tempResult
-
-    def IncrementalJoin(self, tempResult, result2join):
-        result = []
-        if len(result2join) > 0: 
-            for (joinData, joinCondition, field, AST) in result2join:
-                for join_record in joinData: 
-                    for record in tempResult:
-                        if record[joinCondition['child']] == join_record[joinCondition['parent']]:
-                            new_record = record
-                            if AST['wrapping_label'] == '0' or AST['wrapping_label'] == '10':
-                                new_record[field] = join_record
-                            else:
-                                new_record[field] = [join_record]
-                            result.append(new_record)
-            return result
-        else: 
-            return tempResult
-
-    def Merge(self, result, tempResult):
-        return result + tempResult
-
-    def DuplicateDetectionFusion(self, result):
-        return result
-
-    def TypeOfObjectMap(self, objectMap):
-        return self.mu.TypeOfObjectMap(objectMap)
-
-    def DataFetcher(self, AST, mapping = None, ref= None):
-        result, mappings = [], []
-        concept_type, queryFields = self.parseAST(AST)
-        if mapping is None:
-            mappings = self.getMappings(concept_type)
-        else:
-            mappings.append(mapping)
-        predicates = self.Translate(queryFields)
-        for mapping in mappings:
-            logicalSource = self.getLogicalSource(mapping)
-            template = self.getTemplate(mapping)
-            tempResult = self.Execute(logicalSource, ref)
-            poms = self.getPredicateObjectMap(mapping, predicates)
-            attr_pred, result2join, constant = [], [], []
-            for pom in poms:
-                predicate, objectMap = self.parsePOM(pom)
-                if self.TypeOfObjectMap(objectMap) == 1:
-                    referenceAttribute = self.getReference(objectMap)
-                    attr_pred.append((referenceAttribute, self.Phi(predicate)))
-                if self.TypeOfObjectMap(objectMap) == 2:
-                    print('Constant')
-                if self.TypeOfObjectMap(objectMap) == 3:
-                    newAST = self.getSubAST(AST, self.Phi(predicate))
-                    parentMapping, joinCondition = self.parseROM(objectMap)
-                    childField, parentField = self.parseJoinCondition(joinCondition)
-                    childData = self.getChildData(tempResult, childField)
-                    ref = (childData, joinCondition)
-                    parentData = self.DataFetcher(newAST, parentMapping, ref)
-                    result2join.append((parentData, joinCondition, self.Phi(predicate), newAST))
-            tempResult = self.RefineJSON(tempResult, attr_pred, constant, template)
-            tempResult = self.IncrementalJoin(tempResult, result2join)
-            result = self.Merge(result, tempResult)
-        return self.DuplicateDetectionFusion(result)
-
-    def check_node_type(self, Node):
-        if Node.kind == 'non_null_type':
-            return 'non_null_type'
-        if Node.kind == 'named_type':
-            return 'named_type'
-        if Node.kind == 'list_type':
-            return 'list_type'
-        return 0
+        return new_ast
 
     def parse_field(self, field):
         named_type_value = ''
@@ -410,10 +219,9 @@ class ResolverUtils(object):
                 encode_labels = '0'
         return named_type_value, encode_labels
 
-    def getSchemaAST(self, schema):
-        if len(self.schemaAST) == 0:
+    def generate_schema_ast(self, schema):
+        if len(self.schema_ast) == 0:
             schema_ast = dict()
-            #filter_ast = dict()
             document = parse(schema)
             for definition in document.definitions:
                 if definition.kind == 'object_type_definition':
@@ -421,65 +229,200 @@ class ResolverUtils(object):
                     for wrapped_field in definition.fields:
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         if definition.name.value == 'Query':
-                            #filter_type = self.parseQueryArguments(wrapped_field.arguments)
+                            #filter_type = self.parse_query_qrguments(wrapped_field.arguments)
                             self.filter_fields_map[(wrapped_field.name.value, 'filter')] = named_type_value
                         else:
                             self.filter_fields_map[(definition.name.value, wrapped_field.name.value)] = named_type_value
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
                 if definition.kind == 'input_object_type_definition':
-                    # print(definition.name.value)
                     schema_ast[definition.name.value] = dict()
                     for wrapped_field in definition.fields:
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
-            # print(filter_ast)
-            self.schemaAST = schema_ast
-            return self.schemaAST
+            self.schema_ast = schema_ast
+            return self.schema_ast
         else:
-            return self.schemaAST
+            return self.schema_ast
 
-    def parseQueryArguments(self, arguments):
-        filter_type = ''
-        for argu in arguments:
-            if argu.name.value == 'filter':
-                filter_type = argu.type.name.value
-                break
-        return filter_type
-
-    def getQueryEntries(self, schema):
-        query_entries = []
-        schema_AST = self.getSchemaAST(schema)
-        query_entries = list(schema_AST['Query'].keys())
+    def get_query_entries(self, schema):
+        schema_ast = self.generate_schema_ast(schema)
+        query_entries = list(schema_ast['Query'].keys())
         return query_entries
 
-    def getAST(self, schema, query_info):
-        queryAST = dict()
-        schemaAST = self.getSchemaAST(schema)
-        self.schemaAST = schemaAST
-        root = query_info.field_name
-        queryFieldsNodes = query_info.field_nodes
-        queryAST = self.parse_query_fields('Query',queryFieldsNodes)
-        query_entry_name = queryAST['fields'][0]['name']
-        queryAST['fields'][0]['type'] = schemaAST['Query'][query_entry_name]['base_type']
-        queryAST['fields'][0]['wrapping_label'] = schemaAST['Query'][query_entry_name]['wrapping_label']
-        newAST = self.fill_return_type(queryAST['fields'][0], schemaAST, queryAST['fields'][0]['type'])
-        #print('queryAST', queryAST)
-        return queryAST
-
-    def fill_return_type(self, queryAST, schemaAST, parentType):
-        if len(queryAST['fields']) > 0:
+    def fill_return_type(self, query_ast, schema_ast, super_type):
+        if len(query_ast['fields']) > 0:
             temp_fields = []
-            for subAST in queryAST['fields']:
-                #subAST['name']
+            for sub_ast in query_ast['fields']:
+                sub_ast['type'] = schema_ast[super_type][sub_ast['name']]['base_type']
+                sub_ast['wrapping_label'] = schema_ast[super_type][sub_ast['name']]['wrapping_label']
+                new_sub_ast = self.fill_return_type(sub_ast, schema_ast, sub_ast['type'])
+                temp_fields.append(new_sub_ast)
+            query_ast['fields'] = temp_fields
+        return query_ast
 
-                subAST['type'] = schemaAST[parentType][subAST['name']]['base_type']
-                subAST['wrapping_label'] = schemaAST[parentType][subAST['name']]['wrapping_label']
-                new_subAST = self.fill_return_type(subAST, schemaAST, subAST['type'])
-                temp_fields.append(new_subAST)
-            queryAST['fields'] = temp_fields
-        return queryAST
+    def generate_query_ast(self, schema, query_info):
+        schema_ast = self.generate_schema_ast(schema)
+        self.schema_ast = schema_ast
+        query_field_nodes = query_info.field_nodes
+        query_ast = self.parse_query_fields('Query',query_field_nodes)
+        query_entry_name = query_ast['fields'][0]['name']
+        query_ast['fields'][0]['type'] = schema_ast['Query'][query_entry_name]['base_type']
+        query_ast['fields'][0]['wrapping_label'] = schema_ast['Query'][query_entry_name]['wrapping_label']
+        #query_ast is changed inside fill_return_type
+        newAST = self.fill_return_type(query_ast['fields'][0], schema_ast, query_ast['fields'][0]['type'])
+        return query_ast
+
+    def get_mappings(self, concept_type):
+        return self.mu.get_mappings_by_type(concept_type)
+
+    def get_mappings_by_names(self, mappings_name= []):
+        return self.mu.get_mappings_by_names(mappings_name)
+
+    def get_logical_source(self, mapping):
+        return self.mu.get_logical_source_by_mapping(mapping)
+
+    def get_template(self, mapping):
+        return self.mu.get_subject_template_by_mapping(mapping)
+
+    def get_predicate_object_maps(self, mapping, predicates):
+        return self.mu.get_pom_by_predicates(mapping, predicates)
+
+    def get_reference_attribute(self, term_map):
+        return self.mu.get_reference(term_map)
+
+    def get_child_data(self, temp_result, child_field):
+        return [{child_field: record[child_field]} for record in temp_result]
+
+    @staticmethod
+    def parse_iterator(iterator):
+        iterator_elements = iterator.split('.')
+        iterator_elements = list(filter(None,iterator_elements))
+        return iterator_elements
+
+    def parse_pom(self, pom):
+        return self.mu.parse_pom(pom)
+
+    def parse_rom(self, object_map):
+        return self.mu.parse_rom(object_map)
+
+    def phi(self, ontology_term):
+        return self.ontology_GraphQLschema[ontology_term]
+
+    def inverse_phi(self, GraphQL_term):
+        return self.GraphQLschema_Ontology[GraphQL_term]
+
+    def translate(self, query_fields):
+        predicates = []
+        for field in query_fields:
+            predicates.append(self.inverse_phi(field))
+        return predicates
+
+    @staticmethod
+    def parse_template(template):
+        start_pos = template.index('{')
+        end_pos = template.index('}')
+        key = template[start_pos + 1: end_pos]
+        new_template = template.replace(key,'')
+        return key, new_template
+
+    def parse_join_condition(self, join_condition):
+        return self.mu.parse_join_condition(join_condition)
+
+    # need to update
+    def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag = False, mapping_name = ''):
+        key, template = self.parse_template(template)
+        i=0
+        while i < len(temp_result):
+            iri = template.format(temp_result[i][key])
+            if root_type_flag == True:
+                if iri in self.filtered_object_iri[mapping_name]:
+                    temp_result[i]['iri'] = iri
+                    for attr_pred_tuple in attr_pred_lst:
+                        if '.' in attr_pred_tuple[0]:
+                            keys = self.parse_iterator(attr_pred_tuple[0])
+                            temp_data = temp_result[i]
+                            for i in range(len(keys)):
+                                temp_data = temp_data[keys[i]]
+                                temp_result[i][attr_pred_tuple[1]] = temp_data
+                        else:
+                            if attr_pred_tuple[0] in temp_result[i].keys():
+                                # record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
+                                temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                    i+=1
+                else:
+                    del temp_result[i]
+            else:
+                temp_result[i]['iri'] = iri
+                for attr_pred_tuple in attr_pred_lst:
+                    if '.' in attr_pred_tuple[0]:
+                        keys = self.parse_iterator(attr_pred_tuple[0])
+                        temp_data = temp_result[i]
+                        for i in range(len(keys)):
+                            temp_data = temp_data[keys[i]]
+                            temp_result[i][attr_pred_tuple[1]] = temp_data
+                    else:
+                        if attr_pred_tuple[0] in temp_result[i].keys():
+                            # record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
+                            temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                i += 1
+        '''
+        for record in temp_result:
+            record['iri'] = template.format(record[key])
+            for attr_pred_tuple in attr_pred_lst:
+                if '.' in attr_pred_tuple[0]:
+                    keys = self.parse_iterator(attr_pred_tuple[0])
+                    temp_data = record
+                    for i in range(len(keys)):
+                        temp_data = temp_data[keys[i]]
+                    record[attr_pred_tuple[1]] = temp_data
+                else:
+                    if attr_pred_tuple[0] in record.keys():
+                        #record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
+                        record[attr_pred_tuple[1]] = record[attr_pred_tuple[0]]
+        
+        '''
+        return temp_result
+
+    @staticmethod
+    def incremental_join(temp_result, result2join):
+        result = []
+        if len(result2join) > 0: 
+            for (join_data, join_condition, field, ast) in result2join:
+                for join_record in join_data:
+                    for record in temp_result:
+                        if record[join_condition['child']] == join_record[join_condition['parent']]:
+                            new_record = record
+                            if ast['wrapping_label'] == '0' or ast['wrapping_label'] == '10':
+                                new_record[field] = join_record
+                            else:
+                                new_record[field] = [join_record]
+                            result.append(new_record)
+            return result
+        else: 
+            return temp_result
+
+    @staticmethod
+    def merge(result, temp_result):
+        return result + temp_result
+
+    @staticmethod
+    def duplicate_detection_fusion(result):
+        return result
+
+    def type_of_object_map(self, object_map):
+        return self.mu.type_of_object_map(object_map)
+
+    @staticmethod
+    def check_node_type(node):
+        if node.kind == 'non_null_type':
+            return 'non_null_type'
+        if node.kind == 'named_type':
+            return 'named_type'
+        if node.kind == 'list_type':
+            return 'list_type'
+        return 0
 
     def parse_query_fields(self, root_name, query_field_notes):
         result = dict()
@@ -497,6 +440,337 @@ class ResolverUtils(object):
         result['fields'] = fields
         return result
 
+    def get_source_type(self, logical_source):
+        return self.mu.get_logical_source_type(logical_source)
+
+    def get_source_request(self, logical_source):
+        return self.mu.get_source(logical_source)
+
+    def get_json_iterator(self, logical_source):
+        return self.mu.get_json_iterator(logical_source)
+
+    def get_db_source(self, logical_source):
+        return self.mu.get_db_source(logical_source)
+
+    def executor(self, logical_source, key_attrs, filter_flag= False, filter=None, ref=None):
+        source_type = self.get_source_type(logical_source)
+        result = []
+        if source_type == 'ql:CSV':
+            source_request = self.get_source_request(logical_source)
+            #result = self.getCSVData(source_request, ref)
+        if source_type == 'ql:JSONPath':
+            source_request = self.get_source_request(logical_source)
+            iterator = self.get_json_iterator(logical_source)
+            #result = self.getJSONData(source_request, iterator, ref)
+            if filter_flag == True:
+                #data frame here
+                #print('in executor', filter)
+                result = self.get_json_data(source_request, iterator, key_attrs, filter)
+            else:
+                result = self.getJSONData(source_request, iterator, ref)
+        if source_type == 'mydb:mongodb':
+            iterator = self.get_json_iterator(logical_source)
+            server_info, query = self.get_db_source(logical_source)
+            result = self.getMongoDBData(server_info, query, iterator)
+        return result
+
+    def refine_data_frame(self, df, pred_attr_dict, constant, template):
+        key, template = self.parse_template(template)
+        df = df.assign(iri=[template.format(x) for x in df[key]])
+        for pred, attr in pred_attr_dict.items():
+            if attr in list(df.columns):
+                if pred != attr:
+                    kwargs = {pred: lambda x:  x[attr]}
+                    df = df.assign(**kwargs)
+        return df
+
+    @staticmethod
+    def generate_filter_asts(filter_fields_map, symbol_exp_dict, conjunctive_exp_lst, entry='CalculationList'):
+        filter_asts = []
+        common_prefix = frozenset()
+        repeated_single_exp = set()
+        all_ast_exp = set()
+        for conjunctive_expression in conjunctive_exp_lst:
+            fields_filter_dict = defaultdict(list)
+            for exp in conjunctive_expression:
+                #print('conjunctive_exp', conjunctive_expression)
+                if exp[0] == '~':
+                    cond = symbol_exp_dict[exp[1]]
+                    field = cond[0]
+                    #new_cond = {'field': field.split('.')[-1], 'operator': cond[1], 'value': cond[2], 'negation': True,'symbol': exp}
+                    new_cond = {'operator': cond[1], 'value': cond[2], 'negation': True, 'symbol': exp}
+                    fields_filter_dict[field].append(new_cond)
+                else:
+                    cond = symbol_exp_dict[exp]
+                    field = cond[0]
+                    #new_cond = {'field': field.split('.')[-1], 'operator': cond[1], 'value': cond[2], 'negation': False, 'symbol': exp}
+                    new_cond = {'operator': cond[1], 'value': cond[2], 'negation': False, 'symbol': exp}
+                    fields_filter_dict[field].append(new_cond)
+            field_filters = fields_filter_dict.items()
+            field_filters = sorted(field_filters, key=lambda f: len(f[0].split('.')))
+            filter_ast = FilterAST('root')
+            # filter_ast.add_child_edge('filter')
+            for field_filter in field_filters:
+                fields = field_filter[0].split('.')
+                root_type = entry
+                ast = filter_ast
+                for f in fields:
+                    if f not in filter_ast.children_edges:
+                        name = filter_fields_map[(root_type, f)]
+                        if name not in ['String', 'Int', 'Boolean', 'ID', 'Float']:
+                            new_child = ast.add_child(name, f)
+                            ast = new_child
+                        else:
+                            ast.add_attribute_filter(f, field_filter[1], name)
+                    else:
+                        ast = ast.get_sub_tree_by_edge(f)
+                    root_type = filter_fields_map[(root_type, f)]
+            filter_asts.append(filter_ast)
+            prefix = filter_ast.get_prefix_expressions()
+            common_prefix -= frozenset(prefix)
+            all_exp = filter_ast.get_all_expression()
+            repeated_single_exp = set.union(repeated_single_exp, all_ast_exp.intersection(all_exp))
+            all_ast_exp = set.union(all_ast_exp, all_exp)
+        return filter_asts, common_prefix, repeated_single_exp
+
+    @staticmethod
+    def new_filter(super_filters, current_filter):
+        super_filters.update(current_filter)
+        return super_filters
+
+    def get_cache(self, filter_exp):
+        return
+
+
+    def localize_filter(self, entity_type, pred_attr, filter_fields = None, query_fields = None):
+        if len(filter_fields) == 0:
+            #print('pred_attr', pred_attr)
+            query_fields = []
+            return
+        else:
+            localized_filter_fields = defaultdict(dict)
+            for key, value in filter_fields.items():
+                localized_filter_fields[key]['local_name'] = pred_attr[key]
+                localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
+                localized_filter_fields[key]['filter'] = value
+            return localized_filter_fields
+
+    def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name):
+        result = defaultdict()
+        if len(super_mappings_name) == 0:
+            mappings = self.get_mappings(entity_type)
+            #print('mappings',mappings)
+        else:
+            mappings = []
+        query_fields = filter_fields.keys()
+        predicates = self.translate(query_fields)
+        for mapping in mappings:
+            mapping_name = mapping['name']
+            logical_source = self.get_logical_source(mapping)
+            template = self.get_template(mapping)
+            #may change if multiple key attributes
+            key_attrs = [self.parse_template(template)[0]]
+            poms = self.get_predicate_object_maps(mapping, predicates)
+            pred_attr = dict()
+            for pom in poms:
+                predicate, object_map = self.parse_pom(pom)
+                if self.type_of_object_map(object_map) == 1:
+                    reference_attribute = self.get_reference_attribute(object_map)
+                    pred_attr[self.phi(predicate)] = reference_attribute
+                    #attr_pred.append((referenceAttribute, self.phi(predicate)))
+                if self.type_of_object_map(object_map) == 2:
+                    print('Constant')
+            localized_filter = self.localize_filter(entity_type ,pred_attr, filter_fields, query_fields)
+            #print('local filter', localized_filter)
+            temp_result = self.executor(logical_source, key_attrs, True, localized_filter)
+            #temp_result = self.refine(temp_result, pred_attr, None, template)
+            temp_result = self.refine_data_frame(temp_result, pred_attr, None, template)
+            result[mapping_name] = temp_result
+        return result
+
+    def check_cpe(self, filter, CPE):
+        exp_symbols = set()
+        if len(filter) >0:
+            for key, value in filter.items():
+                for exp in value:
+                    exp_symbols.add(exp['symbol'])
+            if exp_symbols in CPE:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def check_rse(self, filter, RSE):
+        exp_symbols = set()
+        if len(filter) > 0:
+            for key, value in filter.items():
+                for exp in value:
+                    exp_symbols.add(exp['symbol'])
+            return
+        else:
+            return False
+
+    def filter_evaluator(self, filter_ast, CPE, RSE, super_filters ={}, super_result=None):
+        root_node_filter = filter_ast.get_current_filter()
+        #print('root_filter', root_node_filter)
+        if len(root_node_filter) == 0:
+            root_node_filter = {filter_ast.name + '-ALL':{}}
+        new_filter = self.new_filter(super_filters, root_node_filter)
+        joined_result = self.get_cache(new_filter)
+        if joined_result is None:
+            temp_result = self.get_cache(root_node_filter)
+            if temp_result is None:
+                entity_type = filter_ast.name
+                filter_fields = filter_ast.filter_dict
+                #print('type', type)
+                #print('filter_fields', filter_fields)
+                super_mappings_name = []
+                temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name)
+                if self.check_rse(root_node_filter, RSE) == True:
+                    self.cache[root_node_filter] = temp_result
+            super_node_type = filter_ast.parent.name
+            current_node_type = filter_ast.name
+            super_field = filter_ast.parent_edge
+            #print('temp_result here', current_node_type)
+            if super_field != 'filter':
+                print('Join here')
+                super_result = self.filter_join(super_result, temp_result, super_node_type, current_node_type, super_field)
+            else:
+                super_result = temp_result
+            if self.check_cpe(new_filter, CPE) == True:
+                self.cache[new_filter] = super_result
+
+        else:
+            super_result = joined_result
+        sub_filter_ASTs = filter_ast.get_sub_trees()
+        for ast in sub_filter_ASTs:
+            self.filter_evaluator(ast, CPE, RSE, new_filter, super_result)
+        return super_result
+
+    def filter_join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
+        super_mappings = self.get_mappings(super_node_type)
+        predicates = self.translate([super_field])
+        for mapping in super_mappings:
+            poms = self.get_predicate_object_maps(mapping, predicates)
+            for pom in poms:
+                predicate, object_map = self.parse_pom(pom)
+                if self.type_of_object_map(object_map) == 3:
+                    parent_mapping, join_condition = self.parse_rom(object_map)
+                    child_field, parent_field = self.parse_join_condition(join_condition)
+                    right_df = current_node_result[parent_mapping['name']].drop(['iri'], axis=1)
+                    for key in super_result.keys():
+                        if child_field in list(super_result[key].columns):
+                            super_result[key] = right_df.join(super_result[key].set_index([child_field], verify_integrity = True), on= [parent_field], how='left')
+        return super_result
+
+    def query_evaluator(self, ast, mapping = None, ref= None, root_type_flag = False, filtered_root_mappings = []):
+        result, mappings = [], []
+        concept_type, query_fields = self.parse_ast(ast)
+        if mapping is None:
+            mappings = self.get_mappings_by_names(filtered_root_mappings)
+            #mappings = self.get_mappings(concept_type)
+            #print('refmappings', filtered_root_mappings,ref_mappings)
+            print('mappings', mappings)
+        else:
+            mappings.append(mapping)
+        predicates = self.translate(query_fields)
+        for mapping in mappings:
+            logical_source = self.get_logical_source(mapping)
+            template = self.get_template(mapping)
+            key_attr = self.parse_template(template)[0]
+            temp_result = self.executor(logical_source, None, False, None, ref)
+            poms = self.get_predicate_object_maps(mapping, predicates)
+            attr_pred, result2join, constant = [], [], []
+            ref_poms_pred_object_map = []
+            for pom in poms:
+                predicate, object_map = self.parse_pom(pom)
+                if self.type_of_object_map(object_map) == 1:
+                    reference_attribute = self.get_reference_attribute(object_map)
+                    attr_pred.append((reference_attribute, self.phi(predicate)))
+                if self.type_of_object_map(object_map) == 2:
+                    print('Constant')
+                if self.type_of_object_map(object_map) == 3:
+                    ref_poms_pred_object_map.append((predicate, object_map))
+
+            if root_type_flag == True:
+                temp_result = self.refine_json(temp_result, attr_pred, constant, template, True, mapping['name'])
+            else:
+                temp_result = self.refine_json(temp_result, attr_pred, constant, template)
+            for (predicate, object_map) in ref_poms_pred_object_map:
+                new_ast = self.get_sub_ast(ast, self.phi(predicate))
+                parent_mapping, join_condition = self.parse_rom(object_map)
+                child_field, parent_field = self.parse_join_condition(join_condition)
+                child_data = self.get_child_data(temp_result, child_field)
+                ref = (child_data, join_condition)
+                parent_data = self.query_evaluator(new_ast, parent_mapping, ref)
+                result2join.append((parent_data, join_condition, self.phi(predicate), new_ast))
+            temp_result = self.incremental_join(temp_result, result2join)
+            result = self.merge(result, temp_result)
+        return self.duplicate_detection_fusion(result)
+
+    '''
+    def old_localize_filter(self, filter, pred_attr):
+        localized_filter = []
+        #current filter [('filter.ID', '_eq', '1'), ('not', ('filter.ID', '_eq', '2'))]
+        for i in range(len(filter)):
+            if filter[i][0] is 'not':
+                key = filter[i][1][0].split('.')[-1]
+                temp_filter = list(filter[i][1])
+                temp_filter[0] = pred_attr[key]
+                localized_filter.append(['not'] + temp_filter)
+            else:
+                temp_filter = list(filter[i])
+                key = filter[i][0].split('.')[-1]
+                temp_filter[0] = pred_attr[key]
+                localized_filter.append(temp_filter)
+        return localized_filter
+    '''
+'''
+    def DataFetcher(self, AST, mapping = None, ref= None):
+        result, mappings = [], []
+        concept_type, query_fields = self.parse_ast(AST)
+        if mapping is None:
+            mappings = self.get_mappings(concept_type)
+        else:
+            mappings.append(mapping)
+        predicates = self.translate(query_fields)
+        for mapping in mappings:
+            logical_source = self.get_logical_source(mapping)
+            template = self.get_template(mapping)
+            temp_result = self.Execute(logical_source, ref)
+            poms = self.get_predicate_object_maps(mapping, predicates)
+            attr_pred, result2join, constant = [], [], []
+            for pom in poms:
+                predicate, object_map = self.parse_pom(pom)
+                if self.type_of_object_map(object_map) == 1:
+                    referenceAttribute = self.get_reference_attribute(object_map)
+                    attr_pred.append((referenceAttribute, self.phi(predicate)))
+                if self.type_of_object_map(object_map) == 2:
+                    print('Constant')
+                if self.type_of_object_map(object_map) == 3:
+                    new_ast = self.get_sub_ast(AST, self.phi(predicate))
+                    parent_mapping, join_condition = self.parse_rom(object_map)
+                    child_field, parent_field = self.parse_join_condition(join_condition)
+                    child_data = self.get_child_data(temp_result, child_field)
+                    ref = (child_data, join_condition)
+                    parent_data = self.DataFetcher(new_ast, parent_mapping, ref)
+                    result2join.append((parent_data, join_condition, self.phi(predicate), new_ast))
+            temp_result = self.refine_json(temp_result, attr_pred, constant, template)
+            temp_result = self.incremental_join(temp_result, result2join)
+            result = self.merge(result, temp_result)
+        return self.duplicate_detection_fusion(result)
+    '''
+'''
+    def parse_query_qrguments(self, arguments):
+        filter_type = ''
+        for argu in arguments:
+            if argu.name.value == 'filter':
+                filter_type = argu.type.name.value
+                break
+        return filter_type
+    '''
+'''
     def get_filter_fields(self, conjunctive_expression, current_type, level):
         current_filter = []
         current_filter_dict = []
@@ -504,7 +778,7 @@ class ResolverUtils(object):
         sub_filter_dict = []
         filter_fields = []
         new_conjunctive_expression = []
-        #print('schemaAST[current_type]', self.schemaAST[current_type])
+        #print('schema_ast[current_type]', self.schema_ast[current_type])
         print('current_type', current_type)
         for symbol in conjunctive_expression:
             if symbol[0] is '~':
@@ -538,55 +812,32 @@ class ResolverUtils(object):
         print('current_filter_dict', current_filter_dict)
         print(current_filter)
         return current_filter, sub_filter, filter_fields, new_conjunctive_expression
-
-    def Executor(self, logicalSource, key_attrs, filter_flag= False, filter = None, ref = None):
-        source_type = self.mu.getLSType(logicalSource)
+    '''
+'''
+    def Execute(self, logical_source, ref = None, filter = None):
+        source_type = self.get_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
-            source_request = self.mu.getSource(logicalSource)
-            #result = self.getCSVData(source_request, ref)
+            source_request = self.get_source_request(logical_source)
+            result = self.getCSVData(source_request, ref)
         if source_type == 'ql:JSONPath':
-            source_request = self.mu.getSource(logicalSource)
-            iterator = self.mu.getJSONIterator(logicalSource)
-            #result = self.getJSONData(source_request, iterator, ref)
-            if filter_flag is True:
-                result = self.get_json_data(source_request, iterator, key_attrs, filter)
-            else:
-                result = self.getJSONData(source_request, iterator, ref)
+            source_request = self.get_source_request(logical_source)
+            iterator = self.get_json_iterator(logical_source)
+            result = self.getJSONData(source_request, iterator, ref)
         if source_type == 'mydb:mongodb':
-            iterator = self.mu.getJSONIterator(logicalSource)
-            server_info, query = self.mu.getDBSource(logicalSource)
+            iterator = self.get_json_iterator(logical_source)
+            server_info, query = self.get_db_source(logical_source)
             result = self.getMongoDBData(server_info, query, iterator)
         return result
-
-    def get_json_data(self, URL, iterator, key_attrs, filter=None):
-        r = requests.get(url=URL)
-        if filter is not None:
-            for key, value in filter.items():
-                if value['local_name'] not in key_attrs:
-                    key_attrs.append(value['local_name'])
-        data = r.json()
-        temp_data = data
-        if iterator is not None:
-            keys = self.parseIterator(iterator)
-            for i in range(len(keys)):
-                temp_data = temp_data[keys[i]]
-        result = []
-        for data_record in temp_data:
-            temp_dict = dict()
-            for k,v in data_record.items():
-                if k in key_attrs:
-                    temp_dict[k] = v
-            result.append(temp_dict)
-        return result
     '''
+'''
     def refine(self, temp_result, pred_attr_dict, constant, template):
-        key, template = self.parseTemplate(template)
+        key, template = self.parse_template(template)
         for record in temp_result:
             record['iri'] = template.format(record[key])
             for pred, attr in pred_attr_dict.items():
                 if '.' in attr:
-                    keys = self.parseIterator(attr)
+                    keys = self.parse_iterator(attr)
                     temp_data = record
                     for i in range(len(keys)):
                         temp_data = temp_data[keys[i]]
@@ -596,256 +847,3 @@ class ResolverUtils(object):
                         record[pred] = record[attr]
         return temp_result
     '''
-
-    def RefineDataFrame(self, df, pred_attr_dict, constant, template):
-        key, template = self.parseTemplate(template)
-        df = df.assign(iri = [template.format(x) for x in df[key]])
-        for pred, attr in pred_attr_dict.items():
-            if attr in list(df.columns):
-                if pred != attr:
-                    kwargs = {pred : lambda x:  x[attr] }
-                    df = df.assign(**kwargs)
-        return df
-
-    def localize_filter(self, filter, pred_attr):
-        localized_filter = []
-        #current filter [('filter.ID', '_eq', '1'), ('not', ('filter.ID', '_eq', '2'))]
-        for i in range(len(filter)):
-            if filter[i][0] is 'not':
-                key = filter[i][1][0].split('.')[-1]
-                temp_filter = list(filter[i][1])
-                temp_filter[0] = pred_attr[key]
-                localized_filter.append(['not'] + temp_filter)
-            else:
-                temp_filter = list(filter[i])
-                key = filter[i][0].split('.')[-1]
-                temp_filter[0] = pred_attr[key]
-                localized_filter.append(temp_filter)
-        return localized_filter
-
-    def generateFilterASTs(self, filter_fields_map, symbol_exp_dict, conjunctive_exp_lst, entry='CalculationList'):
-        filter_ASTs = []
-        common_prefix = frozenset()
-        repeated_single_exp = set()
-        all_ast_exp = set()
-        for conjunctive_expression in conjunctive_exp_lst:
-            fields_filter_dict = defaultdict(list)
-            for exp in conjunctive_expression:
-                if exp[0] is '~':
-                    cond = symbol_exp_dict[exp[1]]
-                    field = cond[0]
-                    #new_cond = {'field': field.split('.')[-1], 'operator': cond[1], 'value': cond[2], 'negation': True,'symbol': exp}
-                    new_cond = {'operator': cond[1], 'value': cond[2], 'negation': True, 'symbol': exp}
-                    fields_filter_dict[field].append(new_cond)
-                else:
-                    cond = symbol_exp_dict[exp]
-                    field = cond[0]
-                    #new_cond = {'field': field.split('.')[-1], 'operator': cond[1], 'value': cond[2], 'negation': False, 'symbol': exp}
-                    new_cond = {'operator': cond[1], 'value': cond[2], 'negation': False, 'symbol': exp}
-                    fields_filter_dict[field].append(new_cond)
-            field_filters = fields_filter_dict.items()
-            field_filters = sorted(field_filters, key=lambda f: len(f[0].split('.')))
-            filter_ast = FilterAST('root')
-            # filter_ast.add_child_edge('filter')
-            for field_filter in field_filters:
-                fields = field_filter[0].split('.')
-                root_type = entry
-                ast = filter_ast
-                for f in fields:
-                    if f not in filter_ast.children_edges:
-                        name = filter_fields_map[(root_type, f)]
-                        if name not in ['String']:
-                            new_child = ast.add_child(name, f)
-                            ast = new_child
-                        else:
-                            ast.add_attribute_filter(f, field_filter[1])
-                    else:
-                        temp = ast.getSubTree(f)
-                        ast = ast.getSubTree(f)
-                    root_type = filter_fields_map[(root_type, f)]
-            filter_ASTs.append(filter_ast)
-            prefix = filter_ast.getPrefixExps()
-            common_prefix -= frozenset(prefix)
-            all_exp = filter_ast.getAllExps()
-            repeated_single_exp = set.union(repeated_single_exp, all_ast_exp.intersection(all_exp))
-            all_ast_exp = set.union(all_ast_exp, all_exp)
-        return filter_ASTs, common_prefix, repeated_single_exp
-
-    def newFilter(self, super_filters, current_filter):
-        print(super_filters)
-        super_filters.update(current_filter)
-        return super_filters
-
-    def getCache(self, filter_exp):
-        return
-
-    def localize(self, pred_attr, filter_fields = None, query_fields = None):
-        if len(filter_fields) == 0:
-            #print('pred_attr', pred_attr)
-            query_fields = []
-            return
-        else:
-            localized_filter_fields = defaultdict(dict)
-            #print('attr_pred', attr_pred)
-            #print('filter_fields', filter_fields)
-            for key, value in filter_fields.items():
-                localized_filter_fields[key]['local_name'] = pred_attr[key]
-                localized_filter_fields[key]['filter'] = value
-            return localized_filter_fields
-
-    def data_fetcher(self, type, filter_fields, super_mappings_name):
-        result = defaultdict()
-        if len(super_mappings_name) == 0:
-            mappings = self.getMappings(type)
-            #print('mappings',mappings)
-        else:
-            mappings = []
-        query_fields = filter_fields.keys()
-        predicates = self.Translate(query_fields)
-        for mapping in mappings:
-            mapping_name = mapping['name']
-            logical_source = self.getLogicalSource(mapping)
-            template = self.getTemplate(mapping)
-            #may change if multiple key attributes
-            key_attrs = [self.parseTemplate(template)[0]]
-            poms = self.getPredicateObjectMap(mapping, predicates)
-            pred_attr = dict()
-            for pom in poms:
-                predicate, object_map = self.parsePOM(pom)
-                if self.TypeOfObjectMap(object_map) == 1:
-                    reference_attribute = self.getReference(object_map)
-                    pred_attr[self.Phi(predicate)] = reference_attribute
-                    #attr_pred.append((referenceAttribute, self.Phi(predicate)))
-                if self.TypeOfObjectMap(object_map) == 2:
-                    print('Constant')
-            localized_filter = self.localize(pred_attr, filter_fields, query_fields)
-            temp_result = pd.json_normalize(self.Executor(logical_source, key_attrs, True, localized_filter))
-            #temp_result = self.refine(temp_result, pred_attr, None, template)
-            temp_result = self.RefineDataFrame(temp_result, pred_attr, None, template)
-            result[mapping_name] = temp_result
-        return result
-
-    def checkCPE(self, filter, CPE):
-        exp_symbols = set()
-        if len(filter) >0:
-            for key, value in filter.items():
-                for exp in value:
-                    exp_symbols.add(exp['symbol'])
-            if exp_symbols in CPE:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def checkRSE(self, filter, RSE):
-        exp_symbols = set()
-        if len(filter) > 0:
-            for key, value in filter.items():
-                for exp in value:
-                    exp_symbols.add(exp['symbol'])
-            return
-        else:
-            return False
-
-    def FilterEvaluator(self, filter_AST, CPE, RSE, super_filters ={}, super_result=None):
-        root_node_filter = filter_AST.getCurrentFilter()
-        #print('root_filter', root_node_filter)
-        if len(root_node_filter) == 0:
-            root_node_filter = {filter_AST.name + '-ALL':{}}
-        new_filter = self.newFilter(super_filters, root_node_filter)
-        joined_result = self.getCache(new_filter)
-        if joined_result is None:
-            temp_result = self.getCache(root_node_filter)
-            if temp_result is None:
-                type = filter_AST.name
-                filter_fields = filter_AST.filter_dict
-                #print('type', type)
-                #print('filter_fields', filter_fields)
-                super_mappings_name = []
-                temp_result = self.data_fetcher(type, filter_fields, super_mappings_name)
-                if self.checkRSE(root_node_filter, RSE) == True:
-                    self.cache[root_node_filter] = temp_result
-            super_node_type = filter_AST.parent.name
-            current_node_type = filter_AST.name
-            super_field = filter_AST.parent_edge
-            #print('tempResult here', current_node_type)
-            if super_field != 'filter':
-                print('Join here')
-                super_result = self.Join(super_result, temp_result, super_node_type, current_node_type, super_field)
-            else:
-                super_result = temp_result
-            if self.checkCPE(new_filter, CPE) == True:
-                self.cache[new_filter] = super_result
-
-        else:
-            super_result = joined_result
-        sub_filter_ASTs = filter_AST.getSubTrees()
-        for ast in sub_filter_ASTs:
-            self.FilterEvaluator(ast, CPE, RSE, new_filter, super_result)
-        return super_result
-
-    def Join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
-        super_mappings = self.getMappings(super_node_type)
-        predicates = self.Translate([super_field])
-        for mapping in super_mappings:
-            poms = self.getPredicateObjectMap(mapping, predicates)
-            for pom in poms:
-                predicate, object_map = self.parsePOM(pom)
-                if self.TypeOfObjectMap(object_map) == 3:
-                    parent_mapping, join_condition = self.parseROM(object_map)
-                    child_field, parent_field = self.parseJoinCondition(join_condition)
-                    right_df = current_node_result[parent_mapping['name']].drop(['iri'], axis=1)
-                    for key in super_result.keys():
-                        if child_field in list(super_result[key].columns):
-                            super_result[key] = right_df.join(super_result[key].set_index([child_field], verify_integrity = True), on= [parent_field], how='left')
-        return super_result
-
-    def InnerJoin(self):
-        return
-
-    def QueryEvaluator(self, AST, mapping = None, ref= None, root_type = False):
-        result, mappings = [], []
-        concept_type, queryFields = self.parseAST(AST)
-        if mapping is None:
-            mappings = self.getMappings(concept_type)
-        else:
-            mappings.append(mapping)
-        predicates = self.Translate(queryFields)
-        for mapping in mappings:
-            logicalSource = self.getLogicalSource(mapping)
-            template = self.getTemplate(mapping)
-            key_attr = self.parseTemplate(template)[0]
-            tempResult = self.Executor(logicalSource, None, False, None, ref)
-            poms = self.getPredicateObjectMap(mapping, predicates)
-            attr_pred, result2join, constant = [], [], []
-            ref_poms_pred_object_map = []
-            for pom in poms:
-                predicate, objectMap = self.parsePOM(pom)
-                if self.TypeOfObjectMap(objectMap) == 1:
-                    referenceAttribute = self.getReference(objectMap)
-                    attr_pred.append((referenceAttribute, self.Phi(predicate)))
-                if self.TypeOfObjectMap(objectMap) == 2:
-                    print('Constant')
-                if self.TypeOfObjectMap(objectMap) == 3:
-                    ref_poms_pred_object_map.append((predicate, objectMap))
-
-            if root_type is True:
-                tempResult = self.RefineJSON(tempResult, attr_pred, constant, template, True, mapping['name'])
-            else:
-                tempResult = self.RefineJSON(tempResult, attr_pred, constant, template)
-
-            for (predicate, objectMap) in ref_poms_pred_object_map:
-                newAST = self.getSubAST(AST, self.Phi(predicate))
-                parentMapping, joinCondition = self.parseROM(objectMap)
-                childField, parentField = self.parseJoinCondition(joinCondition)
-                childData = self.getChildData(tempResult, childField)
-                ref = (childData, joinCondition)
-                parentData = self.QueryEvaluator(newAST, parentMapping, ref)
-                result2join.append((parentData, joinCondition, self.Phi(predicate), newAST))
-            tempResult = self.IncrementalJoin(tempResult, result2join)
-            result = self.Merge(result, tempResult)
-        return self.DuplicateDetectionFusion(result)
-
-    def filter(self, tempresult):
-        return

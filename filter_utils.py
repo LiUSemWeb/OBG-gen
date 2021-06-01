@@ -22,7 +22,7 @@ logger.info('\n')
 logger.info('----------NEW LOG----------')
 #logging.basicConfig(filename ='filter.log',level = logging.DEBUG,format='%(asctime)s:%(levelname)s:%(message)s')
 
-class FilterUtils(object):
+class Filter_Utils(object):
     def __init__(self):
         self.operator_stack = ['EOS']
         self.fields_stack = ['EOS']
@@ -48,11 +48,11 @@ class FilterUtils(object):
        #     self.GraphQLschema_Ontology = self.ontology_GraphQLschema
 
     def check_type(self, condition):
-        if isinstance(condition, list) is True:
+        if isinstance(condition, list)==True:
             return 'LIST'
-        if isinstance(condition, dict) is True:
+        if isinstance(condition, dict)==True:
             return 'DICT'
-        if isinstance(condition, str) is True or isinstance(condition, int) is True:
+        if isinstance(condition, str)==True or isinstance(condition, int)==True:
             return 'BASIC_TYPE'
 
     def convert_field_name(self):
@@ -91,88 +91,28 @@ class FilterUtils(object):
             return new_name
 
     def translate_whole_exp(self, exp_element):
-        if exp_element.startswith('filter.') is True:
+        if exp_element.startswith('filter.')==True:
             return self.translate_field_name(exp_element)
-        elif exp_element is '_and':
+        elif exp_element == '_and':
             return '&'
-        elif exp_element is '_or':
+        elif exp_element == '_or':
             return '|'
-        elif exp_element is '_not':
+        elif exp_element == '_not':
             return '~'
-        elif exp_element is '_eq':
+        elif exp_element == '_eq':
             return '_eq'
-        elif exp_element is '_neq':
+        elif exp_element == '_neq':
             return '_neq'
-        elif exp_element is '_gt':
+        elif exp_element == '_gt':
             return '_gt'
-        elif exp_element is '_egt':
+        elif exp_element == '_egt':
             return '_egt'
-        elif exp_element is '_lt':
+        elif exp_element == '_lt':
             return '_lt'
-        elif exp_element is '_elt':
+        elif exp_element == '_elt':
             return '_elt'
         else:
             return exp_element
-
-    def parse(self, filter_field, filter_condition, expression):
-        expression = expression
-        if filter_field in ['_and', '_or', '_not']:
-            if self.operator_stack[-1] is not filter_field:
-                self.operator_stack.append(filter_field)
-                if filter_field is '_not':
-                    self.bool_exp.append('_not')
-                    expression.append('_not')
-                self.bool_exp.append('(')
-                expression.append('(')
-        else:
-            if filter_field not in ['_eq', '_neq']:
-                self.fields_stack.append(filter_field)
-        if self.check_type(filter_condition) is 'LIST':
-            for item in filter_condition:
-                self.parse(filter_field, item, expression)
-            if self.operator_stack[-1] is not 'EOS':
-                # After parsing a list of AND expression or OR expression, popping tops of fields_stack and operator_stack
-                self.bool_exp.append(')')
-                expression.append(')')
-                self.fields_stack.pop(-1)
-                self.operator_stack.pop(-1)
-                self.bool_exp.append(self.operator_stack[-1])
-                expression.append(self.operator_stack[-1])
-        if self.check_type(filter_condition) is 'DICT':
-            if len(filter_condition) > 1 and filter_field is not '_and':
-                repeated_field = self.fields_stack[-1]
-                self.fields_stack.pop(-1)
-                new_condition = []
-                for (key, value) in filter_condition.items():
-                    new_condition.append({repeated_field: {key: value}})
-                self.parse('_and', new_condition, expression)
-            else:
-                for (key, value) in filter_condition.items():
-                    if len(value) is 0:
-                        break
-                    self.parse(key, value, expression)
-                    if self.operator_stack[-1] is '_not':
-                        self.bool_exp.append(')')
-                        expression.append(')')
-                        # self.fields_stack.pop(-1)
-                        self.operator_stack.pop(-1)
-                        self.bool_exp.append(self.operator_stack[-1])
-                        expression.append(self.operator_stack[-1])
-        if self.check_type(filter_condition) is 'BASIC_TYPE':
-            new_field_name = self.convert_field_name()
-            # self.bool_exp.append(new_field_name)
-            # self.bool_exp.append(filter_field)
-            # self.bool_exp.append(filter_condition)
-            new_symbol = self.translate_field_exp((new_field_name, filter_field, filter_condition))
-            expression.append(new_field_name)
-            expression.append(filter_field)
-            expression.append(filter_condition)
-            self.bool_exp.append(new_symbol)
-            if self.operator_stack[-1] not in ['EOS', '_not']:
-                self.bool_exp.append(self.operator_stack[-1])
-                expression.append(self.operator_stack[-1])
-            self.fields_stack.pop(-1)
-        return expression
 
     def simplify_bool_expression(self, bool_exp):
         simplified_bool_exp = []
@@ -219,7 +159,7 @@ class FilterUtils(object):
         logger.info('asdasd')
 
     def parse_cond(self, cond):
-        if self.check_type(cond) is 'DICT':
+        if self.check_type(cond) == 'DICT':
             cond_length = len(cond)
             if cond_length > 1:
                 i = 0
@@ -241,7 +181,7 @@ class FilterUtils(object):
                         self.fields_stack1.pop(-1)
                 # expression_str.append(')')
                 self.operator_stack1.pop(-1)
-            elif cond_length is 0:
+            elif cond_length == 0:
                 self.expression_str.append('NULL')
                 self.translated_expression_str.append('NULL')
             else:
@@ -255,6 +195,8 @@ class FilterUtils(object):
                         self.expression_str.append('(')
                         self.translated_expression_str.append('(')
                         new_key = self.negative_op_map[key]
+                        if key == '_nin':
+                            value = str(value)
                         self.parse_cond({new_key: value})
                         # expression_str.append('&')
                         self.expression_str.append(')')
@@ -268,6 +210,8 @@ class FilterUtils(object):
                             field_name += '.'
                         self.expression_str.append(field_name[0:-1])
                         self.expression_str.append(key)
+                        if key == '_in':
+                            value = str(value)
                         self.expression_str.append(value)
                         new_symbol = self.translate_field_exp((field_name[0:-1], key, value))
                         self.translated_expression_str.append(new_symbol)
@@ -276,11 +220,13 @@ class FilterUtils(object):
                     if key not in ['_and', '_or', '_not']:
                         # if fields_stack1[-1] is not key:
                         self.fields_stack1.append(key)
+                        if key in ['_in', '_nin']:
+                            value = str(value)
                         self.parse_cond(value)
                         self.fields_stack1.pop(-1)
                     else:
                         self.operator_stack1.append(key)
-                        if key is '_not':
+                        if key == '_not':
                             self.expression_str.append('_not')
                             self.translated_expression_str.append('_not')
                             self.expression_str.append('(')
@@ -291,7 +237,7 @@ class FilterUtils(object):
                             self.translated_expression_str.append(')')
                             # expression_str.append(')')
                             self.operator_stack1.pop(-1)
-                        elif key is '_or':
+                        elif key == '_or':
                             self.expression_str.append('(')
                             self.translated_expression_str.append('(')
                             self.parse_cond(value)
@@ -306,8 +252,7 @@ class FilterUtils(object):
                             # expression_str.append('&')
                             # expression_str.append(')')
                             self.operator_stack1.pop(-1)
-        if self.check_type(cond) is 'LIST':
-            # print('LIST', cond)
+        if self.check_type(cond) == 'LIST':
             i = 0
             cond_length = len(cond)
             for sub_cond in cond:
@@ -321,25 +266,29 @@ class FilterUtils(object):
     def simplify(self):
         dnf_exp_lst = []
         exp_str = ''
+        #print('self translated_expression_str', self.translated_expression_str)
         for element in self.translated_expression_str:
-            if element is '_and':
+            if element == '_and':
                 exp_str += ' & '
-            elif element is '_or':
+            elif element == '_or':
                 exp_str += ' | '
-            elif element is '_not':
+            elif element == '_not':
                 exp_str += '~'
             else:
                 exp_str += element
+        #print('exp_str', exp_str)
         simplified_exp_str = str(to_dnf(exp_str, True))
         # result = satisfiable(dnf_obj)
         # dnf_exp_lst = str(simplified_exp).split('|')
         if '|' not in simplified_exp_str:
+            #print('simplified_exp_str', simplified_exp_str)
             cnf_lst = simplified_exp_str.split('&')
             cnf_lst = [x.strip() for x in cnf_lst]
             dnf_exp_lst.append(cnf_lst)
         else:
             #common_symbols_set = set(self.symbol_field_exp.keys())
             for cnf in simplified_exp_str.split('|'):
+                #print('cnf', cnf)
                 cnf_lst = cnf.strip()[1:-1].split('&')
                 cnf_lst = [x.strip() for x in cnf_lst]
                 dnf_exp_lst.append(cnf_lst)
@@ -347,6 +296,68 @@ class FilterUtils(object):
         #print(dnf_exp_lst)
         #self.common_exp_symbols = common_symbols_set
         return dnf_exp_lst
+
+'''
+    def parse(self, filter_field, filter_condition, expression):
+        expression = expression
+        if filter_field in ['_and', '_or', '_not']:
+            if self.operator_stack[-1] != filter_field:
+                self.operator_stack.append(filter_field)
+                if filter_field == '_not':
+                    self.bool_exp.append('_not')
+                    expression.append('_not')
+                self.bool_exp.append('(')
+                expression.append('(')
+        else:
+            if filter_field not in ['_eq', '_neq']:
+                self.fields_stack.append(filter_field)
+        if self.check_type(filter_condition) == 'LIST':
+            for item in filter_condition:
+                self.parse(filter_field, item, expression)
+            if self.operator_stack[-1] != 'EOS':
+                # After parsing a list of AND expression or OR expression, popping tops of fields_stack and operator_stack
+                self.bool_exp.append(')')
+                expression.append(')')
+                self.fields_stack.pop(-1)
+                self.operator_stack.pop(-1)
+                self.bool_exp.append(self.operator_stack[-1])
+                expression.append(self.operator_stack[-1])
+        if self.check_type(filter_condition) == 'DICT':
+            if len(filter_condition) > 1 and filter_field != '_and':
+                repeated_field = self.fields_stack[-1]
+                self.fields_stack.pop(-1)
+                new_condition = []
+                for (key, value) in filter_condition.items():
+                    new_condition.append({repeated_field: {key: value}})
+                self.parse('_and', new_condition, expression)
+            else:
+                for (key, value) in filter_condition.items():
+                    if len(value) == 0:
+                        break
+                    self.parse(key, value, expression)
+                    if self.operator_stack[-1] == '_not':
+                        self.bool_exp.append(')')
+                        expression.append(')')
+                        # self.fields_stack.pop(-1)
+                        self.operator_stack.pop(-1)
+                        self.bool_exp.append(self.operator_stack[-1])
+                        expression.append(self.operator_stack[-1])
+        if self.check_type(filter_condition) == 'BASIC_TYPE':
+            new_field_name = self.convert_field_name()
+            # self.bool_exp.append(new_field_name)
+            # self.bool_exp.append(filter_field)
+            # self.bool_exp.append(filter_condition)
+            new_symbol = self.translate_field_exp((new_field_name, filter_field, filter_condition))
+            expression.append(new_field_name)
+            expression.append(filter_field)
+            expression.append(filter_condition)
+            self.bool_exp.append(new_symbol)
+            if self.operator_stack[-1] not in ['EOS', '_not']:
+                self.bool_exp.append(self.operator_stack[-1])
+                expression.append(self.operator_stack[-1])
+            self.fields_stack.pop(-1)
+        return expression
+'''
 
 
 '''
@@ -364,4 +375,6 @@ print(exp_list)
 #print(bool_exp)
 print(ru.convert_to_dnf(exp_list))
 print(ru.symbol_field_exp)
+
+ru = Filter_Utils()
 '''

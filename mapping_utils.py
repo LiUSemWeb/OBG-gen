@@ -3,90 +3,107 @@ import json
 
 class RML_Mapping(object):
 	def __init__(self, mapping_file):
-		self.rml_mapping = self.__read_mappings(mapping_file)
-		self.dbsources = self.rml_mapping['DBSources']
+		self.rml_mapping = self.read_mappings(mapping_file)
+		self.db_sources = self.rml_mapping['DBSources']
 		self.logical_sources = self.rml_mapping['LogicalSources']
 		self.mappings = self.rml_mapping['Mappings']
-	
-	def __read_mappings(self, file): 
+
+	@staticmethod
+	def read_mappings(file):
 		with open(file) as f:
 			data = json.load(f)
 			return data
 
-	def getMappingsByType(self, Type):
+	def get_mappings_by_type(self, Type):
 		result_mappings = []
 		for m in self.mappings:
 			if m['subjectMap']['class'] == Type:
 				result_mappings.append(m)
 		return result_mappings
 
-	def getLogicalSourceByMapping(self, mapping):
+	def get_mappings_by_names(self, names):
+		result_mappings = []
+		for m in self.mappings:
+			if m['name'] in names:
+				result_mappings.append(m)
+		return result_mappings
+
+	def get_logical_source_by_mapping(self, mapping):
 		logical_source = None
 		for ls in self.logical_sources:
 			if ls['name'] == mapping['logicalSource']:
 				logical_source = ls
 				break
 		return logical_source
-	
-	def getSubjectTemplateByMapping(self,mapping):
+
+	@staticmethod
+	def get_subject_template_by_mapping(mapping):
 		return mapping['subjectMap']['template']
+
+	@staticmethod
+	def get_logical_source_type(logical_source):
+		return logical_source['referenceFormulation']
+
+	@staticmethod
+	def get_source(logical_source):
+		return logical_source['source']
 	
-	def getLSType(self, logicalSource):
-		return logicalSource['referenceFormulation']
-	
-	def getSource(self, logicalSource):
-		return logicalSource['source']
-	
-	def getDBSource(self, logicalsource):
-		query = logicalsource['query']
+	def get_db_source(self, logical_source):
+		query = logical_source['query']
 		server_info = None
-		for db_source in self.dbsources:
-			if db_source['name'] == logicalsource['source']:
+		for db_source in self.db_sources:
+			if db_source['name'] == logical_source['source']:
 				server_info = db_source
 				break
 		return server_info, query
 
-	def getJSONIterator(self, logicalSource):
-		iterator = logicalSource['iterator']
+	@staticmethod
+	def get_json_iterator(logical_source):
+		iterator = logical_source['iterator']
 		if '[*]' in iterator:
 			position = iterator.index('[*]')
 			return iterator[1:position]
 		else:
 			return iterator[1:]
 	
-	def getPredicateObjectMapByPred(self, mapping, predicates):
-		poms = self.getPredicateObjectMap(mapping)
+	def get_pom_by_predicates(self, mapping, predicates):
+		poms = self.get_pom(mapping)
 		poms = [pom for pom in poms if pom['predicate'] in predicates]
 		return poms
-	
-	def parsePOM(self, pom):
+
+	@staticmethod
+	def parse_pom(pom):
 		return pom['predicate'], pom['objectMap']
+
+	@staticmethod
+	def get_reference(term_map):
+		return term_map['reference']
 	
-	def getReference(self, termMap):
-		return termMap['reference']
-	
-	def parseROM(self, objectMap):
-		mapping_name = objectMap['parentTriplesMap']
-		joinCondition = objectMap['joinCondition']
-		parentMapping = self.getMappingsByName(mapping_name)
-		return parentMapping, joinCondition
-	
-	def parseJoinCondition(self, joinCondition):
-		return joinCondition['child'], joinCondition['parent']
-	
-	def TypeOfObjectMap(self, objectMap):
-		if 'reference' in objectMap.keys():
+	def parse_rom(self, object_map):
+		mapping_name = object_map['parentTriplesMap']
+		join_condition = object_map['joinCondition']
+		parent_mapping = self.get_mapping_by_name(mapping_name)
+		return parent_mapping, join_condition
+
+	@staticmethod
+	def parse_join_condition(join_condition):
+		return join_condition['child'], join_condition['parent']
+
+	@staticmethod
+	def type_of_object_map(object_map):
+		if 'reference' in object_map.keys():
 			return 1
-		if 'constant' in objectMap.keys():
+		if 'constant' in object_map.keys():
 			return 2
-		if 'parentTriplesMap' in objectMap.keys():
+		if 'parentTriplesMap' in object_map.keys():
 			return 3
 		return 0
-	
-	def getPredicateObjectMap(self, mapping):
+
+	@staticmethod
+	def get_pom(mapping):
 		return mapping['predicateObjectMap']
 	
-	def getMappingsByName(self, mapping_name):
+	def get_mapping_by_name(self, mapping_name):
 		result_mapping = None
 		for m in self.mappings:
 			if m['name'] == mapping_name:

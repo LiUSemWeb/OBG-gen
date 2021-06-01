@@ -6,8 +6,8 @@ from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from graphql import parse
 from graphql.language.ast import *
-from odgsg_graphql_utils import ResolverUtils
-from filter_utils import FilterUtils
+from odgsg_graphql_utils import Resolver_Utils
+from filter_utils import Filter_Utils
 from moesifwsgi import MoesifMiddleware
 
 
@@ -23,30 +23,35 @@ def test_Generic_resolver():
 
 # Resolvers are simple python functions
 
-def Generic_Resolver(_, info, **kwargs):
+def generic_resolver(_, info, **kwargs):
+    result = []
     a = datetime.datetime.now()
     #print('info', info)
     filter_condition = kwargs
     dnf_expression = ''
     if len(filter_condition) > 0:
-        fu = FilterUtils()
+        fu = Filter_Utils()
         fu.parse_cond(filter_condition)
         dnf_lst = fu.simplify()
+        #print('dnf_lst', dnf_lst)
         ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
-        filter_ASTs, common_prefix, repeated_single_exp = ru.generateFilterASTs(ru.filter_fields_map, ru.symbol_field_exp, dnf_lst, 'CalculationList')
+        filter_asts, common_prefix, repeated_single_exp = ru.generate_filter_asts(ru.filter_fields_map, ru.symbol_field_exp, dnf_lst, 'CalculationList')
         #filtered_object_iri = dict()
-        for filter_ast in filter_ASTs:
-            filter_df = ru.FilterEvaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
+        for filter_ast in filter_asts:
+            filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
             for key, value in filter_df.items():
-                ru.filtered_object_iri[key] = value['iri'].tolist()[0:5]
+                object_iri_lst = value['iri'].tolist()
+                if len(object_iri_lst) > 0:
+                    ru.filtered_object_iri[key] = object_iri_lst
         print(ru.filtered_object_iri)
-    queryAST = ru.getAST(type_defs, info)
-    result = ru.DataFetcher(queryAST['fields'][0])
-    result1 = ru.QueryEvaluator(queryAST['fields'][0], None ,None, True)
-    print('result1', len(result1), result1)
-    b = datetime.datetime.now()
-    print('Response Time:', (b-a))
-    return result1
+    if len(ru.filtered_object_iri.keys()) > 0:
+        query_ast = ru.generate_query_ast(type_defs, info)
+        #result = ru.DataFetcher(query_ast['fields'][0])
+        result = ru.query_evaluator(query_ast['fields'][0], None ,None, True, ru.filtered_object_iri.keys())
+        print('result1', len(result), result)
+        b = datetime.datetime.now()
+        print('Response Time:', (b-a))
+    return result
 
 # Create an ASGI app using the schema, running in debug mode
 #app = GraphQL(schema, debug=True)
@@ -96,7 +101,7 @@ query.set_field("CalculationList", Generic_Resolver)
 '''
 def register_queries(query_entries):
     for query_entry in query_entries:
-        query.set_field(query_entry, Generic_Resolver)
+        query.set_field(query_entry, generic_resolver)
 
 
 #main function
@@ -108,10 +113,10 @@ if __name__ == "__main__":
     mapping_file = (str(sys.argv[2]))
     type_defs = load_schema_from_path(schema_file)
 
-    ru = ResolverUtils(mapping_file, 'o2graphql.json')
+    ru = Resolver_Utils(mapping_file, 'o2graphql.json')
     #ru.set_mappings(mapping_file)
     #ru.set_Phi()
-    register_queries(ru.getQueryEntries(type_defs))
+    register_queries(ru.get_query_entries(type_defs))
     #print('ru', ru.filter_fields_map)
     schema = make_executable_schema(type_defs, query)
     app.run(debug=True)
