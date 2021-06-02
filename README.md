@@ -39,16 +39,18 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Usage
 
- Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
+* Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
 
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/domain_ontologies/mdofull.ttl
 
-Parse a RML mapping file and output a mappings.json file in current folder:
+* Parse a RML mapping file and output a mappings.json file in current folder:
+
 
 	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/1K-mapping.ttl
 
-Run GraphQL server:
+* Run GraphQL server:
+
 
 	export FLASK_ENV=development
 	python app.py ./schema.graphql ./mappings-temp.json
@@ -61,7 +63,7 @@ Run GraphQL server:
 	* Debugger is active!
 	* Debugger PIN: 540-041-748
 
-Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql.
+* Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql.
 
 ## A demo on Heroku of ODGSG for the materials design domain
 * TO UPDATE
