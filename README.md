@@ -11,14 +11,14 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [/schema_generator/graphql_schema_gen.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema; 
-* [/mapping_parser/mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_parser.py) takes a RML mapping file (in turtle format) as the input and then outputs mappings and logical sources into a json file;
+* [schema_generator/graphql_schema_gen.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
+* [mapping_parser/mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
 * [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
 ## Installation
 
-* Following packages are needed and successfully installed messages:
+* Following packages are needed and successfully installed messages are shown:
 
 [//]: # "python -m pip install \"graphql-core>=3\""
 [//]: # "GraphQL-core 3 can be installed from PyPI using the built-in pip command:"
@@ -68,7 +68,7 @@ You can find query examples in the following folder.
 
 [query examples](https://github.com/huanyu-li/ODGSG/blob/main/query_examples/)
 
-*You don't have to re-run **Pre-Step 1** and **Pre-Step 2** if you have not changed your ontology and RML mappings.*
+*You don't have to re-run **Pre-Step 1** and/or **Pre-Step 2** if you have not changed your ontology and/or RML mappings.*
 
 
 ## A demo on Heroku of ODGSG for the materials design domain
