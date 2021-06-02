@@ -42,13 +42,12 @@ def generic_resolver(_, info, **kwargs):
                         ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
                     else:
                         ru.filtered_object_iri[key] = object_iri_lst
-            #print('cache', ru.cache)
         print('filterd_result',ru.filtered_object_iri)
         if len(ru.filtered_object_iri.keys()) > 0:
             ru.filtered_object_iri['filter'] = True
             query_ast = ru.generate_query_ast(type_defs, info)
             #result = ru.DataFetcher(query_ast['fields'][0])
-            result = ru.query_evaluator(query_ast['fields'][0], None ,None, True, ru.filtered_object_iri.keys())
+            result = ru.query_evaluator(query_ast['fields'][0], None, None, True, ru.filtered_object_iri.keys())
             b = datetime.datetime.now()
             print('Response Time:', (b-a))
     else:

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from schema_generator.ontology import Ontology
+from ontology import Ontology
 import json
 import datetime
 import sys
@@ -139,11 +139,11 @@ class GraphQLSchema(object):
     def write_OntologyGraphQLSchemaMapping(self, A, U, P):
         temp_data = dict()
         for concept in A:
-            temp_data[su.remove_prefix(concept)] = su.remove_prefix(concept)
+            temp_data[remove_prefix(concept)] = remove_prefix(concept)
         for data_property in U:
-            temp_data[su.remove_prefix(data_property)] = su.remove_prefix(data_property)
+            temp_data[remove_prefix(data_property)] = remove_prefix(data_property)
         for object_property in P:
-            temp_data[su.remove_prefix(object_property)] = su.remove_prefix(object_property)
+            temp_data[remove_prefix(object_property)] = remove_prefix(object_property)
         with open('o2graphql.json', 'w') as fp:
             json.dump(temp_data, fp)
 
@@ -153,18 +153,18 @@ class GraphQLSchema(object):
         objecttype_schema = ''
         querytype_schema = 'type Query {\n\t'
 
-        self.I.sort(key = su.remove_prefix)
+        self.I.sort(key = remove_prefix)
         for interface in self.I:
-            interfacetype_schema += 'interface {interface}'.format(interface = su.remove_prefix(interface))
-            objecttype_schema += 'type {interface}_obj implements {interface}'.format(interface = su.remove_prefix(interface))
+            interfacetype_schema += 'interface {interface}'.format(interface = remove_prefix(interface))
+            objecttype_schema += 'type {interface}_obj implements {interface}'.format(interface = remove_prefix(interface))
 
-            querytype_schema += '{interface}List('.format(interface = su.remove_prefix(interface))
+            querytype_schema += '{interface}List('.format(interface = remove_prefix(interface))
             if len(self.implementation[interface]) >0:
                 interfacetype_schema += ' implements '
-                #objecttype_schema += ' implements {interface} & '.format(interface = su.remove_prefix(interface))
+                #objecttype_schema += ' implements {interface} & '.format(interface = remove_prefix(interface))
                 for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                    interfacetype_schema += '{implemented_interface}'.format(implemented_interface = su.remove_prefix(implemented_interface))
-                    objecttype_schema += ' & {implemented_interface}'.format(implemented_interface = su.remove_prefix(implemented_interface))
+                    interfacetype_schema += '{implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
+                    objecttype_schema += ' & {implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
                     if i < len(self.implementation[interface]) -1:
                         interfacetype_schema += ' & '
                         #objecttype_schema += ' & '
@@ -175,20 +175,20 @@ class GraphQLSchema(object):
                 range = ''
                 if item[0] == 0:
                     if item[1] == float('inf'):
-                        range = '[{type}!]'.format(type = su.remove_prefix(key[1]))
+                        range = '[{type}!]'.format(type = remove_prefix(key[1]))
                     if item[1] == 1:
-                        range = '{type}'.format(type = su.remove_prefix(key[1]))
+                        range = '{type}'.format(type = remove_prefix(key[1]))
                 if item[0] == 1:
                     if item[1] == float('inf'):
-                        range = '[{type}!]!'.format(type = su.remove_prefix(key[1]))
+                        range = '[{type}!]!'.format(type = remove_prefix(key[1]))
                     if item[1] == 1:
-                        range = '{type}!'.format(type = su.remove_prefix(key[1]))
-                interfacetype_schema += '\t{field}:{type}\n'.format(field = su.remove_prefix(key[0]), type = range)
-                objecttype_schema += '\t{field}:{type}\n'.format(field = su.remove_prefix(key[0]), type = range)
+                        range = '{type}!'.format(type = remove_prefix(key[1]))
+                interfacetype_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
+                objecttype_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
                 if(key[1] in V2Scalar.values()):
-                    querytype_schema += '{field}:[{type}],'.format(field = su.remove_prefix(key[0]), type = range)
+                    querytype_schema += '{field}:[{type}],'.format(field = remove_prefix(key[0]), type = range)
             querytype_schema = querytype_schema[0:-1]
-            querytype_schema += '): [{interface}]\n\t'.format(interface = su.remove_prefix(interface))
+            querytype_schema += '): [{interface}]\n\t'.format(interface = remove_prefix(interface))
             interfacetype_schema += '}\n'
             objecttype_schema += '}\n'
         querytype_schema += '}\n'
@@ -196,27 +196,27 @@ class GraphQLSchema(object):
         print(interfacetype_schema)
         print(objecttype_schema)
         print(querytype_schema)
-        su.write_file('./schema_generator/schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
-        su.write_file('./schema_generator/schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
+        write_file('./schema_generator/schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
+        write_file('./schema_generator/schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
 
     def write_local_schema(self, local_prefixes):
         for local_prefix in local_prefixes:
             schema = ''
-            self.I.sort(key = su.remove_prefix)
+            self.I.sort(key = remove_prefix)
             for interface in self.I:
-                type_schema = 'type {local_prefix}_{interface}'.format(local_prefix = local_prefix, interface = su.remove_prefix(interface))
+                type_schema = 'type {local_prefix}_{interface}'.format(local_prefix = local_prefix, interface = remove_prefix(interface))
                 
                 if len(self.implementation[interface]) >0:
                     type_schema += ' implements '
                     for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                        type_schema += '{implemented_interface}'.format(implemented_interface = su.remove_prefix(implemented_interface))
+                        type_schema += '{implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
                         if i < len(self.implementation[interface]) -1:
                             type_schema += ' & '
                 type_schema += '\n{\n'
 
                 for (key, item) in self.fields[interface].items():
                     range = ''
-                    field_type = su.remove_prefix(key[1])
+                    field_type = remove_prefix(key[1])
                     if item[0] == 0:
                         if item[1] == float('inf'):
                             if key[1] in self.I:
@@ -239,17 +239,17 @@ class GraphQLSchema(object):
                                 range = '[{local_prefix}_{type}]'.format(local_prefix = local_prefix, type = field_type)
                             else:
                                 range = '{type}!'.format(type = field_type)
-                    type_schema += '\t{field}:{type}\n'.format(field = su.remove_prefix(key[0]), type = range)
+                    type_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
                 type_schema += '}\n'
                 schema += type_schema
             print(schema)
             print(local_prefix)
-            su.write_file('{local_prefix}_schema.graphql'.format(local_prefix = local_prefix),schema)
+            write_file('{local_prefix}_schema.graphql'.format(local_prefix = local_prefix),schema)
         
             
 def main(ontology):
     print('main function')
-    g = su.parse_owl(ontology)
+    g = parse_owl(ontology)
     o = Ontology()
     o.construct(g)
     #o.parse_general_axioms()
@@ -290,5 +290,5 @@ graphql_schema.construct(elq1d.A, elq1d.V, elq1d.U, elq1d.P,elq1d.concept2subsum
 graphql_schema.write_schema()
 
 '''
-#g = su.parse_owl('testcoreQ.ttl')
+#g = parse_owl('testcoreQ.ttl')
 #print(str(sys.argv[1]))
