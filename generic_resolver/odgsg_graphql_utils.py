@@ -2,16 +2,13 @@ import requests
 import csv
 import codecs
 from contextlib import closing
-from mapping_utils import RML_Mapping
-from collections import defaultdict
+from generic_resolver.mapping_utils import RML_Mapping
 from graphql import parse
 import json
 import pymongo
-import urllib.parse
-import pymongo
 from collections import defaultdict
 import pandas as pd
-from filter_ast import Filter_AST
+from generic_resolver.filter_ast import Filter_AST
 import ast
 
 

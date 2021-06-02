@@ -1,7 +1,7 @@
 from collections import defaultdict
-import schema_utils as su
+import schema_generator.schema_utils as su
 from rdflib.namespace import RDF, RDFS,OWL
-from ontology import Ontology
+from schema_generator.ontology import Ontology
 import json
 import datetime
 import sys

@@ -1,16 +1,10 @@
 import sys
 import datetime
-from ariadne import ObjectType, QueryType, gql, make_executable_schema, graphql_sync, load_schema_from_path
-from ariadne.asgi import GraphQL
+from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema_from_path
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
-from graphql import parse
-from graphql.language.ast import *
-from odgsg_graphql_utils import Resolver_Utils
-from filter_utils import Filter_Utils
-from moesifwsgi import MoesifMiddleware
-import numpy as np
-
+from generic_resolver.odgsg_graphql_utils import Resolver_Utils
+from generic_resolver.filter_utils import Filter_Utils
 
 global ru
 global fu
