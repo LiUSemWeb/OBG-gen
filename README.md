@@ -18,7 +18,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Installation
 
-* Following packages are needed:
+* Following packages are needed and successfully installed messages:
 
 [//]: # "python -m pip install \"graphql-core>=3\""
 [//]: # "GraphQL-core 3 can be installed from PyPI using the built-in pip command:"
@@ -29,12 +29,6 @@ A framework for using GraphQL in which a global domain ontology drives the gener
     pip install ariadne
     pip install Flask
     pip install pymongo
-    
-
-* Successfully installed messages:
-
-
-
     --------------------------
     Successfully installed PyYAML-5.4.1
     Successfully installed isodate-0.6.0 rdflib-5.0.0
