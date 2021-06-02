@@ -38,9 +38,12 @@ def generic_resolver(_, info, **kwargs):
             for key, value in filter_df.items():
                 object_iri_lst = value['iri'].tolist()
                 if len(object_iri_lst) > 0:
-                    ru.filtered_object_iri[key] = object_iri_lst
-            print('cache', ru.cache.keys())
-        print(ru.filtered_object_iri)
+                    if key in ru.filtered_object_iri.keys():
+                        ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
+                    else:
+                        ru.filtered_object_iri[key] = object_iri_lst
+            #print('cache', ru.cache)
+        print('filterd_result',ru.filtered_object_iri)
         if len(ru.filtered_object_iri.keys()) > 0:
             ru.filtered_object_iri['filter'] = True
             query_ast = ru.generate_query_ast(type_defs, info)

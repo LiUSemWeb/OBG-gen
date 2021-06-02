@@ -32,6 +32,8 @@ class Resolver_Utils(object):
         self.symbol_field_exp = dict()
         self.schema_ast = dict()
         self.cache = dict()
+        self.join_cache = dict()
+        self.single_cache = dict()
         self.common_exp_symbols = []
         self.filter_fields_map = dict()
         self.mapping_attr_pred_dict = defaultdict(dict)
@@ -123,8 +125,10 @@ class Resolver_Utils(object):
             result.append(temp_dict)
         result = pd.json_normalize(result)
         if filter is not None:
+            #print('filter')
             #print('shape', result.shape[0])
             result = self.filter_data_frame(result, filter)
+            #print(result)
             #print('shape', result.shape[0])
         return result
 
@@ -571,6 +575,17 @@ class Resolver_Utils(object):
         else:
             return None
 
+    def get_join_cache(self, symbolic_filter):
+        if symbolic_filter in self.join_cache.keys():
+            return self.join_cache[symbolic_filter]
+        else:
+            return None
+
+    def get_single_cache(self, symbolic_filter):
+        if symbolic_filter in self.single_cache.keys():
+            return self.single_cache[symbolic_filter]
+        else:
+            return None
 
     def localize_filter(self, entity_type, pred_attr, filter_fields = None, query_fields = None):
         if len(filter_fields) == 0:
@@ -656,15 +671,16 @@ class Resolver_Utils(object):
             root_node_filter = {filter_ast.name + '-ALL':{}}
         new_filter = self.new_filter(super_filters, root_node_filter)
         symbolic_new_filter = self.symbolic_filter(new_filter)
-        joined_result = self.get_cache(symbolic_new_filter)
-        if joined_result is None:
+        joined_result = self.get_join_cache(symbolic_new_filter)
+        if joined_result is None or len(joined_result) == 0:
             symbolic_root_filter = self.symbolic_filter(root_node_filter)
-            temp_result = self.get_cache(symbolic_root_filter)
-            if temp_result is None:
+            temp_result = self.get_single_cache(symbolic_root_filter)
+            if temp_result is None or len(temp_result) == 0:
                 entity_type = filter_ast.name
                 filter_fields = filter_ast.filter_dict
                 super_mappings_name = []
                 temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name)
+                #print('temp_result', temp_result)
                 if symbolic_root_filter in RSE:
                     self.cache[symbolic_root_filter] = temp_result
             super_node_type = filter_ast.parent.name
@@ -675,13 +691,9 @@ class Resolver_Utils(object):
                 super_result = self.filter_join(super_result, temp_result, super_node_type, current_node_type, super_field)
             else:
                 super_result = temp_result
-
             #check CPE
             if symbolic_new_filter in CPE:
-                #print('CPE TRUE')
                 self.cache[symbolic_new_filter] = super_result
-                #print('cache', self.cache)
-
         else:
             super_result = joined_result
         sub_filter_ASTs = filter_ast.get_sub_trees()
@@ -699,11 +711,19 @@ class Resolver_Utils(object):
                 if self.type_of_object_map(object_map) == 3:
                     parent_mapping, join_condition = self.parse_rom(object_map)
                     child_field, parent_field = self.parse_join_condition(join_condition)
-                    right_df = current_node_result[parent_mapping['name']].drop(['iri'], axis=1)
-                    for key in super_result.keys():
-                        if child_field in list(super_result[key].columns):
-                            super_result[key] = pd.merge(super_result[key], right_df, how='left', left_on=child_field, right_on=parent_field)
-                            #super_result[key] = right_df.join(super_result[key].set_index([child_field], verify_integrity = True), on= [parent_field], how='left')
+                    if parent_mapping['name'] in current_node_result.keys():
+                        for key in super_result.keys():
+                            if child_field in list(super_result[key].columns):
+                                if len(current_node_result[parent_mapping['name']]) > 0:
+                                    right_df = current_node_result[parent_mapping['name']]
+                                    right_df = right_df.drop(['iri'], axis=1)
+                                    super_result[key] = pd.merge(super_result[key], right_df, how='inner', left_on=child_field, right_on=parent_field)
+                                else:
+                                    super_result[key] = super_result[key][0:0]
+                            else:
+                                print('No join here')
+                    else:
+                        print('No join here')
         return super_result
 
     def query_evaluator(self, ast, mapping = None, ref= None, root_type_flag = False, filtered_root_mappings = []):
