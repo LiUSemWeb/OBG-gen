@@ -11,7 +11,7 @@ import urllib.parse
 import pymongo
 from collections import defaultdict
 import pandas as pd
-from filter_AST import FilterAST
+from filter_ast import Filter_AST
 import ast
 
 
@@ -528,7 +528,7 @@ class Resolver_Utils(object):
                     fields_filter_dict[field].append(new_cond)
             field_filters = fields_filter_dict.items()
             field_filters = sorted(field_filters, key=lambda f: len(f[0].split('.')))
-            filter_ast = FilterAST('root')
+            filter_ast = Filter_AST('root')
             # filter_ast.add_child_edge('filter')
             for field_filter in field_filters:
                 fields = field_filter[0].split('.')

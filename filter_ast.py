@@ -1,4 +1,4 @@
-class FilterAST(object):
+class Filter_AST(object):
     def __init__(self, name, children = None, parent = None, parent_edge = None, filter_dict = None):
         #data in the form of list of (field name: symbol (with negation or not))
         self.name = name
