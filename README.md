@@ -60,7 +60,15 @@ Run GraphQL server:
 	* Debugger is active!
 	* Debugger PIN: 540-041-748
 
-Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql.
+Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as shown below.
+
+![graphql_server_ui](https://huanyu-li.github.io/figures/odgsg/graphql_server_ui.png "GraphQL server UI example")
+
+You can find query examples in the following folder.
+
+[query examples](https://github.com/huanyu-li/ODGSG/blob/main/query_examples/README.md)
+
+
 
 ## A demo on Heroku of ODGSG for the materials design domain
 * TO UPDATE
