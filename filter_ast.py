@@ -12,7 +12,7 @@ class Filter_AST(object):
         self.filter_flag = 'ALL'
 
     def add_child(self, child_name, edge):
-        new_child = FilterAST(child_name, parent=self, parent_edge=edge)
+        new_child = Filter_AST(child_name, parent=self, parent_edge=edge)
         new_child.parent_edge_chain = self.parent_edge_chain + '.' + edge
         self.children.append(new_child)
         self.children_edges.append(edge)

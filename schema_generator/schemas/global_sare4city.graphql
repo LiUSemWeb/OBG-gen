@@ -1,0 +1,182 @@
+interface Actuator implements Feature & Device & SpatialObject
+{
+	controlsProperty:[Property]
+	measuresProperty:[Property]
+	makesMeasurement:[Measurement]
+	iri:String!
+}
+interface AdministrativeArea implements Feature & SpatialObject
+{
+	iri:String!
+}
+interface Agent
+{
+	iri:String!
+}
+interface Agent implements Agent
+{
+	provides:[PublicService]
+	uses:[PublicService]
+	iri:String!
+}
+interface City implements Feature & AdministrativeArea & SpatialObject
+{
+	iri:String!
+}
+interface CityObject implements Feature & SpatialObject
+{
+	iri:String!
+}
+interface Concept
+{
+	iri:String!
+}
+interface Country implements Feature & AdministrativeArea & SpatialObject
+{
+	iri:String!
+}
+interface Device implements Feature & SpatialObject
+{
+	controlsProperty:[Property]
+	measuresProperty:[Property]
+	makesMeasurement:[Measurement]
+	iri:String!
+}
+interface District implements Feature & AdministrativeArea & SpatialObject
+{
+	iri:String!
+}
+interface Event
+{
+	takesPlaceAtFacility:[Facility]
+	isOrganizedBy:[Agent]
+	takesPlaceAtTime:[TemporalEntity]
+	isSubEventOf:[Event]
+	hasAccesibility:[Concept]
+	iri:String!
+}
+interface Facility implements Feature & SpatialObject
+{
+	iri:String!
+}
+interface Feature implements SpatialObject
+{
+	iri:String!
+}
+interface FeatureOfInterest
+{
+	hasMeasurement:[Measurement]
+	hasKPI:[KeyPerformanceIndicator]
+	hasProperty:[Property]
+	iri:String!
+}
+interface Geometry implements SpatialObject
+{
+	iri:String!
+}
+interface Instant implements TemporalEntity
+{
+	iri:String!
+}
+interface Interval implements TemporalEntity
+{
+	iri:String!
+}
+interface KeyPerformanceIndicator
+{
+	isKPIOf:[FeatureOfInterest]
+	hasCalculationPeriod:[TemporalDuration]
+	iri:String!
+}
+interface KeyPerformanceIndicatorAssessment
+{
+	assesses:[FeatureOfInterest]
+	hasExpirationDate:[dateTime]
+	hasLastUpdateDate:[dateTime]
+	isMeasuredIn:[UnitOfMeasure]
+	hasCreationDate:[dateTime]
+	refersToTime:[TemporalEntity]
+	isAssessedBy:[Agent]
+	isDerivedFrom:[Measurement]
+	quantifiesKPI:[KeyPerformanceIndicator]
+	iri:String!
+}
+interface LinguisticSystem
+{
+	iri:String!
+}
+interface Measurement
+{
+	isMeasurementOf:[FeatureOfInterest]
+	relatesToProperty:Property!
+	measurementMadeBy:[Device]
+	isMeasuredIn:UnitOfMeasure!
+	hasTimestamp:[dateTime]
+	iri:String!
+}
+interface Neighbourhood implements Feature & AdministrativeArea & SpatialObject
+{
+	iri:String!
+}
+interface Organization implements Agent
+{
+	iri:String!
+}
+interface Person implements Agent
+{
+	iri:String!
+}
+interface Point implements Geometry & SpatialObject
+{
+	iri:String!
+}
+interface Property
+{
+	isControlledByDevice:[Device]
+	isPropertyOf:[FeatureOfInterest]
+	relatesToMeasurement:[Measurement]
+	isMeasuredByDevice:[Device]
+	iri:String!
+}
+interface PublicAdministration implements Agent & Organization
+{
+	iri:String!
+}
+interface PublicService
+{
+	iri:String!
+}
+interface PublicService implements PublicService
+{
+	isAvailableInLanguage:[LinguisticSystem]
+	physicallyAvailableAt:[AdministrativeArea]
+	involvesFacility:[Facility]
+	iri:String!
+}
+interface Sensor implements Feature & Device & SpatialObject
+{
+	controlsProperty:[Property]
+	measuresProperty:[Property]
+	makesMeasurement:[Measurement]
+	iri:String!
+}
+interface SpatialObject
+{
+	iri:String!
+}
+interface SpatialThing
+{
+	iri:String!
+}
+interface TemporalDuration
+{
+	iri:String!
+}
+interface TemporalEntity
+{
+	iri:String!
+}
+interface UnitOfMeasure
+{
+	iri:String!
+}

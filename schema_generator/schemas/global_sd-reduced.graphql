@@ -1,0 +1,151 @@
+interface ConfigurationSetup implements SoftwareConfiguration & Software
+{
+	iri:String!
+	status:[String]
+}
+interface DataTransformation implements SoftwareConfiguration & Software
+{
+	iri:String!
+}
+interface DataTransformationSetup implements SoftwareConfiguration & DataTransformation & ConfigurationSetup & Software
+{
+	iri:String!
+}
+interface DatasetSpecification
+{
+	iri:String!
+	pathLocation:[String]
+	hasDimensionality:[int]
+	hasFixedResource:[SampleResource]
+}
+interface FundingInformation
+{
+	iri:String!
+	fundingGrant:[String]
+	fundingSource:[Organization]
+}
+interface NumericalIndex implements Variable
+{
+	iri:String!
+}
+interface Organization
+{
+	iri:String!
+}
+interface Parameter
+{
+	iri:String!
+	hasStepSize:[float]
+	hasDataType:[String]
+	hasFixedValue:[String]
+	recommendedIncrement:[float]
+	hasAcceptedValues:[String]
+	adjustsVariable:[Variable]
+}
+interface Person
+{
+	iri:String!
+	email:[String]
+}
+interface SampleCollection implements SampleResource
+{
+	iri:String!
+}
+interface SampleExecution
+{
+	iri:String!
+}
+interface SampleResource
+{
+	iri:String!
+	dataCatalogIdentifier:[String]
+}
+interface Software
+{
+	iri:String!
+	hasTypicalDataSource:[anyURI]
+	supportDetails:[String]
+	hasFAQ:[String]
+	processorRequirements:[String]
+	issueTracker:[anyURI]
+	doi:[String]
+	readme:[anyURI]
+	softwareRequirements:[String]
+	hasExecutableInstructions:[String]
+	shortDescription:[String]
+	hasAssumption:[String]
+	datePublished:[dateTime]
+	hasDownloadURL:[anyURI]
+	hasDocumentation:[anyURI]
+	citation:[String]
+	hasExample:[String]
+	hasDownloadInstructions:[String]
+	hasUsageNotes:[String]
+	hasBuildFile:[anyURI]
+	keywords:[String]
+	hasExecutableNotebook:[anyURI]
+	referencePublication:[String]
+	hasPurpose:[String]
+	operatingSystems:[String]
+	dateCreated:[dateTime]
+	memoryRequirements:[String]
+	hasInstallationInstructions:[String]
+	hasVersion:[SoftwareVersion]
+	hasSourceCode:[SourceCode]
+	hasFunding:[FundingInformation]
+	hasContactPerson:[Person]
+	author:[Person]
+	usefulForCalculatingIndex:[NumericalIndex]
+}
+interface SoftwareConfiguration implements Software
+{
+	iri:String!
+	hasComponentLocation:[anyURI]
+	hasSupportScriptLocation:[anyURI]
+	hasImplementationScriptLocation:[anyURI]
+	hasInput:[DatasetSpecification]
+	hasSoftwareImage:[SoftwareImage]
+	hasOutput:[DatasetSpecification]
+	hasParameter:[Parameter]
+	hasSetup:[ConfigurationSetup]
+}
+interface SoftwareImage implements Software
+{
+	iri:String!
+}
+interface SoftwareVersion implements Software
+{
+	iri:String!
+	hasVersionId:[String]
+	hasConfiguration:[SoftwareConfiguration]
+}
+interface SourceCode
+{
+	iri:String!
+	codeRepository:[anyURI]
+	programmingLanguage:[String]
+}
+interface StandardVariable implements Variable
+{
+	iri:String!
+}
+interface Unit
+{
+	iri:String!
+}
+interface Variable
+{
+	iri:String!
+}
+interface VariablePresentation implements Variable
+{
+	iri:String!
+	hasLongName:[String]
+	hasShortName:[String]
+	partOfDataset:[DatasetSpecification]
+}
+interface ub1bL686C23
+{
+	iri:String!
+	position:[int]
+}

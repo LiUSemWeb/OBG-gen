@@ -11,11 +11,17 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [graphql_schema_gen.py](https://github.com/huanyu-li/ODGSG/blob/main/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
-* [mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser.py) takes a RML mapping file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
+* [/schema_generator/graphql_schema_gen.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema; 
+   
+  [/schema_generator/ontology.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/ontology.py) is used to parse an OWL ontology; 
+  
+  [/schema_generator/schema_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/schema_utils.py) defines helper functions used to generate the GraphQL schema.
+* [/mapping_parser/mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_parser.py) takes a RML mapping file (in turtle format) as the input and then outputs mappings and logical sources into a json file;
+
+  [/mapping_parser/mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_utils.py) defines the helper functions used to parse RML mappings.
+* [odgsg_graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/odgsg_graphql_utils.py) defines helper functions used to generating the generic resolver function.
 * [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
-* [ontology.py](https://github.com/huanyu-li/ODGSG/blob/main/ontology.py) is used to parse an OWL ontology.
-* [schema_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_utils.py), [mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_utils.py), [odgsg_graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/odgsg_graphql_utils.py) define helper functions used to generating GraphQL schema, extracting mappings' structures, and generating resolvers, respectively.
+
 
 ## Installation
 
@@ -34,7 +40,7 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
 Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
 
-	python graphql_schema_gen.py ./domain_ontologies/mdofull.ttl
+	python ./schema_generator/graphql_schema_gen.py ./schema_generator/domain_ontologies/mdofull.ttl
 
 Parse a RML mapping file and output a mappings.json file in current folder:
 

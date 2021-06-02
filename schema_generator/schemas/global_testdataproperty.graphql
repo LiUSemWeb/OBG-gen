@@ -1,0 +1,40 @@
+interface A
+{
+	hasID:[float!]!
+	iri:String!
+}
+interface AtomicStructure implements Structure
+{
+	hasProperty:[Property!]!
+	iri:String!
+}
+interface B
+{
+	iri:String!
+	hasUnit:[String]
+	relationToA:[A]
+}
+interface Property
+{
+	iri:String!
+}
+interface Structure
+{
+	hasProperty:[Property!]!
+	iri:String!
+}
+interface first_typeStructure implements AtomicStructure & Structure
+{
+	hasProperty:[Property!]!
+	iri:String!
+}
+interface second_type_Structure implements Structure & AtomicStructure & first_typeStructure
+{
+	hasProperty:[Property!]!
+	iri:String!
+}
+interface testStructure implements Structure & AtomicStructure & first_typeStructure
+{
+	hasProperty:[Property!]!
+	iri:String!
+}

@@ -1,0 +1,102 @@
+interface Account
+{
+	iri:String!
+}
+interface Activity
+{
+	iri:String!
+}
+interface Agent
+{
+	iri:String!
+}
+interface Artifact
+{
+	iri:String!
+}
+interface Bundle
+{
+	iri:String!
+}
+interface DataVariable implements Variable & WorkflowTemplateArtifact & Thing
+{
+	iri:String!
+	isVariableOfTemplate:[WorkflowTemplate]
+}
+interface Entity
+{
+	iri:String!
+}
+interface OPMGraph
+{
+	iri:String!
+}
+interface ParameterVariable implements Variable & WorkflowTemplateArtifact & Thing
+{
+	iri:String!
+	isParameterOfTemplate:[WorkflowTemplate]
+}
+interface Plan
+{
+	iri:String!
+}
+interface Plan
+{
+	iri:String!
+}
+interface Process
+{
+	iri:String!
+}
+interface Step
+{
+	iri:String!
+}
+interface Variable
+{
+	iri:String!
+}
+interface WorkflowExecutionAccount implements Bundle & Account
+{
+	iri:String!
+	overallEndTime:[dateTime]
+	hasExecutionDiagram:[anyURI]
+	overallStartTime:[dateTime]
+	hasStatus:[String]
+	correspondsToTemplate:[WorkflowTemplate]
+	executedInWorkflowSystem:[Agent]
+}
+interface WorkflowExecutionArtifact implements Entity & Artifact
+{
+	iri:String!
+	hasLocation:[anyURI]
+	hasSize:[int]
+	hasFileName:[String]
+	hasValue:[String]
+	correspondsToTemplateArtifact:[WorkflowTemplateArtifact]
+}
+interface WorkflowExecutionProcess implements Process & Activity
+{
+	iri:String!
+	correspondsToTemplateProcess:[WorkflowTemplateProcess]
+}
+interface WorkflowTemplate implements Plan & Plan & Thing
+{
+	iri:String!
+	createdInWorkflowSystem:[anyURI]
+	hasNativeSystemTemplate:[anyURI]
+	hasDocumentation:[ub1bL328C30]
+	hasTemplateDiagram:[anyURI]
+}
+interface WorkflowTemplateArtifact implements Variable & Thing
+{
+	iri:String!
+	hasDimensionality:[int]
+	isGeneratedBy:[WorkflowTemplateProcess]
+}
+interface WorkflowTemplateProcess implements Step & Thing
+{
+	iri:String!
+	uses:[WorkflowTemplateArtifact]
+	isStepOfTemplate:[WorkflowTemplate]
+}

@@ -1,0 +1,53 @@
+interface ConfigurationSetup implements Software & SoftwareConfiguration
+{
+	iri:String!
+}
+interface EmpiricalModel implements Model & Software
+{
+	iri:String!
+}
+interface Emulator implements Model & Software
+{
+	iri:String!
+}
+interface HybridModel implements Model & Software
+{
+	iri:String!
+}
+interface Model implements Software
+{
+	iri:String!
+	hasModelCategory:[String]
+}
+interface ModelConfiguration implements Software & SoftwareConfiguration
+{
+	iri:String!
+}
+interface ModelConfigurationSetup implements ModelConfiguration & ConfigurationSetup & SoftwareConfiguration & Software
+{
+	iri:String!
+	parameterAssignmentMethod:[String]
+}
+interface Software
+{
+	iri:String!
+	dateCreated:[dateTime]
+	keywords:[String]
+	hasDocumentation:[anyURI]
+	hasDownloadURL:[anyURI]
+	hasInstallationInstructions:[String]
+	citation:[String]
+	datePublished:[dateTime]
+	hasUsageNotes:[String]
+	referencePublication:[String]
+}
+interface SoftwareConfiguration implements Software
+{
+	iri:String!
+	hasSupportScriptLocation:[anyURI]
+	hasComponentLocation:[anyURI]
+}
+interface Theory-GuidedModel implements Model & Software
+{
+	iri:String!
+}
