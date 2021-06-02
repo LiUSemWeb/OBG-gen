@@ -1,6 +1,6 @@
 class Filter_AST(object):
-    def __init__(self, name, children = None, parent = None, parent_edge = None, filter_dict = None):
-        #data in the form of list of (field name: symbol (with negation or not))
+    def __init__(self, name, children=None, parent=None, parent_edge=None, filter_dict=None):
+        # data in the form of list of (field name: symbol (with negation or not))
         self.name = name
         self.children = children or []
         self.parent = parent
@@ -27,7 +27,6 @@ class Filter_AST(object):
         self.attrs_type[attr_symbol] = attr_type
         self.filter_flag = ''
 
-
     def is_root(self):
         return self.parent is None
 
@@ -46,7 +45,6 @@ class Filter_AST(object):
         return return_child
 
     def get_current_filter(self):
-        ''''''
         if len(self.filter_dict) > 0:
             return self.filter_dict
         else:

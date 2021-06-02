@@ -2,10 +2,6 @@ import sys
 import json
 from collections import defaultdict
 from rdflib import Graph
-from graphql import build_schema, is_object_type, get_named_type, is_interface_type, assert_valid_schema, is_input_type, is_union_type
-from graphql import is_scalar_type, is_wrapping_type, is_list_type
-
-
 
 triples = defaultdict(lambda: defaultdict(list))
 
@@ -39,6 +35,7 @@ def read_file(file_name):
 		content = f.read()
 	return content
 
+
 def remove_prefix(s):
 	if 'http' in s:
 		if '#' in s:
@@ -48,14 +45,15 @@ def remove_prefix(s):
 	else:
 		return s
 
-def parse_mapping(mapping_file = 'venue-mapper.ttl', format = 'n3'):
-	g = Graph()
+
+def parse_mapping(mapping_file='venue-mapper.ttl', mapping_format='n3'):
+	mapping_graph = Graph()
 	file = open('all_triples.txt', 'w')
-	g.parse(mapping_file, format=format)
-	for subj, pred, obj in g:
+	mapping_graph.parse(mapping_file, format=mapping_format)
+	for subj, pred, obj in mapping_graph:
 		subj = remove_prefix(subj.toPython())
 		pred = remove_prefix(pred.toPython())
-		#obj = remove_prefix(obj.toPython())
+		# obj = remove_prefix(obj.toPython())
 		triples[pred][subj].append(obj)
 		file.writelines('{} {} {}\n'.format(subj, pred, obj))
 		if pred == 'class':
@@ -97,7 +95,7 @@ def parse_mapping(mapping_file = 'venue-mapper.ttl', format = 'n3'):
 			obj = remove_prefix(obj.toPython())
 			subjectMap_dict[subj] = obj
 		if pred == 'template':
-			#obj = remove_prefix(obj.toPython())
+			# obj = remove_prefix(obj.toPython())
 			templateMap_dict[subj] = obj.toPython()
 		if pred == 'joinCondition':
 			obj = remove_prefix(obj.toPython())
@@ -116,20 +114,23 @@ def parse_mapping(mapping_file = 'venue-mapper.ttl', format = 'n3'):
 			server_password_dict[subj] = obj.toPython()
 		if pred == 'query':
 			query_dict[subj] = obj.toPython()
-	return g
+	return mapping_graph
+
 
 def generateSourceList():
 	return 0
 
+
 def getDBSourceList():
-	DBSource_lst = []
+	db_source_lst = []
 	for (key, value) in source_server_dict.items():
 		source_rec = {'name': key, 'server': value, 'username': server_username_dict[key], 'password': server_password_dict[key]}
-		DBSource_lst.append(source_rec)
-	return DBSource_lst
+		db_source_lst.append(source_rec)
+	return db_source_lst
+
 
 def generateLogicalSourceList():
-	logicalSource_lst = []
+	logical_source_lst = []
 	iterator_str = ''
 	for (key, value) in source_dict.items():
 		if key in iterator_dict.keys():
@@ -138,8 +139,9 @@ def generateLogicalSourceList():
 			ls_record = {'name': key, 'source': remove_prefix(value), 'referenceFormulation': 'mydb:' + referenceFormulation_dict[key], 'query': query_dict[key], 'iterator': iterator_str}
 		else:
 			ls_record = {'name': key, 'source': value, 'referenceFormulation': 'ql:' + referenceFormulation_dict[key], 'iterator': iterator_str}
-		logicalSource_lst.append(ls_record)
-	return  logicalSource_lst
+		logical_source_lst.append(ls_record)
+	return logical_source_lst
+
 
 def generateMappingList():
 	mappings_lst = []
@@ -149,43 +151,44 @@ def generateMappingList():
 		mapping_dict['name'] = key
 		mapping_dict['logicalSource'] = value
 		# render 'subjectMap' field
-		subjecMap_key = subjectMap_dict[key]
-		template = templateMap_dict[subjecMap_key]
-		classOf = class_dict[subjecMap_key]
+		subject_map_key = subjectMap_dict[key]
+		template = templateMap_dict[subject_map_key]
+		class_of = class_dict[subject_map_key]
 		poms_lst = []
-		for pom_anonymou_name in predicateObjectMap_dict[key]:
+		for pom_anonymous_name in predicateObjectMap_dict[key]:
 			pom_dict = dict()
-			pom_dict['predicate'] = predicate_dict[pom_anonymou_name]
-			om_anonymous_name = objectMap_dict[pom_anonymou_name]
+			pom_dict['predicate'] = predicate_dict[pom_anonymous_name]
+			om_anonymous_name = objectMap_dict[pom_anonymous_name]
 			if om_anonymous_name in reference_dict.keys():
 				reference_field = reference_dict[om_anonymous_name]
 				data_type = datatype_dict[om_anonymous_name]
 				pom_dict['objectMap'] = {'reference': reference_field, 'datatype': data_type}
 			if om_anonymous_name in constant_dict.keys():
-				#this if block is not yet tested
+				# this if block is not yet tested
 				constant_value = constant_dict[om_anonymous_name]
 				pom_dict['objectMap'] = {'constant': constant_value}
 			if om_anonymous_name in parentTriplesMap_dict.keys():
-				parentMapping_name = parentTriplesMap_dict[om_anonymous_name]
+				parent_mapping_name = parentTriplesMap_dict[om_anonymous_name]
 				jc_anonymous_name = joinCondition_dict[om_anonymous_name]
 				child_filed = child_dict[jc_anonymous_name]
 				parent_field = parent_dict[jc_anonymous_name]
-				pom_dict['objectMap'] = {'parentTriplesMap': parentMapping_name, 'joinCondition': {'child': child_filed, 'parent': parent_field}}
+				pom_dict['objectMap'] = {'parentTriplesMap': parent_mapping_name, 'joinCondition': {'child': child_filed, 'parent': parent_field}}
 			poms_lst.append(pom_dict)
-		mapping_dict['subjectMap'] = {'template': template, 'class': classOf}
+		mapping_dict['subjectMap'] = {'template': template, 'class': class_of}
 		mapping_dict['predicateObjectMap'] = poms_lst
 		mappings_lst.append(mapping_dict)
 	return mappings_lst
+
 
 def write_json(mapping):
 	with open('./mappings-temp.json', 'w') as fp:
 		json.dump(mapping, fp)
 
+
 if __name__ == '__main__':
 	g = parse_mapping(str(sys.argv[1]))
 	logicalSource_lst = generateLogicalSourceList()
-	mappings_lst = generateMappingList()
+	mappings = generateMappingList()
 	db_source = getDBSourceList()
-	rml_mapping = {'DBSources': db_source, 'LogicalSources': logicalSource_lst, 'Mappings': mappings_lst}
+	rml_mapping = {'DBSources': db_source, 'LogicalSources': logicalSource_lst, 'Mappings': mappings}
 	write_json(rml_mapping)
-		
