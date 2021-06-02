@@ -34,6 +34,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 * Successfully installed messages:
 
 
+
     --------------------------
     Successfully installed PyYAML-5.4.1
     Successfully installed isodate-0.6.0 rdflib-5.0.0
