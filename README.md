@@ -38,16 +38,16 @@ A framework for using GraphQL in which a global domain ontology drives the gener
     Successfully installed pymongo-3.11.4
 
 ## Usage
-**Pre-Step 1**: Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
+**Pre-Step 1**: Generate GraphQL schema from an ontology and output _**schema.graphql**_ and _**o2graphql.json**_ files in current folder.
 
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/domain_ontologies/mdofull.ttl
 
-**Pre-Step 2**: Parse a RML mapping file and output a mappings.json file in current folder:
+**Pre-Step 2**: Parse a RML mappings file and output the _**mappings-temp.json**_ file in current folder.
 
 	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/1K-mapping.ttl
 
-**Step 3**: Run GraphQL server:
+**Step 3**: Run GraphQL server.
 
 	export FLASK_ENV=development
 	python app.py ./schema.graphql ./mappings-temp.json
