@@ -66,7 +66,7 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 
 You can find query examples in the following folder.
 
-[query examples](https://github.com/huanyu-li/ODGSG/blob/main/query_examples/README.md)
+[query examples](https://github.com/huanyu-li/ODGSG/blob/main/query_examples/)
 
 
 
