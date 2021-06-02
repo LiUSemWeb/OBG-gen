@@ -145,8 +145,8 @@ class GraphQLSchema(object):
         print(interfacetype_schema)
         print(objecttype_schema)
         print(querytype_schema)
-        su.write_file('schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
-        su.write_file('schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
+        su.write_file('./schema_generator/schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
+        su.write_file('./schema_generator/schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
 
     def write_local_schema(self, local_prefixes):
         for local_prefix in local_prefixes:
@@ -192,6 +192,7 @@ class GraphQLSchema(object):
                 type_schema += '}\n'
                 schema += type_schema
             print(schema)
+            print(local_prefix)
             su.write_file('{local_prefix}_schema.graphql'.format(local_prefix = local_prefix),schema)
         
             
