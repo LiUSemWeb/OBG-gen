@@ -18,20 +18,34 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Installation
 
-* TO UPDATE
+* Following packages are needed:
 
-GraphQL-core 3 can be installed from PyPI using the built-in pip command:
+[//]: # "python -m pip install \"graphql-core>=3\""
+[//]: # "GraphQL-core 3 can be installed from PyPI using the built-in pip command:"
 	
+	pip install PyYAML
 	pip install rdflib
-    python -m pip install "graphql-core>=3"
-
+    pip install graphql-core 
     pip install ariadne
+    pip install Flask
+    pip install pymongo
+    
+
+* Successfully installed messages:
+
+
+    --------------------------
+    Successfully installed PyYAML-5.4.1
+    Successfully installed isodate-0.6.0 rdflib-5.0.0
+    Successfully installed graphql-core-3.1.5
+    Successfully installed ariadne-0.13.0 starlette-0.14.2 typing-extensions-3.10.0.0
+    Successfully installed Flask-2.0.1 Jinja2-3.0.1 MarkupSafe-2.0.1 Werkzeug-2.0.1 click-8.0.1 itsdangerous-2.0.1
+    Successfully installed pymongo-3.11.4
 
 ## Usage
 
-* TO UPDATE
+ Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
 
-Generate GraphQL schema from an ontology and output a schema.graphql file in current folder:
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/domain_ontologies/mdofull.ttl
 
