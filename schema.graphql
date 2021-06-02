@@ -1,0 +1,69 @@
+
+type Query {
+    CalculationList(filter: CalculationFilter): [Calculation!]
+    StructureList(filter: StructureFilter): [Structure!]
+    CompositionList(filter: CompositionFilter): [Composition!]
+    SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup!]
+}
+
+type Calculation {
+    hasOutputStructure: [Structure!]!
+    ID: String!
+}
+type Structure {
+    StructureID: String!
+    hasComposition: Composition
+    hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup
+}
+type Composition {
+    ReducedFormula: String
+    AnonymousFormula: String
+}
+type SpaceGroup {
+    SpaceGroupID: String
+    SpaceGroupSymbol: String
+}
+input CalculationFilter {
+    hasOutputStructure: StructureFilter
+    ID: StringFilter
+    _and: [CalculationFilter]
+    _or: [CalculationFilter]
+    _not: CalculationFilter
+}
+input StructureFilter {
+    hasSpaceGroup:SpaceGroupFilter
+    hasComposition:CompositionFilter
+    _and:[StructureFilter]
+    _or:[StructureFilter]
+    _not:StructureFilter
+  }
+
+input CompositionFilter {
+    ReducedFormula:StringFilter
+    AnonymousFormula:StringFilter
+    _and:[CompositionFilter]
+    _or:[CompositionFilter]
+    _not:CompositionFilter
+  }
+input SpaceGroupFilter {
+    SpaceGroupID: StringFilter
+    SpaceGroupSymbol:StringFilter
+    _and:[SpaceGroupFilter]
+    _or:[SpaceGroupFilter]
+    _not:SpaceGroupFilter
+  }
+
+  input StringFilter {
+    _eq: String
+    _neq: String
+    _gt: String
+    _egt: String
+    _lt: String
+    _elt: String
+    _in: [String]
+    _nin: [String]
+    _like: String  # string matching along the lines of LIKE in SQL
+    _ilike: String # case-insensitive string matching
+    _nlike: String
+    _nilike: String
+  }

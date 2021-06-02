@@ -18,9 +18,17 @@ A framework for using GraphQL in which a global domain ontology drives the gener
   [/schema_generator/schema_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/schema_utils.py) defines helper functions used to generate the GraphQL schema.
 * [/mapping_parser/mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_parser.py) takes a RML mapping file (in turtle format) as the input and then outputs mappings and logical sources into a json file;
 
-  [/mapping_parser/mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_utils.py) defines the helper functions used to parse RML mappings.
-* [odgsg_graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/odgsg_graphql_utils.py) defines helper functions used to generating the generic resolver function.
-* [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
+  
+* [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org);
+
+  [/generic_resolver/odgsg_graphql_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/generic_resolver/odgsg_graphql_utils.py) defines helper functions used to generating the generic resolver function;
+    
+  [/generic_resolver/mapping_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/generic_resolver/mapping_utils.py) defines the helper functions used to read parsed RML mappings;
+  
+  [/generic_resolver/filter_utils.py](https://github.com/huanyu-li/ODGSG/blob/main/generic_resolver/filter_utils.py) defines the helper functions used parse filtering conditions;
+  
+  [/generic_resolver/filter_ast.py](https://github.com/huanyu-li/ODGSG/blob/main/generic_resolver/filter_ast.py) is used to define the abstract syntax tree to represent filtering conditions entailed with a GraphQL query.
+  
 
 
 ## Installation
