@@ -342,7 +342,7 @@ class Resolver_Utils(object):
     def parse_join_condition(self, join_condition):
         return self.mu.parse_join_condition(join_condition)
 
-    # need to update
+    # need to optimize
     def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name=''):
         key, template = self.parse_template(template)
         i = 0
