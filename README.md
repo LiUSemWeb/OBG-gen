@@ -70,6 +70,6 @@ You can find query examples in the following folder.
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
 
-## A demo on Heroku of ODGSG for the materials design domain
-* TO UPDATE
-[ODGSG-Demo](https://odgsg-demo.herokuapp.com)
+[//]: # "## A demo on Heroku of ODGSG for the materials design domain"
+[//]: # "* TO UPDATE"
+[//]: # "[ODGSG-Demo](https://odgsg-demo.herokuapp.com)"
