@@ -15,7 +15,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 * [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
-## Installation
+## Installation (TO UPDATE)
 
 * Following packages are needed and successfully installed messages are shown:
 
