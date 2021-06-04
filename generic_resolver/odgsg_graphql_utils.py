@@ -15,8 +15,8 @@ import ast
 class Resolver_Utils(object):
     def __init__(self, mapping_file, o2graphql_file='o2graphql.json'):
         self.mu = RML_Mapping(mapping_file)
-        self.operator_1 = ['_and', '_or', '_not']
-        self.operator_2 = ['_eq', '_neq', '_gt']
+        # self.operator_1 = ['_and', '_or', '_not']
+        # self.operator_2 = ['_eq', '_neq', '_gt']
         self.field_exp_symbol = dict()
         self.symbol_field_exp = dict()
         self.schema_ast = dict()
@@ -28,7 +28,7 @@ class Resolver_Utils(object):
         self.mapping_attr_pred_dict = defaultdict(dict)
         self.filtered_object_iri = dict()
         with open(o2graphql_file) as f:
-            # Update needs here for translate
+            # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
             self.GraphQL_schema2ontology = self.ontology2GraphQL_schema
 

@@ -1,26 +1,6 @@
 from sympy.logic.boolalg import to_dnf
 from sympy.logic.inference import satisfiable
-import logging
 
-'''
-log debug
-log info
-log warning (default)
-log error
-log critical
-'''
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
-file_handler = logging.FileHandler('filter.log')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-logger.info('\n')
-logger.info('----------NEW LOG----------')
-
-
-# logging.basicConfig(filename ='filter.log',level = logging.DEBUG,format='%(asctime)s:%(levelname)s:%(message)s')
 
 class Filter_Utils(object):
     def __init__(self):
@@ -128,10 +108,7 @@ class Filter_Utils(object):
         exp_str = ''
         for item in exp_list:
             exp_str += item
-        # print(satisfiable(exp_str))
         dnf_obj = to_dnf(exp_str, True, True)
-        logger.info('dnf_obj')
-        logger.info(dnf_obj)
         result = satisfiable(dnf_obj)
         return str(dnf_obj)
 
@@ -277,21 +254,3 @@ class Filter_Utils(object):
         # print(dnf_exp_lst)
         # self.common_exp_symbols = common_symbols_set
         return dnf_exp_lst
-'''
-    def simplify2DNF(self, filter_condition):
-        test_filter = {'filter':
-            {
-                '_and': [
-                    {'ID': {'_eq': '1'}},
-                    {'ID': {'_neq': '1'}}
-                ]
-            }
-        }
-        expression = self.parse('filter', filter_condition['filter'], [])
-        logger.info('expression')
-        logger.info(expression)
-        exp_list_1 = self.simplify_bool_expression(expression)
-        result = self.convert_to_dnf(exp_list_1)
-        logger.info(exp_list_1)
-        logger.info(result)
-'''
