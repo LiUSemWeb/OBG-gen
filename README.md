@@ -61,7 +61,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as shown below.
 
-![graphql_server_ui](https://huanyu-li.github.io/figures/odgsg/graphql_server_ui.png "GraphQL server UI example")
+![first_query](https://huanyu-li.github.io/figures/odgsg/first_query.png "GraphQL query example")
 
 You can find query examples in the following folder.
 
