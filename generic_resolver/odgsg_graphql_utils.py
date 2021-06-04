@@ -95,7 +95,7 @@ class Resolver_Utils(object):
             result = temp_data
         return result
 
-    def get_json_data(self, url, iterator, key_attrs, filter_dict=None):
+    def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None):
         r = requests.get(url=url)
         if filter_dict is not None:
             for key, value in filter_dict.items():
@@ -115,6 +115,10 @@ class Resolver_Utils(object):
                     temp_dict[k] = v
             result.append(temp_dict)
         result = pd.json_normalize(result)
+        if len(constant_data) >0:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                result = result.assign(**kwargs)
         if filter_dict is not None:
             # print('filter')
             # print('shape', result.shape[0])
@@ -300,6 +304,9 @@ class Resolver_Utils(object):
     def get_predicate_object_maps(self, mapping, predicates):
         return self.mu.get_pom_by_predicates(mapping, predicates)
 
+    def get_constant_value(self, object_map):
+        return self.mu.get_constant_value_type(object_map)
+
     def get_reference_attribute(self, term_map):
         return self.mu.get_reference(term_map)
 
@@ -348,6 +355,8 @@ class Resolver_Utils(object):
         i = 0
         while i < len(temp_result):
             temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
+            for (constant_pred, constant_data, data_type) in constant:
+                temp_result[i][constant_pred] = constant_data
             iri = template.format(temp_result[i][key])
             if root_type_flag is True:
                 if mapping_name in self.filtered_object_iri.keys() and iri in self.filtered_object_iri[mapping_name] or \
@@ -448,7 +457,7 @@ class Resolver_Utils(object):
     def get_db_source(self, logical_source):
         return self.mu.get_db_source(logical_source)
 
-    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None):
+    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None):
         source_type = self.get_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
@@ -460,7 +469,7 @@ class Resolver_Utils(object):
             # result = self.getJSONData(source_request, iterator, ref)
             if filter_flag is True:
                 # data frame here
-                result = self.get_json_data(source_request, iterator, key_attrs, filter_dict)
+                result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data)
             else:
                 result = self.getJSONData(source_request, iterator, ref)
         if source_type == 'mydb:mongodb':
@@ -557,15 +566,21 @@ class Resolver_Utils(object):
         else:
             return None
 
-    def localize_filter(self, entity_type, pred_attr, filter_fields=None, query_fields=None):
+    def localize_filter(self, entity_type, pred_attr, filter_fields=None, query_fields=None, filter_constant_field=None):
         if len(filter_fields) == 0:
             return
         else:
             localized_filter_fields = defaultdict(dict)
             for key, value in filter_fields.items():
-                localized_filter_fields[key]['local_name'] = pred_attr[key]
-                localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
-                localized_filter_fields[key]['filter'] = value
+                if key in pred_attr.keys():
+                    localized_filter_fields[key]['local_name'] = pred_attr[key]
+                    localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
+                    localized_filter_fields[key]['filter'] = value
+                else:
+                    if len(filter_constant_field) >0:
+                        localized_filter_fields[key]['local_name'] = key
+                        localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
+                        localized_filter_fields[key]['filter'] = value
             return localized_filter_fields
 
     def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name):
@@ -584,17 +599,24 @@ class Resolver_Utils(object):
             key_attrs = [self.parse_template(template)[0]]
             poms = self.get_predicate_object_maps(mapping, predicates)
             pred_attr = dict()
+            constant_data =[]
+            filter_constant = []
             for pom in poms:
                 predicate, object_map = self.parse_pom(pom)
                 if self.type_of_object_map(object_map) == 1:
                     reference_attribute = self.get_reference_attribute(object_map)
                     pred_attr[self.phi(predicate)] = reference_attribute
                     # attr_pred.append((referenceAttribute, self.phi(predicate)))
+
                 if self.type_of_object_map(object_map) == 2:
+                    constant_value, constant_datatype = self.get_constant_value(object_map)
+                    constant_data.append((predicate, constant_value, constant_datatype))
+                    filter_constant.append(predicate)
                     print('Constant')
-            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields)
-            temp_result = self.executor(logical_source, key_attrs, True, localized_filter)
-            temp_result = self.refine_data_frame(temp_result, pred_attr, None, template)
+            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields, filter_constant)
+            temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data)
+            temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template)
+
             result[mapping_name] = temp_result
         return result
 
@@ -690,7 +712,7 @@ class Resolver_Utils(object):
             key_attrs = [self.parse_template(template)[0]]
             temp_result = self.executor(logical_source, None, False, None, ref)
             poms = self.get_predicate_object_maps(mapping, predicates)
-            attr_pred, result2join, constant = [], [], []
+            attr_pred, result2join, constant_data = [], [], []
             ref_poms_pred_object_map = []
             result_join = defaultdict(list)
             for pom in poms:
@@ -700,13 +722,15 @@ class Resolver_Utils(object):
                     attr_pred.append((reference_attribute, self.phi(predicate)))
                     key_attrs.append(reference_attribute)
                 if self.type_of_object_map(object_map) == 2:
+                    constant_value, constant_datatype = self.get_constant_value(object_map)
+                    constant_data.append((predicate, constant_value, constant_datatype))
                     print('Constant')
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
             if root_type_flag is True:
-                temp_result = self.refine_json(temp_result, attr_pred, constant, template, True, mapping['name'], key_attrs)
+                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True, mapping['name'], key_attrs)
             else:
-                temp_result = self.refine_json(temp_result, attr_pred, constant, template, False, '', key_attrs)
+                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False, '', key_attrs)
             for (predicate, object_map) in ref_poms_pred_object_map:
                 new_query_ast = self.get_sub_ast(query_ast, self.phi(predicate))
                 parent_mapping, join_condition = self.parse_rom(object_map)

@@ -18,6 +18,7 @@ type Structure {
     hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup
 }
 type CalculatedProperty {
+    PropertyName: String!
     numericalValue: Float!
 }
 type Composition {
@@ -44,6 +45,7 @@ input StructureFilter {
     _not:StructureFilter
   }
 input CalculatedPropertyFilter {
+    PropertyName: StringFilter
     numericalValue: FloatFilter
     _and: [CalculatedPropertyFilter]
     _or: [CalculatedPropertyFilter]

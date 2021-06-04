@@ -14,8 +14,8 @@
 @prefix emmo: <http://emmo.info/domains/emmo-material.owl#>.
 @prefix CHEBI-atom: <http://purl.obolibrary.org/obo/CHEBI_33250>.
 @prefix CHEBI-formula: <http://purl.obolibrary.org/obo/chebi/formula>.
-@prefix QUDT-Unit: <http://qudt.org/vocab/unit/>.
-@prefix QUDT: <http://qudt.org/schema/qudt#>.
+@prefix qudt-unit: <http://qudt.org/vocab/unit/>.
+@prefix qudt: <http://qudt.org/schema/qudt#>.
 @prefix hydra: <http://www.w3.org/ns/hydra/core#>.
 @base <http://example.com/ns#>.
 
@@ -35,11 +35,32 @@
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
+<BandGap_Property_JSONSource_1>
+    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:referenceFormulation ql:JSONPath;
+    rml:iterator "$.data[*]".
+
+<FormationEnergy_Property_JSONSource_1>
+    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:referenceFormulation ql:JSONPath;
+    rml:iterator "$.data[*]".
+
 <Calculation_JSONSource_2>
     rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 <Structure_JSONSource_2>
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:referenceFormulation ql:JSONPath;
+    rml:iterator "$.data[*]".
+
+<BandGap_Property_JSONSource_2>
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:referenceFormulation ql:JSONPath;
+    rml:iterator "$.data[*]".
+
+
+<FormationEnergy_Property_JSONSource_2>
     rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
@@ -70,6 +91,26 @@
     rr:predicate core:hasOutputStructure;
     rr:objectMap [
       rr:parentTriplesMap <Structure_Mapping_1>;
+      rr:joinCondition [
+        rr:child "material_id";
+        rr:parent "material_id";
+      ];
+    ];
+  ];
+  rr:predicateObjectMap [
+    rr:predicate core:hasOutputCalculatedProperty;
+    rr:objectMap [
+      rr:parentTriplesMap <BandGap_Mapping_1>;
+      rr:joinCondition [
+        rr:child "material_id";
+        rr:parent "material_id";
+      ];
+    ];
+  ];
+  rr:predicateObjectMap [
+    rr:predicate core:hasOutputCalculatedProperty;
+    rr:objectMap [
+      rr:parentTriplesMap <FormationEnergy_Mapping_1>;
       rr:joinCondition [
         rr:child "material_id";
         rr:parent "material_id";
@@ -117,6 +158,47 @@
         ]
     ].
 
+<BandGap_Mapping_1>
+  rml:logicalSource <BandGap_Property_JSONSource_1>;
+  rr:subjectMap [
+        rr:template "http://example.com/property/bandgap/{material_id}";
+        rr:class core:CalculatedProperty
+    ];
+    rr:predicateObjectMap [
+        rr:predicate core:PropertyName;
+        rr:objectMap [
+            rr:constant "Band Gap";
+            rr:datatype xsd:string
+        ]
+    ];
+  rr:predicateObjectMap [
+        rr:predicate qudt:numericalValue;
+        rr:objectMap [
+            rml:reference "band_gap";
+            rr:datatype xsd:float
+        ]
+    ].
+
+<FormationEnergy_Mapping_1>
+  rml:logicalSource <FormationEnergy_Property_JSONSource_1>;
+  rr:subjectMap [
+        rr:template "http://example.com/property/formationenergy/{material_id}";
+        rr:class core:CalculatedProperty
+    ];
+    rr:predicateObjectMap [
+        rr:predicate core:PropertyName;
+        rr:objectMap [
+            rr:constant "Formation Energy";
+            rr:datatype xsd:string
+        ]
+    ];
+  rr:predicateObjectMap [
+        rr:predicate qudt:numericalValue;
+        rr:objectMap [
+            rml:reference "energy";
+            rr:datatype xsd:float
+        ]
+    ].
 
 <Calculation_Mapping_2>
   rml:logicalSource <Calculation_JSONSource_2>;
@@ -135,6 +217,26 @@
     rr:predicate core:hasOutputStructure;
     rr:objectMap [
       rr:parentTriplesMap <Structure_Mapping_2>;
+      rr:joinCondition [
+        rr:child "entry_id";
+        rr:parent "entry_id";
+      ];
+    ];
+  ];
+  rr:predicateObjectMap [
+    rr:predicate core:hasOutputCalculatedProperty;
+    rr:objectMap [
+      rr:parentTriplesMap <BandGap_Mapping_2>;
+      rr:joinCondition [
+        rr:child "entry_id";
+        rr:parent "entry_id";
+      ];
+    ];
+  ];
+  rr:predicateObjectMap [
+    rr:predicate core:hasOutputCalculatedProperty;
+    rr:objectMap [
+      rr:parentTriplesMap <FormationEnergy_Mapping_2>;
       rr:joinCondition [
         rr:child "entry_id";
         rr:parent "entry_id";
@@ -181,3 +283,47 @@
             rr:datatype xsd:string
         ]
     ].
+
+<BandGap_Mapping_2>
+  rml:logicalSource <BandGap_Property_JSONSource_2>;
+  rr:subjectMap [
+        rr:template "http://example.com/property/bandgap/{entry_id}";
+        rr:class core:CalculatedProperty
+    ];
+  rr:predicateObjectMap [
+        rr:predicate core:PropertyName;
+        rr:objectMap [
+            rr:constant "Band Gap";
+            rr:datatype xsd:string
+        ]
+    ];
+  rr:predicateObjectMap [
+        rr:predicate qudt:numericalValue;
+        rr:objectMap [
+            rml:reference "band_gap";
+            rr:datatype xsd:float
+        ]
+    ].
+
+<FormationEnergy_Mapping_2>
+  rml:logicalSource <FormationEnergy_Property_JSONSource_2>;
+  rr:subjectMap [
+        rr:template "http://example.com/property/formationenergy/{entry_id}";
+        rr:class core:CalculatedProperty
+    ];
+    rr:predicateObjectMap [
+        rr:predicate core:PropertyName;
+        rr:objectMap [
+            rr:constant "Formation Energy";
+            rr:datatype xsd:string
+        ]
+    ];
+  rr:predicateObjectMap [
+        rr:predicate qudt:numericalValue;
+        rr:objectMap [
+            rml:reference "delta_e";
+            rr:datatype xsd:float
+        ]
+    ].
+
+    

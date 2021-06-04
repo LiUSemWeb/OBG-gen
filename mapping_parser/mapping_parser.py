@@ -166,7 +166,8 @@ def generateMappingList():
 			if om_anonymous_name in constant_dict.keys():
 				# this if block is not yet tested
 				constant_value = constant_dict[om_anonymous_name]
-				pom_dict['objectMap'] = {'constant': constant_value}
+				data_type = datatype_dict[om_anonymous_name]
+				pom_dict['objectMap'] = {'constant': constant_value, 'datatype': data_type}
 			if om_anonymous_name in parentTriplesMap_dict.keys():
 				parent_mapping_name = parentTriplesMap_dict[om_anonymous_name]
 				jc_anonymous_name = joinCondition_dict[om_anonymous_name]

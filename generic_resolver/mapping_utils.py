@@ -79,6 +79,10 @@ class RML_Mapping(object):
     def get_reference(term_map):
         return term_map['reference']
 
+    @staticmethod
+    def get_constant_value_type(term_map):
+        return term_map['constant'], term_map['datatype']
+
     def parse_rom(self, object_map):
         mapping_name = object_map['parentTriplesMap']
         join_condition = object_map['joinCondition']
