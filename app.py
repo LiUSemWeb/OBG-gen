@@ -16,6 +16,7 @@ global query
 # Resolvers are simple python functions
 
 def generic_resolver(_, info, **kwargs):
+
     result = []
     a = datetime.datetime.now()
     # print('info', info)

@@ -3,17 +3,22 @@ type Query {
     CalculationList(filter: CalculationFilter): [Calculation!]
     StructureList(filter: StructureFilter): [Structure!]
     CompositionList(filter: CompositionFilter): [Composition!]
+    CalculatedPropertyList(filter: CalculatedPropertyFilter): [CalculatedProperty!]
     SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup!]
 }
 
 type Calculation {
     hasOutputStructure: [Structure!]!
+    hasOutputCalculatedProperty: [CalculatedProperty!]!
     ID: String!
 }
 type Structure {
     StructureID: String!
     hasComposition: Composition
     hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup
+}
+type CalculatedProperty {
+    numericalValue: Float!
 }
 type Composition {
     ReducedFormula: String
@@ -25,6 +30,7 @@ type SpaceGroup {
 }
 input CalculationFilter {
     hasOutputStructure: StructureFilter
+    hasOutputCalculatedProperty: CalculatedPropertyFilter
     ID: StringFilter
     _and: [CalculationFilter]
     _or: [CalculationFilter]
@@ -37,7 +43,12 @@ input StructureFilter {
     _or:[StructureFilter]
     _not:StructureFilter
   }
-
+input CalculatedPropertyFilter {
+    numericalValue: FloatFilter
+    _and: [CalculatedPropertyFilter]
+    _or: [CalculatedPropertyFilter]
+    _not: CalculatedPropertyFilter
+}
 input CompositionFilter {
     ReducedFormula:StringFilter
     AnonymousFormula:StringFilter
@@ -67,3 +78,18 @@ input SpaceGroupFilter {
     _nlike: String
     _nilike: String
   }
+  input FloatFilter {
+    _eq: Float
+    _neq: Float
+    _gt: Float
+    _egt: Float
+    _lt: Float
+    _elt: Float
+    _in: [Float]
+    _nin: [Float]
+    _like: Float  # string matching along the lines of LIKE in SQL
+    _ilike: Float # case-insensitive string matching
+    _nlike: Float
+    _nilike: Float
+  }
+  

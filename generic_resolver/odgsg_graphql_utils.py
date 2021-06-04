@@ -343,10 +343,11 @@ class Resolver_Utils(object):
         return self.mu.parse_join_condition(join_condition)
 
     # need to optimize
-    def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name=''):
+    def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes= []):
         key, template = self.parse_template(template)
         i = 0
         while i < len(temp_result):
+            temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
             iri = template.format(temp_result[i][key])
             if root_type_flag is True:
                 if mapping_name in self.filtered_object_iri.keys() and iri in self.filtered_object_iri[mapping_name] or \
@@ -397,24 +398,6 @@ class Resolver_Utils(object):
         
         '''
         return temp_result
-
-    @staticmethod
-    def incremental_join(temp_result, result2join):
-        result = []
-        if len(result2join) > 0:
-            for (join_data, join_condition, field, schema_ast) in result2join:
-                for join_record in join_data:
-                    for record in temp_result:
-                        if record[join_condition['child']] == join_record[join_condition['parent']]:
-                            new_record = record
-                            if schema_ast['wrapping_label'] == '0' or schema_ast['wrapping_label'] == '10':
-                                new_record[field] = join_record
-                            else:
-                                new_record[field] = [join_record]
-                            result.append(new_record)
-            return result
-        else:
-            return temp_result
 
     @staticmethod
     def merge(result, temp_result):
@@ -704,24 +687,26 @@ class Resolver_Utils(object):
         for mapping in mappings:
             logical_source = self.get_logical_source(mapping)
             template = self.get_template(mapping)
-            # key_attr = self.parse_template(template)[0]
+            key_attrs = [self.parse_template(template)[0]]
             temp_result = self.executor(logical_source, None, False, None, ref)
             poms = self.get_predicate_object_maps(mapping, predicates)
             attr_pred, result2join, constant = [], [], []
             ref_poms_pred_object_map = []
+            result_join = defaultdict(list)
             for pom in poms:
                 predicate, object_map = self.parse_pom(pom)
                 if self.type_of_object_map(object_map) == 1:
                     reference_attribute = self.get_reference_attribute(object_map)
                     attr_pred.append((reference_attribute, self.phi(predicate)))
+                    key_attrs.append(reference_attribute)
                 if self.type_of_object_map(object_map) == 2:
                     print('Constant')
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
             if root_type_flag is True:
-                temp_result = self.refine_json(temp_result, attr_pred, constant, template, True, mapping['name'])
+                temp_result = self.refine_json(temp_result, attr_pred, constant, template, True, mapping['name'], key_attrs)
             else:
-                temp_result = self.refine_json(temp_result, attr_pred, constant, template)
+                temp_result = self.refine_json(temp_result, attr_pred, constant, template, False, '', key_attrs)
             for (predicate, object_map) in ref_poms_pred_object_map:
                 new_query_ast = self.get_sub_ast(query_ast, self.phi(predicate))
                 parent_mapping, join_condition = self.parse_rom(object_map)
@@ -730,6 +715,63 @@ class Resolver_Utils(object):
                 ref = (child_data, join_condition)
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
                 result2join.append((parent_data, join_condition, self.phi(predicate), new_query_ast))
-            temp_result = self.incremental_join(temp_result, result2join)
+                result_join[self.phi(predicate)].append((parent_data, join_condition, new_query_ast['wrapping_label']))
+            # if len(result2join) > 0:
+                # temp_result = self.old_incremental_join(temp_result, result2join)
+            if len(result_join) >0:
+                temp_result = self.incremental_join(temp_result, result_join)
             result = self.merge(result, temp_result)
         return self.duplicate_detection_fusion(result)
+
+    @staticmethod
+    def incremental_join(temp_result, result_join):
+        result = []
+        for pred_key, data_join_lst in result_join.items():
+            for (join_data, join_condition, wrapping_label) in data_join_lst:
+                for join_record in join_data:
+                    for record in temp_result:
+                        new_record = record
+                        if pred_key not in new_record.keys() and wrapping_label != '0' and wrapping_label != '10':
+                            new_record[pred_key] = []
+                        if record[join_condition['child']] == join_record[join_condition['parent']]:
+                            if wrapping_label == '0' or wrapping_label == '10':
+                                new_record[pred_key] = join_record
+                            else:
+                                new_record[pred_key].append(join_record)
+                            # May need to be updated
+                            if new_record not in result:
+                                result.append(new_record)
+        return result
+    '''
+            if len(result2join) > 0:
+            for (join_data, join_condition, field, schema_ast) in result2join:
+                for join_record in join_data:
+                    for record in temp_result:
+                        if record[join_condition['child']] == join_record[join_condition['parent']]:
+                            new_record = record
+                            if schema_ast['wrapping_label'] == '0' or schema_ast['wrapping_label'] == '10':
+                                new_record[field] = join_record
+                            else:
+                                new_record[field] = [join_record]
+                            result.append(new_record)
+    '''
+
+'''
+@staticmethod
+    def old_incremental_join(temp_result, result2join):
+        result = []
+        if len(result2join) > 0:
+            for (join_data, join_condition, field, schema_ast) in result2join:
+                for join_record in join_data:
+                    for record in temp_result:
+                        if record[join_condition['child']] == join_record[join_condition['parent']]:
+                            new_record = record
+                            if schema_ast['wrapping_label'] == '0' or schema_ast['wrapping_label'] == '10':
+                                new_record[field] = join_record
+                            else:
+                                new_record[field] = [join_record]
+                            result.append(new_record)
+            return result
+        else:
+            return temp_result
+'''
