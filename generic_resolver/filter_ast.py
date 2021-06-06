@@ -10,22 +10,31 @@ class Filter_AST(object):
         self.parent_edge_chain = ''
         self.attrs_type = dict()
         self.filter_flag = 'ALL'
+        self.list_obj_flag = False
 
-    def add_child(self, child_name, edge):
+    def add_child(self, child_name, edge, list_obj_tag = ''):
         new_child = Filter_AST(child_name, parent=self, parent_edge=edge)
         new_child.parent_edge_chain = self.parent_edge_chain + '.' + edge
         self.children.append(new_child)
         self.children_edges.append(edge)
         self.filter_flag = 'ALL'
+        if list_obj_tag == '0' or list_obj_tag == '10':
+            if self.list_obj_flag is True:
+                new_child.list_obj_flag = True
+            else:
+                new_child.list_obj_flag = False
+        else:
+            new_child.list_obj_flag = True
         return new_child
 
     def add_child_edge(self, child_edge):
         self.children_edges.append(child_edge)
 
-    def add_attribute_filter(self, attr_symbol, filter_dict, attr_type):
+    def add_attribute_filter(self, attr_symbol, filter_dict, attr_type, list_obj_tag = ''):
         self.filter_dict[attr_symbol] = filter_dict
         self.attrs_type[attr_symbol] = attr_type
         self.filter_flag = ''
+
 
     def is_root(self):
         return self.parent is None

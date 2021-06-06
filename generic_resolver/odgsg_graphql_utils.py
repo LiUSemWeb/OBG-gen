@@ -10,6 +10,7 @@ from collections import defaultdict
 import pandas as pd
 from generic_resolver.filter_ast import Filter_AST
 import ast
+import copy
 
 
 class Resolver_Utils(object):
@@ -95,7 +96,9 @@ class Resolver_Utils(object):
             result = temp_data
         return result
 
-    def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None):
+    def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
+        filter_lst_obj_tag = False
+        group_by_attrs = copy.copy(key_attrs)
         r = requests.get(url=url)
         if filter_dict is not None:
             for key, value in filter_dict.items():
@@ -119,13 +122,19 @@ class Resolver_Utils(object):
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
                 result = result.assign(**kwargs)
+        #print('list_obj_flag', filter_lst_obj_tag)
         if filter_dict is not None:
-            # print('filter')
-            # print('shape', result.shape[0])
-            result = self.filter_data_frame(result, filter_dict)
-            # print(result)
-            # print('shape', result.shape[0])
-        return result
+            if filter_lst_obj_tag is False:
+                # print('filter')
+                # print('shape', result.shape[0])
+                result = self.filter_data_frame(result, filter_dict)
+                # print(result)
+                # print('shape', result.shape[0])
+                return result
+            else:
+                return self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
+        else:
+            return result
 
     @staticmethod
     def transform_operator(operator, negation_flag=False):
@@ -145,6 +154,19 @@ class Resolver_Utils(object):
             return operator
 
     @staticmethod
+    def transform_lambda_func(column_name, operator, value, negation_flag=False):
+        if operator == '_eq':
+            return lambda x: x[column_name].eq(value).any() if not negation_flag else lambda x: x[column_name].ne(value).any()
+        elif operator == '_gt':
+            return lambda x: x[column_name].gt(value).any() if not negation_flag else lambda x: x[column_name].le(value).any()
+        elif operator == '_lt':
+            return lambda x: x[column_name].lt(value).any() if not negation_flag else lambda x: x[column_name].ge(value).any()
+        elif operator == '_in':
+            return lambda x: x[column_name].isin(value).any() if not negation_flag else lambda x: ~x[column_name].isin(value).any()
+        else:
+            return None
+
+    @staticmethod
     def convert_data_type(column_name, old_type):
         convert_type_dict = dict()
         if old_type == 'String':
@@ -156,6 +178,8 @@ class Resolver_Utils(object):
         return convert_type_dict
 
     def filter_data_frame(self, df, filter_dict):
+        # print('FILTER DICT')
+        # print(filter_dict)
         for pred, filter_dict_value in filter_dict.items():
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
@@ -164,6 +188,44 @@ class Resolver_Utils(object):
                                                       atom_filter['value'], atom_filter['negation'], attr_type)
                 df = df.query(filter_str)
         return df
+
+    def filter_data_frame_group_by(self, df, filter_dict, key_attrs):
+        for pred, filter_dict_value in filter_dict.items():
+            local_name = filter_dict_value['local_name']
+            attr_type = filter_dict_value['attribute_type']
+            for atom_filter in filter_dict_value['filter']:
+                # filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
+                filter_lambda_func = self.generate_filter_lambda_func(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
+                df = df.groupby(key_attrs).filter(filter_lambda_func)
+        return df
+
+    def generate_filter_lambda_func(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
+        graphql_df_operator_map = {}
+        filter_str = ''
+        lambda_func = None
+        if operator_str in ['_in', '_nin']:
+            # new_value = ast.literal_eval(value)
+            if column_type == 'int64':
+                new_value = ast.literal_eval(value_str)
+                new_value = [int(x) for x in new_value if x.isnumeric() is True]
+                lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+            else:
+                lambda_func = self.transform_lambda_func(attribute_name, operator_str, value_str, negation_flag)
+        else:
+            if attr_type == 'String' or 'ID':
+                if column_type == 'int64':
+                    new_value = int(value_str)
+                    lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+                else:
+                    new_value = str(value_str)
+                    lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+            if attr_type == 'Int':
+                new_value = int(value_str)
+                lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+            if attr_type == 'Float':
+                new_value = float(value_str)
+                lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+        return lambda_func
 
     def generate_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
@@ -245,9 +307,9 @@ class Resolver_Utils(object):
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         if definition.name.value == 'Query':
                             # filter_type = self.parse_query_qrguments(wrapped_field.arguments)
-                            self.filter_fields_map[(wrapped_field.name.value, 'filter')] = named_type_value
+                            self.filter_fields_map[(wrapped_field.name.value, 'filter')] = (named_type_value, encode_labels)
                         else:
-                            self.filter_fields_map[(definition.name.value, wrapped_field.name.value)] = named_type_value
+                            self.filter_fields_map[(definition.name.value, wrapped_field.name.value)] = (named_type_value, encode_labels)
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
                 if definition.kind == 'input_object_type_definition':
@@ -457,7 +519,8 @@ class Resolver_Utils(object):
     def get_db_source(self, logical_source):
         return self.mu.get_db_source(logical_source)
 
-    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None):
+    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False):
+
         source_type = self.get_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
@@ -469,7 +532,8 @@ class Resolver_Utils(object):
             # result = self.getJSONData(source_request, iterator, ref)
             if filter_flag is True:
                 # data frame here
-                result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data)
+                #print('print my dilter_dict', filter_dict)
+                result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
             else:
                 result = self.getJSONData(source_request, iterator, ref)
         if source_type == 'mydb:mongodb':
@@ -518,15 +582,16 @@ class Resolver_Utils(object):
                 temp_ast = filter_ast
                 for f in fields:
                     if f not in filter_ast.children_edges:
-                        name = filter_fields_map[(root_type, f)]
+                        name = filter_fields_map[(root_type, f)][0]
+                        list_obj_tag = filter_fields_map[(root_type, f)][1]
                         if name not in ['String', 'Int', 'Boolean', 'ID', 'Float']:
-                            new_child = temp_ast.add_child(name, f)
+                            new_child = temp_ast.add_child(name, f, list_obj_tag)
                             temp_ast = new_child
                         else:
                             temp_ast.add_attribute_filter(f, field_filter[1], name)
                     else:
                         temp_ast = temp_ast.get_sub_tree_by_edge(f)
-                    root_type = filter_fields_map[(root_type, f)]
+                    root_type = filter_fields_map[(root_type, f)][0]
             filter_asts.append(filter_ast)
             prefix = filter_ast.get_prefix_expressions()
             prefix_dict[tuple(sorted(prefix))] += 1
@@ -583,7 +648,7 @@ class Resolver_Utils(object):
                         localized_filter_fields[key]['filter'] = value
             return localized_filter_fields
 
-    def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name):
+    def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag=False):
         result = defaultdict()
         if len(super_mappings_name) == 0:
             mappings = self.get_mappings(entity_type)
@@ -614,9 +679,10 @@ class Resolver_Utils(object):
                     filter_constant.append(predicate)
                     print('Constant')
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields, filter_constant)
-            temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data)
+            temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
             temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template)
-
+            #if temp_result.empty is not True:
+            #result[mapping_name] = pd.merge(result[mapping_name], temp_result, how= 'inner', left_on=key_attrs, right_on=key_attrs)
             result[mapping_name] = temp_result
         return result
 
@@ -645,8 +711,10 @@ class Resolver_Utils(object):
             if temp_result is None or len(temp_result) == 0:
                 entity_type = filter_ast.name
                 filter_fields = filter_ast.filter_dict
+                filter_lst_obj_tag = filter_ast.list_obj_flag
                 super_mappings_name = []
-                temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name)
+                print('filter fields', filter_fields)
+                temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag)
                 # print('temp_result', temp_result)
                 if symbolic_root_filter in rse:
                     self.cache[symbolic_root_filter] = temp_result
@@ -689,10 +757,10 @@ class Resolver_Utils(object):
                                                                  left_on=child_field, right_on=parent_field)
                                 else:
                                     super_result[key] = super_result[key][0:0]
-                            else:
-                                print('No join here')
-                    else:
-                        print('No join here')
+                            # else:
+                                # print('No join here')
+                    # else:
+                        # print('No join here')
         return super_result
 
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):

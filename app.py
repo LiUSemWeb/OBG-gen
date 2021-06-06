@@ -27,6 +27,7 @@ def generic_resolver(_, info, **kwargs):
         dnf_lst = fu.simplify()
         ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
         print('DNF', dnf_lst)
+        print('ru_filter_fields_map', ru.filter_fields_map)
         filter_asts, common_prefix, repeated_single_exp = ru.generate_filter_asts(ru.filter_fields_map,
                                                                                   ru.symbol_field_exp, dnf_lst,
                                                                                   'CalculationList')
@@ -56,6 +57,7 @@ def generic_resolver(_, info, **kwargs):
         result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
         b = datetime.datetime.now()
         print('Response Time:', (b - a))
+    ru.filtered_object_iri = dict()
     return result
 
 
