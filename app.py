@@ -42,7 +42,8 @@ def generic_resolver(_, info, **kwargs):
                         ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
                     else:
                         ru.filtered_object_iri[key] = object_iri_lst
-        print('filtered_result', ru.filtered_object_iri)
+        for key, value in ru.filtered_object_iri.items():
+            print('Filtered', key, len(value))
         if len(ru.filtered_object_iri.keys()) > 0:
             ru.filtered_object_iri['filter'] = True
             query_ast = ru.generate_query_ast(type_defs, info)

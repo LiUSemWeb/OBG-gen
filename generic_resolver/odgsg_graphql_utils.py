@@ -97,7 +97,7 @@ class Resolver_Utils(object):
         return result
 
     def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
-        filter_lst_obj_tag = False
+        #filter_lst_obj_tag = False
         group_by_attrs = copy.copy(key_attrs)
         r = requests.get(url=url)
         if filter_dict is not None:
@@ -132,7 +132,8 @@ class Resolver_Utils(object):
                 # print('shape', result.shape[0])
                 return result
             else:
-                return self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
+                temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
+                return temp_result
         else:
             return result
 
@@ -210,7 +211,8 @@ class Resolver_Utils(object):
                 new_value = [int(x) for x in new_value if x.isnumeric() is True]
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
             else:
-                lambda_func = self.transform_lambda_func(attribute_name, operator_str, value_str, negation_flag)
+                new_value = ast.literal_eval(value_str)
+                lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
         else:
             if attr_type == 'String' or 'ID':
                 if column_type == 'int64':
@@ -581,7 +583,7 @@ class Resolver_Utils(object):
                 root_type = entry
                 temp_ast = filter_ast
                 for f in fields:
-                    if f not in filter_ast.children_edges:
+                    if f not in temp_ast.children_edges:
                         name = filter_fields_map[(root_type, f)][0]
                         list_obj_tag = filter_fields_map[(root_type, f)][1]
                         if name not in ['String', 'Int', 'Boolean', 'ID', 'Float']:
@@ -677,13 +679,12 @@ class Resolver_Utils(object):
                     constant_value, constant_datatype = self.get_constant_value(object_map)
                     constant_data.append((predicate, constant_value, constant_datatype))
                     filter_constant.append(predicate)
-                    print('Constant')
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields, filter_constant)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
             temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template)
-            #if temp_result.empty is not True:
+            if temp_result.empty is not True:
+                result[mapping_name] = temp_result
             #result[mapping_name] = pd.merge(result[mapping_name], temp_result, how= 'inner', left_on=key_attrs, right_on=key_attrs)
-            result[mapping_name] = temp_result
         return result
 
     @staticmethod
@@ -737,7 +738,8 @@ class Resolver_Utils(object):
             self.filter_evaluator(sub_filter_ast, cpe, rse, new_filter, super_result)
         return super_result
 
-    def filter_join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
+    def filter_join_old(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
+        returned_result = dict()
         super_mappings = self.get_mappings(super_node_type)
         predicates = self.translate([super_field])
         for mapping in super_mappings:
@@ -753,14 +755,61 @@ class Resolver_Utils(object):
                                 if len(current_node_result[parent_mapping['name']]) > 0:
                                     right_df = current_node_result[parent_mapping['name']]
                                     right_df = right_df.drop(['iri'], axis=1)
-                                    super_result[key] = pd.merge(super_result[key], right_df, how='inner',
-                                                                 left_on=child_field, right_on=parent_field)
+                                    super_result[key] = pd.merge(super_result[key], right_df, how='inner',left_on=child_field, right_on=parent_field)
                                 else:
                                     super_result[key] = super_result[key][0:0]
-                            # else:
-                                # print('No join here')
-                    # else:
-                        # print('No join here')
+                            else:
+                                # need to test
+                                if key == mapping['name']:
+                                    print('No join here')
+                    else:
+                        # may have a problem here.
+                        print('No join here')
+        return super_result
+
+    def filter_join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
+        super_mappings = self.get_mappings(super_node_type)
+        predicates = self.translate([super_field])
+        result2_join = []
+        supper_mappings2join= []
+        for mapping in super_mappings:
+            poms = self.get_predicate_object_maps(mapping, predicates)
+            for pom in poms:
+                predicate, object_map = self.parse_pom(pom)
+                if self.type_of_object_map(object_map) == 3:
+                    parent_mapping, join_condition = self.parse_rom(object_map)
+                    child_field, parent_field = self.parse_join_condition(join_condition)
+                    if parent_mapping['name'] in current_node_result.keys():
+                        result2_join.append((mapping['name'], parent_mapping['name'], child_field, parent_field))
+                        supper_mappings2join.append(mapping['name'])
+        # About these joins
+        for mapping_key in super_result.keys():
+            if mapping_key in supper_mappings2join:
+                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
+                    if super_mapping_name == mapping_key:
+                        right_df = current_node_result[current_mapping_name]
+                        right_df = right_df.drop(['iri'], axis=1)
+                        left_new_column_name = mapping_key + '-' + super_field
+                        right_new_column_name = current_mapping_name + '-' + current_field
+                        super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
+                        super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner', left_on=left_new_column_name,right_on=current_field)
+                        super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
+            else:
+                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
+                    if super_mapping_name == mapping_key:
+                        print('No case here')
+                    else:
+                        column_name = super_mapping_name + '-' + super_field
+                        if column_name in super_result[mapping_key].columns.values.tolist():
+                            right_df = current_node_result[current_mapping_name]
+                            right_df = right_df.drop(['iri'], axis=1)
+                            super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
+                                                                 left_on=column_name, right_on=current_field)
+                        else:
+                            print('Join here?')
+                            if len(super_result.keys()) > len(supper_mappings2join):
+                                print('Give it empty')
+                                super_result[mapping_key] = super_result[mapping_key][0:0]
         return super_result
 
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):
@@ -792,7 +841,6 @@ class Resolver_Utils(object):
                 if self.type_of_object_map(object_map) == 2:
                     constant_value, constant_datatype = self.get_constant_value(object_map)
                     constant_data.append((predicate, constant_value, constant_datatype))
-                    print('Constant')
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
             if root_type_flag is True:
