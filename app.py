@@ -16,9 +16,8 @@ global query
 # Resolvers are simple python functions
 
 def generic_resolver(_, info, **kwargs):
-
     result = []
-    a = datetime.datetime.now()
+    start_time = datetime.datetime.now()
     # print('info', info)
     filter_condition = kwargs
     if len(filter_condition) > 0:
@@ -26,13 +25,13 @@ def generic_resolver(_, info, **kwargs):
         fu.parse_cond(filter_condition)
         dnf_lst = fu.simplify()
         ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
-        print('DNF', dnf_lst)
-        print('ru_filter_fields_map', ru.filter_fields_map)
+        #print('DNF', dnf_lst)
+        # print('ru_filter_fields_map', ru.filter_fields_map)
         filter_asts, common_prefix, repeated_single_exp = ru.generate_filter_asts(ru.filter_fields_map,
                                                                                   ru.symbol_field_exp, dnf_lst,
                                                                                   'CalculationList')
-        print('CP:', common_prefix)
-        print('RSP:', repeated_single_exp)
+        # print('CP:', common_prefix)
+        #vprint('RSP:', repeated_single_exp)
         for filter_ast in filter_asts:
             filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
             for key, value in filter_df.items():
@@ -42,6 +41,9 @@ def generic_resolver(_, info, **kwargs):
                         ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
                     else:
                         ru.filtered_object_iri[key] = object_iri_lst
+        filter_end_time = datetime.datetime.now()
+        print('Filter Time:', (filter_end_time - start_time))
+        print('Filter Time without access time:', (filter_end_time - start_time - ru.filter_access_data_time))
         for key, value in ru.filtered_object_iri.items():
             print('Filtered', key, len(value))
         if len(ru.filtered_object_iri.keys()) > 0:
@@ -49,16 +51,23 @@ def generic_resolver(_, info, **kwargs):
             query_ast = ru.generate_query_ast(type_defs, info)
             # result = ru.DataFetcher(query_ast['fields'][0])
             result = ru.query_evaluator(query_ast['fields'][0], None, None, True, ru.filtered_object_iri.keys())
-            b = datetime.datetime.now()
-            print('Response Time:', (b - a))
+            end_time = datetime.datetime.now()
+            print('Query Response Time:', (end_time - filter_end_time))
+            print('Query Response Time without access time:', (end_time - filter_end_time - ru.query_access_data_time))
+            print('Whole Filter/Query Response Time:', (end_time - start_time))
+            print('Whole Filter/Query Response Time:', (end_time - start_time - ru.filter_access_data_time - ru.query_access_data_time))
     else:
         ru.filtered_object_iri['filter'] = False
         query_ast = ru.generate_query_ast(type_defs, info)
         # result = ru.DataFetcher(query_ast['fields'][0])
         result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
-        b = datetime.datetime.now()
-        print('Response Time:', (b - a))
+        end_time = datetime.datetime.now()
+        print('(No filter)-Query Response Time:', (end_time - start_time))
+        print(ru.query_access_data_time)
+        print('(No filter)-Query Response Time without access time:', (end_time - start_time - ru.query_access_data_time))
     ru.filtered_object_iri = dict()
+    ru.query_access_data_time = datetime.timedelta()
+    ru.filter_access_data_time = datetime.timedelta()
     return result
 
 

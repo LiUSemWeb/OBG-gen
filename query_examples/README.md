@@ -1,5 +1,32 @@
 ### Queries Examples 
 
+#### Query 1
+    
+    query Query1{
+        CalculationList{
+            ID
+        }
+    }
+
+#### Query 2
+
+    query Query2{
+        CalculatedPropertyList{
+            PropertyName
+        }
+    }
+
+
+#### Query 3
+
+    query Query3{
+        CalculatedPropertyList{
+            PropertyName
+            numericalValue
+        }
+    }
+
+#### Query 3
     
     
     query Query1{

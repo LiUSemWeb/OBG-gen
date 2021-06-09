@@ -11,6 +11,8 @@ import pandas as pd
 from generic_resolver.filter_ast import Filter_AST
 import ast
 import copy
+import datetime
+
 
 
 class Resolver_Utils(object):
@@ -28,6 +30,8 @@ class Resolver_Utils(object):
         self.filter_fields_map = dict()
         self.mapping_attr_pred_dict = defaultdict(dict)
         self.filtered_object_iri = dict()
+        self.filter_access_data_time = datetime.timedelta()
+        self.query_access_data_time = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -38,7 +42,11 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def getJSONData(self, url, iterator=None, ref=None):
+        start_time = datetime.datetime.now()
         r = requests.get(url=url)
+        end_time = datetime.datetime.now()
+        #print('Access data source time after filter', (end_time - start_time))
+        self.query_access_data_time += end_time-start_time
         data = r.json()
         if iterator is not None:
             keys = self.parse_iterator(iterator)
@@ -99,7 +107,11 @@ class Resolver_Utils(object):
     def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         #filter_lst_obj_tag = False
         group_by_attrs = copy.copy(key_attrs)
+        start_time = datetime.datetime.now()
         r = requests.get(url=url)
+        end_time = datetime.datetime.now()
+        #print('Access data source time for filter', (end_time - start_time))
+        self.filter_access_data_time += end_time - start_time
         if filter_dict is not None:
             for key, value in filter_dict.items():
                 if value['local_name'] not in key_attrs:
@@ -522,7 +534,6 @@ class Resolver_Utils(object):
         return self.mu.get_db_source(logical_source)
 
     def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False):
-
         source_type = self.get_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
@@ -714,7 +725,7 @@ class Resolver_Utils(object):
                 filter_fields = filter_ast.filter_dict
                 filter_lst_obj_tag = filter_ast.list_obj_flag
                 super_mappings_name = []
-                print('filter fields', filter_fields)
+                #print('filter fields', filter_fields)
                 temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag)
                 # print('temp_result', temp_result)
                 if symbolic_root_filter in rse:
@@ -739,7 +750,6 @@ class Resolver_Utils(object):
         return super_result
 
     def filter_join_old(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
-        returned_result = dict()
         super_mappings = self.get_mappings(super_node_type)
         predicates = self.translate([super_field])
         for mapping in super_mappings:
@@ -796,9 +806,7 @@ class Resolver_Utils(object):
                         super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
             else:
                 for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
-                    if super_mapping_name == mapping_key:
-                        print('No case here')
-                    else:
+                    if super_mapping_name != mapping_key:
                         column_name = super_mapping_name + '-' + super_field
                         if column_name in super_result[mapping_key].columns.values.tolist():
                             right_df = current_node_result[current_mapping_name]
@@ -806,10 +814,11 @@ class Resolver_Utils(object):
                             super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
                                                                  left_on=column_name, right_on=current_field)
                         else:
-                            print('Join here?')
+                            # print('Join here?')
                             if len(super_result.keys()) > len(supper_mappings2join):
-                                print('Give it empty')
+                                # print('Give it empty')
                                 super_result[mapping_key] = super_result[mapping_key][0:0]
+                    # No case for supper_mapping_name == mapping_key
         return super_result
 
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):

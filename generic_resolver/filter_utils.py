@@ -220,7 +220,7 @@ class Filter_Utils(object):
     def simplify(self):
         dnf_exp_lst = []
         exp_str = ''
-        print('self translated_expression_str', self.translated_expression_str)
+        #print('self translated_expression_str', self.translated_expression_str)
         for element in self.translated_expression_str:
             if element == '_and':
                 exp_str += ' & '
@@ -232,7 +232,7 @@ class Filter_Utils(object):
                 exp_str += element
         # print('exp_str', exp_str)
         simplified_exp_str = str(to_dnf(exp_str, True))
-        print('DNF_STR', simplified_exp_str)
+        # print('DNF_STR', simplified_exp_str)
         # result = satisfiable(dnf_obj)
         # dnf_exp_lst = str(simplified_exp).split('|')
         if '|' not in simplified_exp_str:
