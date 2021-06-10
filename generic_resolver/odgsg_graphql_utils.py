@@ -32,6 +32,7 @@ class Resolver_Utils(object):
         self.filtered_object_iri = dict()
         self.filter_access_data_time = datetime.timedelta()
         self.query_access_data_time = datetime.timedelta()
+        self.join_time = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -838,7 +839,7 @@ class Resolver_Utils(object):
             key_attrs = [self.parse_template(template)[0]]
             temp_result = self.executor(logical_source, None, False, None, ref)
             poms = self.get_predicate_object_maps(mapping, predicates)
-            attr_pred, result2join, constant_data = [], [], []
+            attr_pred, constant_data = [], []
             ref_poms_pred_object_map = []
             result_join = defaultdict(list)
             for pom in poms:
@@ -863,17 +864,20 @@ class Resolver_Utils(object):
                 child_data = self.get_child_data(temp_result, child_field)
                 ref = (child_data, join_condition)
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
-                result2join.append((parent_data, join_condition, self.phi(predicate), new_query_ast))
+                # result2join.append((parent_data, join_condition, self.phi(predicate), new_query_ast))
                 result_join[self.phi(predicate)].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             # if len(result2join) > 0:
                 # temp_result = self.old_incremental_join(temp_result, result2join)
             if len(result_join) >0:
-                temp_result = self.incremental_join(temp_result, result_join)
+                #print('result_join', result_join)
+                #print(temp_result)
+                temp_result = self.incremental_optimized_join(temp_result, result_join)
             result = self.merge(result, temp_result)
         return self.duplicate_detection_fusion(result)
 
-    @staticmethod
-    def incremental_join(temp_result, result_join):
+    # @staticmethod
+    def incremental_join(self, temp_result, result_join):
+        start_time = datetime.datetime.now()
         result = []
         for pred_key, data_join_lst in result_join.items():
             for (join_data, join_condition, wrapping_label) in data_join_lst:
@@ -890,6 +894,32 @@ class Resolver_Utils(object):
                             # May need to be updated
                             if new_record not in result:
                                 result.append(new_record)
+        end_time = datetime.datetime.now()
+        self.join_time += end_time-start_time
+        return result
+
+    def incremental_optimized_join(self, temp_result, result_join):
+        start_time = datetime.datetime.now()
+        result = []
+        for pred_key, data_join_lst in result_join.items():
+            for (join_data, join_condition, wrapping_label) in data_join_lst:
+                new_formed_join_data = defaultdict()
+                for record in join_data:
+                    # print(record[join_condition['parent']])
+                    new_formed_join_data[record[join_condition['parent']]] = record
+                for record in temp_result:
+                    new_record = record
+                    join_key_value = record[join_condition['child']]
+                    if pred_key not in new_record.keys() and wrapping_label != '0' and wrapping_label != '10':
+                        new_record[pred_key] = []
+                    if wrapping_label == '0' or wrapping_label == '10':
+                        new_record[pred_key] = new_formed_join_data[join_key_value]
+                    else:
+                        new_record[pred_key].append(new_formed_join_data[join_key_value])
+                    if new_record not in result:
+                        result.append(new_record)
+        end_time = datetime.datetime.now()
+        self.join_time += end_time-start_time
         return result
     '''
             if len(result2join) > 0:

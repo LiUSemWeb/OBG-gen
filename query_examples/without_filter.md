@@ -10,7 +10,7 @@
 
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX core: <https://w3id.org/mdo/core/>
-    SELECT ?id WHERE {
+    SELECT ?calculation ?id WHERE {
       ?calculation rdf:type core:Calculation;
                    core:ID ?id.
     } 
@@ -25,7 +25,7 @@
 
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX core: <https://w3id.org/mdo/core/>
-    SELECT ?name WHERE {
+    SELECT ?calculatedproperty ?name WHERE {
       ?calculatedproperty rdf:type core:CalculatedProperty;
                           core:PropertyName ?name.
     } 
@@ -40,7 +40,7 @@
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX core: <https://w3id.org/mdo/core/>
     PREFIX qudt: <http://qudt.org/schema/qudt#>
-    SELECT ?name ?value WHERE {
+    SELECT ?calculatedproperty ?name ?value WHERE {
       ?calculatedproperty rdf:type core:CalculatedProperty;
                core:PropertyName ?name;
                qudt:numericalValue ?value.
@@ -54,7 +54,7 @@
 
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX structure: <https://w3id.org/mdo/structure/>
-    SELECT ?formula WHERE {
+    SELECT ?composition ?formula WHERE {
       ?composition rdf:type structure:Composition;
                    structure:ReducedFormula ?formula.
     } 
@@ -154,6 +154,19 @@
             }
         }
     }
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX core: <https://w3id.org/mdo/core/>
+    PREFIX structure: <https://w3id.org/mdo/structure/>
+    PREFIX qudt: <http://qudt.org/schema/qudt#>
+    
+    SELECT ?calculation ?id ?calculatedproperty ?name ?value WHERE {
+        ?calculation rdf:type core:Calculation;
+                              core:hasOutputCalculatedProperty ?calculatedproperty;
+                              core:ID ?id.
+        ?calculatedproperty rdf:type core:CalculatedProperty;
+                            core:PropertyName ?name;
+                            qudt:numericalValue ?value.
+    }
 #### Query 10: List calculations including ID, ReducedFormulas, calculatedproperty PropertyNames and numericalValues
     query Query10{
         CalculationList{
@@ -169,14 +182,19 @@
             }
         }
     }
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX core: <https://w3id.org/mdo/core/>
     PREFIX structure: <https://w3id.org/mdo/structure/>
     PREFIX qudt: <http://qudt.org/schema/qudt#>
     SELECT ?calculation ?id ?calculatedproperty ?name ?value WHERE {
       ?calculation rdf:type core:Calculation;
                    core:ID ?id;
-                   core:hasOutputCalculatedProperty ?calculatedproperty.
+                   core:hasOutputCalculatedProperty ?calculatedproperty;
+                   core:hasOutputStructure ?structure.
+  	  ?structure rdf:type core:Structure;
+                 structure:hasComposition ?composition.
+      ?composition rdf:type structure:Composition;
+                   structure:ReducedFormula ?formula.
       ?calculatedproperty rdf:type core:CalculatedProperty;
                    core:PropertyName ?name;
                    qudt:numericalValue ?value.

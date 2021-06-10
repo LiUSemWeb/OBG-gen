@@ -5,6 +5,7 @@ from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from generic_resolver.odgsg_graphql_utils import Resolver_Utils
 from generic_resolver.filter_utils import Filter_Utils
+import json
 
 global ru
 global type_defs
@@ -61,13 +62,18 @@ def generic_resolver(_, info, **kwargs):
         query_ast = ru.generate_query_ast(type_defs, info)
         # result = ru.DataFetcher(query_ast['fields'][0])
         result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
+        #print(result)
+        with open('output.json', 'w') as f:
+            json.dump({'data':result}, f)
         end_time = datetime.datetime.now()
         print('(No filter)-Query Response Time:', (end_time - start_time))
-        print(ru.query_access_data_time)
+        print('Access underling data time', ru.query_access_data_time)
+        print('join time', ru.join_time)
         print('(No filter)-Query Response Time without access time:', (end_time - start_time - ru.query_access_data_time))
     ru.filtered_object_iri = dict()
     ru.query_access_data_time = datetime.timedelta()
     ru.filter_access_data_time = datetime.timedelta()
+    ru.join_time = datetime.timedelta()
     return result
 
 
