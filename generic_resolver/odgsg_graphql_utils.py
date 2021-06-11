@@ -33,6 +33,9 @@ class Resolver_Utils(object):
         self.filter_access_data_time = datetime.timedelta()
         self.query_access_data_time = datetime.timedelta()
         self.join_time = datetime.timedelta()
+        self.filter_join_time = datetime.timedelta()
+        self.filter_df = datetime.timedelta()
+        self.filter_df_groupby = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -104,7 +107,16 @@ class Resolver_Utils(object):
                 temp_data = temp_data[keys[i]]
             result = temp_data
         return result
-
+    def get_from_mysql_to_df(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
+        config = {
+            'user': 'root',
+            'password': '6973278lhy',
+            'host': '127.0.0.1',
+            'database': 'morph_example',
+            'raise_on_warnings': True
+        }
+        return
+    
     def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         #filter_lst_obj_tag = False
         group_by_attrs = copy.copy(key_attrs)
@@ -140,12 +152,18 @@ class Resolver_Utils(object):
             if filter_lst_obj_tag is False:
                 # print('filter')
                 # print('shape', result.shape[0])
+                start_time = datetime.datetime.now()
                 result = self.filter_data_frame(result, filter_dict)
+                end = datetime.datetime.now()
+                self.filter_df += end_time - start_time
                 # print(result)
                 # print('shape', result.shape[0])
                 return result
             else:
+                start_time = datetime.datetime.now()
                 temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
+                end_time = datetime.datetime.now()
+                self.filter_df_groupby += end_time - start_time
                 return temp_result
         else:
             return result
@@ -211,6 +229,7 @@ class Resolver_Utils(object):
                 # filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
                 filter_lambda_func = self.generate_filter_lambda_func(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
+                #df = df.filter(filter_lambda_func)
         return df
 
     def generate_filter_lambda_func(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
@@ -467,22 +486,6 @@ class Resolver_Utils(object):
                             # record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
                             temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
                 i += 1
-        '''
-        for record in temp_result:
-            record['iri'] = template.format(record[key])
-            for attr_pred_tuple in attr_pred_lst:
-                if '.' in attr_pred_tuple[0]:
-                    keys = self.parse_iterator(attr_pred_tuple[0])
-                    temp_data = record
-                    for i in range(len(keys)):
-                        temp_data = temp_data[keys[i]]
-                    record[attr_pred_tuple[1]] = temp_data
-                else:
-                    if attr_pred_tuple[0] in record.keys():
-                        #record[attr_pred_tuple[1]] = record.pop(attr_pred_tuple[0])
-                        record[attr_pred_tuple[1]] = record[attr_pred_tuple[0]]
-        
-        '''
         return temp_result
 
     @staticmethod
@@ -738,8 +741,11 @@ class Resolver_Utils(object):
             super_field = filter_ast.parent_edge
             if super_field != 'filter':
                 # print('Join here')
+                start_time = datetime.datetime.now()
                 super_result = self.filter_join(super_result, temp_result, super_node_type, current_node_type,
                                                 super_field)
+                end_time = datetime.datetime.now()
+                self.filter_join_time += end_time - start_time
             else:
                 super_result = temp_result
             # check CPE

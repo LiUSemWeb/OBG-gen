@@ -35,6 +35,12 @@ def generic_resolver(_, info, **kwargs):
         #vprint('RSP:', repeated_single_exp)
         for filter_ast in filter_asts:
             filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
+            print('Filter Join time', ru.filter_join_time)
+            ru.filter_join_time = datetime.timedelta()
+            print('Filter DF time', ru.filter_df)
+            ru.filter_df = datetime.timedelta()
+            print('Filter DF-Group time', ru.filter_df_groupby)
+            ru.filter_df_groupby = datetime.timedelta()
             for key, value in filter_df.items():
                 object_iri_lst = value['iri'].tolist()
                 if len(object_iri_lst) > 0:
@@ -52,6 +58,8 @@ def generic_resolver(_, info, **kwargs):
             query_ast = ru.generate_query_ast(type_defs, info)
             # result = ru.DataFetcher(query_ast['fields'][0])
             result = ru.query_evaluator(query_ast['fields'][0], None, None, True, ru.filtered_object_iri.keys())
+            with open('output.json', 'w') as f:
+                json.dump({'data': result}, f)
             end_time = datetime.datetime.now()
             print('Query Response Time:', (end_time - filter_end_time))
             print('Query Response Time without access time:', (end_time - filter_end_time - ru.query_access_data_time))
