@@ -556,14 +556,17 @@ class Resolver_Utils(object):
             result = self.getMongoDBData(server_info, query, iterator)
         return result
 
-    def refine_data_frame(self, df, pred_attr_dict, constant, template):
+    def refine_data_frame(self, df, pred_attr_dict, constant, template, mapping_name):
         key, template = self.parse_template(template)
+        new_column_name = mapping_name + '-' + key
+        df[new_column_name] = df[key]
         df = df.assign(iri=[template.format(x) for x in df[key]])
         for pred, attr in pred_attr_dict.items():
             if attr in list(df.columns):
                 if pred != attr:
                     kwargs = {pred: lambda x: x[attr]}
                     df = df.assign(**kwargs)
+        df = df.drop([key], axis=1)
         return df
 
     @staticmethod
@@ -693,10 +696,9 @@ class Resolver_Utils(object):
                     filter_constant.append(predicate)
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields, filter_constant)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
-            temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template)
+            temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template, mapping_name)
             if temp_result.empty is not True:
                 result[mapping_name] = temp_result
-            #result[mapping_name] = pd.merge(result[mapping_name], temp_result, how= 'inner', left_on=key_attrs, right_on=key_attrs)
         return result
 
     @staticmethod
@@ -742,6 +744,7 @@ class Resolver_Utils(object):
                 super_result = temp_result
             # check CPE
             if symbolic_new_filter in cpe:
+                print('Yes, here')
                 self.cache[symbolic_new_filter] = super_result
         else:
             super_result = joined_result
@@ -750,33 +753,6 @@ class Resolver_Utils(object):
             self.filter_evaluator(sub_filter_ast, cpe, rse, new_filter, super_result)
         return super_result
 
-    def filter_join_old(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
-        super_mappings = self.get_mappings(super_node_type)
-        predicates = self.translate([super_field])
-        for mapping in super_mappings:
-            poms = self.get_predicate_object_maps(mapping, predicates)
-            for pom in poms:
-                predicate, object_map = self.parse_pom(pom)
-                if self.type_of_object_map(object_map) == 3:
-                    parent_mapping, join_condition = self.parse_rom(object_map)
-                    child_field, parent_field = self.parse_join_condition(join_condition)
-                    if parent_mapping['name'] in current_node_result.keys():
-                        for key in super_result.keys():
-                            if child_field in list(super_result[key].columns):
-                                if len(current_node_result[parent_mapping['name']]) > 0:
-                                    right_df = current_node_result[parent_mapping['name']]
-                                    right_df = right_df.drop(['iri'], axis=1)
-                                    super_result[key] = pd.merge(super_result[key], right_df, how='inner',left_on=child_field, right_on=parent_field)
-                                else:
-                                    super_result[key] = super_result[key][0:0]
-                            else:
-                                # need to test
-                                if key == mapping['name']:
-                                    print('No join here')
-                    else:
-                        # may have a problem here.
-                        print('No join here')
-        return super_result
 
     def filter_join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
         super_mappings = self.get_mappings(super_node_type)
@@ -802,18 +778,28 @@ class Resolver_Utils(object):
                         right_df = right_df.drop(['iri'], axis=1)
                         left_new_column_name = mapping_key + '-' + super_field
                         right_new_column_name = current_mapping_name + '-' + current_field
-                        super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
-                        super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner', left_on=left_new_column_name,right_on=current_field)
-                        super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
+                        if left_new_column_name not in list(super_result[mapping_key].columns):
+                            super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
+                        #super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner', left_on=left_new_column_name,right_on=current_field)
+                        super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
+                                                             left_on=left_new_column_name, right_on=right_new_column_name)
+                        if right_new_column_name not in list(super_result[mapping_key].columns):
+                            super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
             else:
                 for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
                     if super_mapping_name != mapping_key:
-                        column_name = super_mapping_name + '-' + super_field
-                        if column_name in super_result[mapping_key].columns.values.tolist():
+                        left_new_column_name = super_mapping_name + '-' + super_field
+                        if left_new_column_name in super_result[mapping_key].columns.values.tolist():
                             right_df = current_node_result[current_mapping_name]
                             right_df = right_df.drop(['iri'], axis=1)
+                            right_new_column_name = current_mapping_name + '-' + current_field
+                            #super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
+
+                            #super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',left_on=column_name, right_on=current_field)
                             super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
-                                                                 left_on=column_name, right_on=current_field)
+                                                                 left_on=left_new_column_name, right_on=right_new_column_name)
+                            if right_new_column_name not in list(super_result[mapping_key].columns):
+                                super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
                         else:
                             # print('Join here?')
                             if len(super_result.keys()) > len(supper_mappings2join):
