@@ -37,10 +37,6 @@ def generic_resolver(_, info, **kwargs):
             filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
             print('Filter Join time', ru.filter_join_time)
             ru.filter_join_time = datetime.timedelta()
-            print('Filter DF time', ru.filter_df)
-            ru.filter_df = datetime.timedelta()
-            print('Filter DF-Group time', ru.filter_df_groupby)
-            ru.filter_df_groupby = datetime.timedelta()
             for key, value in filter_df.items():
                 object_iri_lst = value['iri'].tolist()
                 if len(object_iri_lst) > 0:

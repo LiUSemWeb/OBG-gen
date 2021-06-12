@@ -12,8 +12,33 @@ from generic_resolver.filter_ast import Filter_AST
 import ast
 import copy
 import datetime
+from sqlalchemy import create_engine
 
-
+map_data_source = {'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-1K.json': 'oqmd-1K-calculation',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-structure-1K.json': 'oqmd-1K-structure',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-composition-1K.json': 'oqmd-1K-composition',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-spacegroup-1K.json': 'oqmd-1K-spacegroup',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-1K.json': 'oqmd-1K-bandgap',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-1K.json': 'oqmd-1K-formationenergy',
+                   'https://huanyu-li.github.io/data/mp/mp-calculation-1K.json': 'mp-1K-calculation',
+                   'https://huanyu-li.github.io/data/mp/mp-structure-1K.json': 'mp-1K-structure',
+                   'https://huanyu-li.github.io/data/mp/mp-composition-1K.json': 'mp-1K-composition',
+                   'https://huanyu-li.github.io/data/mp/mp-spacegroup-1K.json': 'mp-1K-spacegroup',
+                   'https://huanyu-li.github.io/data/mp/mp-bandgap-1K.json': 'mp-1K-bandgap',
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-1K.json': 'mp-1K-formationenergy',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-2K.json': 'oqmd-2K-calculation',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-structure-2K.json': 'oqmd-2K-structure',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-composition-2K.json': 'oqmd-2K-composition',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-spacegroup-2K.json': 'oqmd-2K-spacegroup',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-2K.json': 'oqmd-2K-bandgap',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-2K.json': 'oqmd-2K-formationenergy',
+                   'https://huanyu-li.github.io/data/mp/mp-calculation-2K.json': 'mp-2K-calculation',
+                   'https://huanyu-li.github.io/data/mp/mp-structure-2K.json': 'mp-2K-structure',
+                   'https://huanyu-li.github.io/data/mp/mp-composition-2K.json': 'mp-2K-composition',
+                   'https://huanyu-li.github.io/data/mp/mp-spacegroup-2K.json': 'mp-2K-spacegroup',
+                   'https://huanyu-li.github.io/data/mp/mp-bandgap-2K.json': 'mp-2K-bandgap',
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-2K.json': 'mp-2K-formationenergy'
+                   }
 
 class Resolver_Utils(object):
     def __init__(self, mapping_file, o2graphql_file='o2graphql.json'):
@@ -24,6 +49,7 @@ class Resolver_Utils(object):
         self.symbol_field_exp = dict()
         self.schema_ast = dict()
         self.cache = dict()
+        self.sql_cache = dict()
         self.join_cache = dict()
         self.single_cache = dict()
         self.common_exp_symbols = []
@@ -49,7 +75,6 @@ class Resolver_Utils(object):
         start_time = datetime.datetime.now()
         r = requests.get(url=url)
         end_time = datetime.datetime.now()
-        #print('Access data source time after filter', (end_time - start_time))
         self.query_access_data_time += end_time-start_time
         data = r.json()
         if iterator is not None:
@@ -107,28 +132,117 @@ class Resolver_Utils(object):
                 temp_data = temp_data[keys[i]]
             result = temp_data
         return result
-    def get_from_mysql_to_df(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
-        config = {
-            'user': 'root',
-            'password': '6973278lhy',
-            'host': '127.0.0.1',
-            'database': 'morph_example',
-            'raise_on_warnings': True
-        }
-        return
-    
+
+    @staticmethod
+    def convert_lst_strings(columns_lst, delimiter):
+        lst_strings = ''
+        col_num = len(columns_lst)
+        k = 0
+        for col in columns_lst:
+            lst_strings += '`{column}`'.format(column=col)
+            k += 1
+            if k < col_num:
+                lst_strings += '{delimiter} '.format(delimiter=delimiter)
+        return lst_strings
+
+    def get_mysql_data(self, source_request, iterator, key_columns, filter_dict, constant_data, filter_lst_obj_tag):
+        constant_preds = []
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                constant_preds.append(constant_pred)
+        table_name = map_data_source[source_request]
+        sql_query_str = ''
+        constant_pred_filter = dict()
+        sql_pred_filter = dict()
+        if filter_dict is not None:
+            for pred, filter_dict_value in filter_dict.items():
+                if pred not in constant_preds and filter_dict_value['local_name'] not in key_columns:
+                    key_columns.append(filter_dict_value['local_name'])
+                if pred in constant_preds:
+                    constant_pred_filter[pred] = filter_dict_value
+                else:
+                    sql_pred_filter[pred] = filter_dict_value
+            if filter_lst_obj_tag is False:
+                filter_str = ''
+                sql_filter_columns_num = len(sql_pred_filter)
+                i = 0
+                for pred, filter_dict_value in sql_pred_filter.items():
+                    local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    j = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
+                                                                     atom_filter['value'], atom_filter['negation'],
+                                                                     attr_type)
+                        j += 1
+                        if j < atom_filter_num:
+                            filter_str += ' AND '
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter += ' AND '
+                select_cols = self.convert_lst_strings(key_columns, ',')
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+            else:
+                filter_str = ''
+                sql_filter_columns_num = len(sql_pred_filter)
+                i = 0
+                for pred, filter_dict_value in sql_pred_filter.items():
+                    local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    j = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
+                                                                     atom_filter['value'], atom_filter['negation'],
+                                                                     attr_type)
+                        j += 1
+                        if j < atom_filter_num:
+                            filter_str += ' AND '
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter_str += ' AND '
+                group_by_cols =self.convert_lst_strings(key_columns, ',')
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
+        else:
+            select_cols = self.convert_lst_strings(key_columns, ',')
+            if filter_lst_obj_tag is False:
+                sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+            else:
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
+        print('SQL Query', sql_query_str)
+        with open('./db_config.json') as f:
+            config = json.load(f)
+        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],
+                                                                                            password=config['password'],
+                                                                                            server=config['server'],
+                                                                                            port=config['port'],
+                                                                                            db=config['db'])
+        db_connection = create_engine(db_connection_str)
+        df = pd.read_sql(sql_query_str, con=db_connection)
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                df = df.assign(**kwargs)
+            if filter_lst_obj_tag is False:
+                df = self.filter_data_frame(df, constant_pred_filter)
+            else:
+                key_columns += constant_preds
+                df = self.filter_data_frame_group_by(df, constant_pred_filter, key_columns)
+        return df
+
     def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         #filter_lst_obj_tag = False
         group_by_attrs = copy.copy(key_attrs)
         start_time = datetime.datetime.now()
         r = requests.get(url=url)
         end_time = datetime.datetime.now()
-        #print('Access data source time for filter', (end_time - start_time))
         self.filter_access_data_time += end_time - start_time
         if filter_dict is not None:
             for key, value in filter_dict.items():
                 if value['local_name'] not in key_attrs:
                     key_attrs.append(value['local_name'])
+
         data = r.json()
         temp_data = data
         if iterator is not None:
@@ -147,12 +261,12 @@ class Resolver_Utils(object):
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
                 result = result.assign(**kwargs)
-        #print('list_obj_flag', filter_lst_obj_tag)
         if filter_dict is not None:
             if filter_lst_obj_tag is False:
                 # print('filter')
                 # print('shape', result.shape[0])
                 start_time = datetime.datetime.now()
+                # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
                 end = datetime.datetime.now()
                 self.filter_df += end_time - start_time
@@ -177,7 +291,7 @@ class Resolver_Utils(object):
         elif operator == '_lt':
             return '<' if not negation_flag else '>='
         elif operator == '_in':
-            return 'in' if not negation_flag else ' not in'
+            return 'in' if not negation_flag else 'not in'
         elif operator == '_like':
             return 'like'
         elif operator == '_ilike':
@@ -210,8 +324,6 @@ class Resolver_Utils(object):
         return convert_type_dict
 
     def filter_data_frame(self, df, filter_dict):
-        # print('FILTER DICT')
-        # print(filter_dict)
         for pred, filter_dict_value in filter_dict.items():
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
@@ -293,6 +405,30 @@ class Resolver_Utils(object):
                 filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
                                                                    value=new_value)
         return filter_str
+
+    def generate_mysql_filter_str(self, column_name, operator_str, value_str, negation_flag, attr_type):
+        filter_str = ''
+        new_operator = self.transform_operator(operator_str, negation_flag)
+        if operator_str in ['_in', '_nin']:
+            values = value_str[1:-1]
+            new_value = ast.literal_eval(value_str)
+            #new_value = [int(x) for x in new_value if x.isnumeric() is True]
+            filter_str ='`{column}` {operator} ({values})'.format(column=column_name, operator=new_operator, values=values)
+        else:
+            if attr_type == 'String' or 'ID':
+                new_value = str(value_str)
+                filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
+                                                                        value=new_value)
+            if attr_type == 'Int':
+                new_value = int(value_str)
+                filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
+                                                                       value=new_value)
+            if attr_type == 'Float':
+                new_value = float(value_str)
+                filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
+                                                                       value=new_value)
+        return filter_str
+
 
     @staticmethod
     def parse_ast(query_ast):
@@ -549,8 +685,9 @@ class Resolver_Utils(object):
             # result = self.getJSONData(source_request, iterator, ref)
             if filter_flag is True:
                 # data frame here
-                #print('print my dilter_dict', filter_dict)
-                result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                group_by_mysql_attrs = copy.copy(key_attrs)
+                #result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                result = self.get_mysql_data(source_request, iterator, group_by_mysql_attrs, filter_dict, constant_data, filter_lst_obj_tag)
             else:
                 result = self.getJSONData(source_request, iterator, ref)
         if source_type == 'mydb:mongodb':
@@ -603,7 +740,10 @@ class Resolver_Utils(object):
                 for f in fields:
                     if f not in temp_ast.children_edges:
                         name = filter_fields_map[(root_type, f)][0]
-                        list_obj_tag = filter_fields_map[(root_type, f)][1]
+                        if f == 'filter':
+                            list_obj_tag = '0'
+                        else:
+                            list_obj_tag = filter_fields_map[(root_type, f)][1]
                         if name not in ['String', 'Int', 'Boolean', 'ID', 'Float']:
                             new_child = temp_ast.add_child(name, f, list_obj_tag)
                             temp_ast = new_child
@@ -731,9 +871,7 @@ class Resolver_Utils(object):
                 filter_fields = filter_ast.filter_dict
                 filter_lst_obj_tag = filter_ast.list_obj_flag
                 super_mappings_name = []
-                #print('filter fields', filter_fields)
                 temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag)
-                # print('temp_result', temp_result)
                 if symbolic_root_filter in rse:
                     self.cache[symbolic_root_filter] = temp_result
             super_node_type = filter_ast.parent.name
@@ -750,7 +888,6 @@ class Resolver_Utils(object):
                 super_result = temp_result
             # check CPE
             if symbolic_new_filter in cpe:
-                print('Yes, here')
                 self.cache[symbolic_new_filter] = super_result
         else:
             super_result = joined_result
@@ -807,9 +944,8 @@ class Resolver_Utils(object):
                             if right_new_column_name not in list(super_result[mapping_key].columns):
                                 super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
                         else:
-                            # print('Join here?')
                             if len(super_result.keys()) > len(supper_mappings2join):
-                                # print('Give it empty')
+                                # Give it empty
                                 super_result[mapping_key] = super_result[mapping_key][0:0]
                     # No case for supper_mapping_name == mapping_key
         return super_result
@@ -861,8 +997,6 @@ class Resolver_Utils(object):
             # if len(result2join) > 0:
                 # temp_result = self.old_incremental_join(temp_result, result2join)
             if len(result_join) >0:
-                #print('result_join', result_join)
-                #print(temp_result)
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
             result = self.merge(result, temp_result)
         return self.duplicate_detection_fusion(result)
@@ -897,7 +1031,6 @@ class Resolver_Utils(object):
             for (join_data, join_condition, wrapping_label) in data_join_lst:
                 new_formed_join_data = defaultdict()
                 for record in join_data:
-                    # print(record[join_condition['parent']])
                     new_formed_join_data[record[join_condition['parent']]] = record
                 for record in temp_result:
                     new_record = record
