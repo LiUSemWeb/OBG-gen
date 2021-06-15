@@ -37,7 +37,43 @@ map_data_source = {'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-1K.js
                    'https://huanyu-li.github.io/data/mp/mp-composition-2K.json': 'mp-2K-composition',
                    'https://huanyu-li.github.io/data/mp/mp-spacegroup-2K.json': 'mp-2K-spacegroup',
                    'https://huanyu-li.github.io/data/mp/mp-bandgap-2K.json': 'mp-2K-bandgap',
-                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-2K.json': 'mp-2K-formationenergy'
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-2K.json': 'mp-2K-formationenergy',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-4K.json': 'oqmd-4K-calculation',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-structure-4K.json': 'oqmd-4K-structure',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-composition-4K.json': 'oqmd-4K-composition',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-spacegroup-4K.json': 'oqmd-4K-spacegroup',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-4K.json': 'oqmd-4K-bandgap',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-4K.json': 'oqmd-4K-formationenergy',
+                   'https://huanyu-li.github.io/data/mp/mp-calculation-4K.json': 'mp-4K-calculation',
+                   'https://huanyu-li.github.io/data/mp/mp-structure-4K.json': 'mp-4K-structure',
+                   'https://huanyu-li.github.io/data/mp/mp-composition-4K.json': 'mp-4K-composition',
+                   'https://huanyu-li.github.io/data/mp/mp-spacegroup-4K.json': 'mp-4K-spacegroup',
+                   'https://huanyu-li.github.io/data/mp/mp-bandgap-4K.json': 'mp-4K-bandgap',
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-4K.json': 'mp-4K-formationenergy',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-8K.json': 'oqmd-8K-calculation',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-structure-8K.json': 'oqmd-8K-structure',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-composition-8K.json': 'oqmd-8K-composition',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-spacegroup-8K.json': 'oqmd-8K-spacegroup',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-8K.json': 'oqmd-8K-bandgap',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-8K.json': 'oqmd-8K-formationenergy',
+                   'https://huanyu-li.github.io/data/mp/mp-calculation-8K.json': 'mp-8K-calculation',
+                   'https://huanyu-li.github.io/data/mp/mp-structure-8K.json': 'mp-8K-structure',
+                   'https://huanyu-li.github.io/data/mp/mp-composition-8K.json': 'mp-8K-composition',
+                   'https://huanyu-li.github.io/data/mp/mp-spacegroup-8K.json': 'mp-8K-spacegroup',
+                   'https://huanyu-li.github.io/data/mp/mp-bandgap-8K.json': 'mp-8K-bandgap',
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-8K.json': 'mp-8K-formationenergy',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-calculation-16K.json': 'oqmd-16K-calculation',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-structure-16K.json': 'oqmd-16K-structure',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-composition-16K.json': 'oqmd-16K-composition',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-spacegroup-16K.json': 'oqmd-16K-spacegroup',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-16K.json': 'oqmd-16K-bandgap',
+                   'https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-16K.json': 'oqmd-16K-formationenergy',
+                   'https://huanyu-li.github.io/data/mp/mp-calculation-16K.json': 'mp-16K-calculation',
+                   'https://huanyu-li.github.io/data/mp/mp-structure-16K.json': 'mp-16K-structure',
+                   'https://huanyu-li.github.io/data/mp/mp-composition-16K.json': 'mp-16K-composition',
+                   'https://huanyu-li.github.io/data/mp/mp-spacegroup-16K.json': 'mp-16K-spacegroup',
+                   'https://huanyu-li.github.io/data/mp/mp-bandgap-16K.json': 'mp-16K-bandgap',
+                   'https://huanyu-li.github.io/data/mp/mp-formationenergy-16K.json': 'mp-16K-formationenergy'
                    }
 
 class Resolver_Utils(object):
@@ -72,11 +108,15 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def getJSONData(self, url, iterator=None, ref=None):
+        file_name = url.split('/')[-1]
         start_time = datetime.datetime.now()
-        r = requests.get(url=url)
+        data=None
+        with open('./data/' + file_name) as f:
+            data = json.load(f)
+        #r = requests.get(url=url)
         end_time = datetime.datetime.now()
         self.query_access_data_time += end_time-start_time
-        data = r.json()
+        # data = r.json()
         if iterator is not None:
             keys = self.parse_iterator(iterator)
             temp_data = data
@@ -210,7 +250,7 @@ class Resolver_Utils(object):
                 sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
             else:
                 sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
-        print('SQL Query', sql_query_str)
+        #print('SQL Query', sql_query_str)
         with open('./db_config.json') as f:
             config = json.load(f)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],
@@ -924,6 +964,9 @@ class Resolver_Utils(object):
                         if left_new_column_name not in list(super_result[mapping_key].columns):
                             super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
                         #super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner', left_on=left_new_column_name,right_on=current_field)
+                        # set index
+                        super_result[mapping_key].set_index(left_new_column_name)
+                        right_df.set_index(right_new_column_name)
                         super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
                                                              left_on=left_new_column_name, right_on=right_new_column_name)
                         if right_new_column_name not in list(super_result[mapping_key].columns):
@@ -939,6 +982,9 @@ class Resolver_Utils(object):
                             #super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
 
                             #super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',left_on=column_name, right_on=current_field)
+                            # set index
+                            super_result[mapping_key].set_index(left_new_column_name)
+                            right_df.set_index(right_new_column_name)
                             super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
                                                                  left_on=left_new_column_name, right_on=right_new_column_name)
                             if right_new_column_name not in list(super_result[mapping_key].columns):

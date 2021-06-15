@@ -35,7 +35,7 @@ def generic_resolver(_, info, **kwargs):
         #vprint('RSP:', repeated_single_exp)
         for filter_ast in filter_asts:
             filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
-            print('Filter Join time', ru.filter_join_time)
+            #print('Filter Join time', ru.filter_join_time)
             ru.filter_join_time = datetime.timedelta()
             for key, value in filter_df.items():
                 object_iri_lst = value['iri'].tolist()
@@ -54,9 +54,9 @@ def generic_resolver(_, info, **kwargs):
             query_ast = ru.generate_query_ast(type_defs, info)
             # result = ru.DataFetcher(query_ast['fields'][0])
             result = ru.query_evaluator(query_ast['fields'][0], None, None, True, ru.filtered_object_iri.keys())
+            end_time = datetime.datetime.now()
             with open('output.json', 'w') as f:
                 json.dump({'data': result}, f)
-            end_time = datetime.datetime.now()
             print('Query Response Time:', (end_time - filter_end_time))
             print('Query Response Time without access time:', (end_time - filter_end_time - ru.query_access_data_time))
             print('Whole Filter/Query Response Time:', (end_time - start_time))
@@ -67,9 +67,9 @@ def generic_resolver(_, info, **kwargs):
         # result = ru.DataFetcher(query_ast['fields'][0])
         result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
         #print(result)
+        end_time = datetime.datetime.now()
         with open('output.json', 'w') as f:
             json.dump({'data':result}, f)
-        end_time = datetime.datetime.now()
         print('(No filter)-Query Response Time:', (end_time - start_time))
         print('Access underling data time', ru.query_access_data_time)
         print('join time', ru.join_time)
@@ -138,11 +138,14 @@ def register_queries(query_entries):
 # main function
 if __name__ == "__main__":
     # app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
+    start_time = datetime.datetime.now()
     query = QueryType()
     schema_file = (str(sys.argv[1]))
     mapping_file = (str(sys.argv[2]))
     type_defs = load_schema_from_path(schema_file)
     ru = Resolver_Utils(mapping_file, 'o2graphql.json')
+    end_time = datetime.datetime.now()
+    print('Prepare time', end_time -start_time)
     # ru.set_mappings(mapping_file)
     # ru.set_Phi()
     register_queries(ru.get_query_entries(type_defs))
