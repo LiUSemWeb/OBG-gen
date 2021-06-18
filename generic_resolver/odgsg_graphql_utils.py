@@ -107,8 +107,8 @@ class Resolver_Utils(object):
         self.field_exp_symbol = field_exp_symbol
         self.symbol_field_exp = symbol_field_exp
 
-    def getJSONData(self, url, iterator=None, ref=None):
-        file_name = url.split('/')[-1]
+    def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
+        file_name = source_request.split('/')[-1]
         start_time = datetime.datetime.now()
         data=None
         with open('./data/' + file_name) as f:
@@ -185,7 +185,7 @@ class Resolver_Utils(object):
                 lst_strings += '{delimiter} '.format(delimiter=delimiter)
         return lst_strings
 
-    def get_mysql_data(self, source_request, iterator, key_columns, filter_dict, constant_data, filter_lst_obj_tag):
+    def get_mysql_data(self, source_request, key_columns, filter_dict, constant_data, filter_lst_obj_tag):
         constant_preds = []
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
@@ -271,7 +271,93 @@ class Resolver_Utils(object):
                 df = self.filter_data_frame_group_by(df, constant_pred_filter, key_columns)
         return df
 
-    def get_json_data(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
+    def get_mysql_data_temp(self, source_request, iterator, key_columns, filter_dict, constant_data, filter_lst_obj_tag):
+        constant_preds = []
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                constant_preds.append(constant_pred)
+        table_name = map_data_source[source_request]
+        sql_query_str = ''
+        constant_pred_filter = dict()
+        sql_pred_filter = dict()
+        if filter_dict is not None:
+            for pred, filter_dict_value in filter_dict.items():
+                if pred not in constant_preds and filter_dict_value['local_name'] not in key_columns:
+                    key_columns.append(filter_dict_value['local_name'])
+                if pred in constant_preds:
+                    constant_pred_filter[pred] = filter_dict_value
+                else:
+                    sql_pred_filter[pred] = filter_dict_value
+            if filter_lst_obj_tag is False:
+                filter_str = ''
+                sql_filter_columns_num = len(sql_pred_filter)
+                i = 0
+                for pred, filter_dict_value in sql_pred_filter.items():
+                    local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    j = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
+                                                                     atom_filter['value'], atom_filter['negation'],
+                                                                     attr_type)
+                        j += 1
+                        if j < atom_filter_num:
+                            filter_str += ' AND '
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter += ' AND '
+                select_cols = self.convert_lst_strings(key_columns, ',')
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+            else:
+                filter_str = ''
+                sql_filter_columns_num = len(sql_pred_filter)
+                i = 0
+                for pred, filter_dict_value in sql_pred_filter.items():
+                    local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    j = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
+                                                                     atom_filter['value'], atom_filter['negation'],
+                                                                     attr_type)
+                        j += 1
+                        if j < atom_filter_num:
+                            filter_str += ' AND '
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter_str += ' AND '
+                group_by_cols =self.convert_lst_strings(key_columns, ',')
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
+        else:
+            select_cols = self.convert_lst_strings(key_columns, ',')
+            if filter_lst_obj_tag is False:
+                sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+            else:
+                sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
+        #print('SQL Query', sql_query_str)
+        with open('./db_config.json') as f:
+            config = json.load(f)
+        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],
+                                                                                            password=config['password'],
+                                                                                            server=config['server'],
+                                                                                            port=config['port'],
+                                                                                            db=config['db'])
+        db_connection = create_engine(db_connection_str)
+        df = pd.read_sql(sql_query_str, con=db_connection)
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                df = df.assign(**kwargs)
+            if filter_lst_obj_tag is False:
+                df = self.filter_data_frame(df, constant_pred_filter)
+            else:
+                key_columns += constant_preds
+                df = self.filter_data_frame_group_by(df, constant_pred_filter, key_columns)
+        return df
+
+    def get_json_data_with_filter(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         #filter_lst_obj_tag = False
         group_by_attrs = copy.copy(key_attrs)
         start_time = datetime.datetime.now()
@@ -626,7 +712,7 @@ class Resolver_Utils(object):
         key, template = self.parse_template(template)
         i = 0
         while i < len(temp_result):
-            temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
+            #temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
             for (constant_pred, constant_data, data_type) in constant:
                 temp_result[i][constant_pred] = constant_data
             iri = template.format(temp_result[i][key])
@@ -718,18 +804,27 @@ class Resolver_Utils(object):
         result = []
         if source_type == 'ql:CSV':
             source_request = self.get_source_request(logical_source)
-            # result = self.getCSVData(source_request, ref)
+            #sql
+            if 'query' in logical_source.keys():
+                print('sql')
+                server_info, query = self.get_db_source(logical_source)
+                group_by_mysql_attrs = copy.copy(key_attrs)
+                result = self.get_mysql_data(source_request, group_by_mysql_attrs, filter_dict,
+                                                  constant_data, filter_lst_obj_tag)
+            else:
+                # csv
+                print('CSV')
+                #result = self.getCSVData(source_request, ref)
         if source_type == 'ql:JSONPath':
             source_request = self.get_source_request(logical_source)
             iterator = self.get_json_iterator(logical_source)
-            # result = self.getJSONData(source_request, iterator, ref)
             if filter_flag is True:
                 # data frame here
                 group_by_mysql_attrs = copy.copy(key_attrs)
-                #result = self.get_json_data(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
-                result = self.get_mysql_data(source_request, iterator, group_by_mysql_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                #result = self.get_mysql_data_temp(source_request, iterator, group_by_mysql_attrs, filter_dict, constant_data, filter_lst_obj_tag)
             else:
-                result = self.getJSONData(source_request, iterator, ref)
+                result = self.get_json_data_without_filter(source_request, iterator, ref)
         if source_type == 'mydb:mongodb':
             iterator = self.get_json_iterator(logical_source)
             server_info, query = self.get_db_source(logical_source)
@@ -1075,18 +1170,30 @@ class Resolver_Utils(object):
         result = []
         for pred_key, data_join_lst in result_join.items():
             for (join_data, join_condition, wrapping_label) in data_join_lst:
-                new_formed_join_data = defaultdict()
+                new_formed_join_data = defaultdict(list)
                 for record in join_data:
-                    new_formed_join_data[record[join_condition['parent']]] = record
+                    # following copy field
+                    modified_field_name = join_condition['parent'] + 'ORIGINALL'
+                    if modified_field_name in record.keys():
+                        # check if the data at the right side of the join contains a modified field
+                        new_formed_join_data[record[modified_field_name]].append(record)
+                    else:
+                        new_formed_join_data[record[join_condition['parent']]].append(record)
                 for record in temp_result:
                     new_record = record
                     join_key_value = record[join_condition['child']]
                     if pred_key not in new_record.keys() and wrapping_label != '0' and wrapping_label != '10':
                         new_record[pred_key] = []
-                    if wrapping_label == '0' or wrapping_label == '10':
-                        new_record[pred_key] = new_formed_join_data[join_key_value]
                     else:
-                        new_record[pred_key].append(new_formed_join_data[join_key_value])
+                        if pred_key in new_record.keys():
+                            new_field = pred_key + 'ORIGINALL'
+                            # following copy field's data is used in case the original data has the same field name as the predicate stated in the mapping
+                            new_record[new_field] = new_record[pred_key]
+                    if wrapping_label == '0' or wrapping_label == '10':
+                        new_record[pred_key] = new_formed_join_data[join_key_value][0]
+                    else:
+                        new_record[pred_key] += new_formed_join_data[join_key_value]
+                        #new_record[pred_key].append(new_formed_join_data[join_key_value])
                     if new_record not in result:
                         result.append(new_record)
         end_time = datetime.datetime.now()

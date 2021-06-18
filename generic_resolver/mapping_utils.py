@@ -56,7 +56,6 @@ class RML_Mapping(object):
                 server_info = db_source
                 break
         return server_info, query
-
     @staticmethod
     def get_json_iterator(logical_source):
         iterator = logical_source['iterator']
