@@ -110,6 +110,10 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
+        ref_condition, ref_data = [], []
+        if ref is not None:
+            ref_condition = ref[1]
+            ref_data = [record[ref_condition['child']] for record in ref[0]]
         data = None
         start_time = datetime.datetime.now()
         if source_request[0:4] == 'http':
@@ -132,31 +136,57 @@ class Resolver_Utils(object):
             return data
 
     @staticmethod
-    def get_csv_data(url, ref=None):
+    def get_csv_data_without_filter(url, ref=None):
         ref_condition, ref_data = [], []
         if ref is not None:
             ref_condition = ref[1]
             ref_data = [record[ref_condition['child']] for record in ref[0]]
-        records = []
+        result = []
+        #ref = None
+        with closing(requests.get(url, stream=True)) as r:
+            reader = csv.DictReader(codecs.iterdecode(r.iter_lines(), 'utf-8'), delimiter=';')
+            for record in reader:
+                #if ref is not None:
+                    #if record[ref_condition['parent']] in ref_data:
+                        #result.append(record)
+                #else:
+                result.append(record)
+        return result
+
+    def get_csv_data_with_filter(self, url, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
+        group_by_attrs = copy.copy(key_attrs)
+        ref_condition, ref_data = [], []
+        #records = []
         result = []
         with closing(requests.get(url, stream=True)) as r:
-            reader = csv.reader(codecs.iterdecode(r.iter_lines(), 'utf-8'), delimiter=';')
-            for record in reader:
-                records.append(record)
-        header = records[0]
-        num_fields = len(header)
-        for record in records[1:]:
-            element = dict()
-            if ref is not None:
-                if record[header.index(ref_condition['parent'])] in ref_data:
-                    for i in range(num_fields):
-                        element[header[i]] = record[i]
-                else:
-                    break
+            reader = csv.DictReader(codecs.iterdecode(r.iter_lines(), 'utf-8'), delimiter=';')
+            for row in reader:
+                result.append(row)
+        result = pd.json_normalize(result)
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                result = result.assign(**kwargs)
+        if filter_dict is not None:
+            if filter_lst_obj_tag is False:
+                # print('filter')
+                # print('shape', result.shape[0])
+                start_time = datetime.datetime.now()
+                # no need group by here
+                result = self.filter_data_frame(result, filter_dict)
+                end_time = datetime.datetime.now()
+                self.filter_df += end_time - start_time
+                # print(result)
+                # print('shape', result.shape[0])
+                return result
             else:
-                for i in range(num_fields):
-                    element[header[i]] = record[i]
-            result.append(element)
+                start_time = datetime.datetime.now()
+                temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
+                end_time = datetime.datetime.now()
+                self.filter_df_groupby += end_time - start_time
+                return temp_result
+        else:
+            return result
         return result
 
     def getMongoDBData(self, server_info, query, iterator=None, ref=None):
@@ -462,7 +492,7 @@ class Resolver_Utils(object):
                 start_time = datetime.datetime.now()
                 # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
-                end = datetime.datetime.now()
+                end_time = datetime.datetime.now()
                 self.filter_df += end_time - start_time
                 # print(result)
                 # print('shape', result.shape[0])
@@ -524,6 +554,12 @@ class Resolver_Utils(object):
             for atom_filter in filter_dict_value['filter']:
                 filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],
                                                       atom_filter['value'], atom_filter['negation'], attr_type)
+                if attr_type == 'Int':
+                    if df.dtypes[local_name] != 'int64':
+                        df = df.astype({local_name: int})
+                if attr_type == 'Float':
+                    if df.dtypes[local_name] != 'float64':
+                        df = df.astype({local_name: float})
                 df = df.query(filter_str)
         return df
 
@@ -534,6 +570,12 @@ class Resolver_Utils(object):
             for atom_filter in filter_dict_value['filter']:
                 # filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
                 filter_lambda_func = self.generate_filter_lambda_func(local_name, df.dtypes[local_name], atom_filter['operator'],atom_filter['value'], atom_filter['negation'], attr_type)
+                if attr_type == 'Int':
+                    if df.dtypes[local_name] != 'int64':
+                        df = df.astype({local_name: int})
+                if attr_type == 'Float':
+                    if df.dtypes[local_name] != 'float64':
+                        df = df.astype({local_name: float})
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
                 #df = df.filter(filter_lambda_func)
         return df
@@ -552,7 +594,7 @@ class Resolver_Utils(object):
                 new_value = ast.literal_eval(value_str)
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
         else:
-            if attr_type == 'String' or 'ID':
+            if attr_type == 'String' or attr_type == 'ID':
                 if column_type == 'int64':
                     new_value = int(value_str)
                     lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
@@ -879,13 +921,18 @@ class Resolver_Utils(object):
                 group_by_mysql_attrs = copy.copy(key_attrs)
                 # if query in mysql is not tested yet, but should be similar to get_csv_data
                 if filter_flag is True:
-                    result = self.get_mysql_data_with_filter(source_request, group_by_mysql_attrs, filter_dict,
+                    result = self.get_mysql_data_with_filter(source_request, key_attrs, filter_dict,
                                                   constant_data, filter_lst_obj_tag, db_source, table_name, query)
                 else:
-                    result = self.get_mysql_data_without_filter(source_request, group_by_mysql_attrs, constant_data, db_source, table_name, query, mapping_name)
+                    result = self.get_mysql_data_without_filter(source_request, key_attrs, constant_data, db_source, table_name, query, mapping_name)
             else:
                 # csv
-                print('CSV')
+                print('Access CSV')
+                if filter_flag is True:
+                    result = self.get_csv_data_with_filter(source_request, key_attrs, filter_dict,
+                                                  constant_data, filter_lst_obj_tag)
+                else:
+                    result = self.get_csv_data_without_filter(source_request, ref)
                 #result = self.get_csv_data(source_request, ref)
         if source_type == 'ql:JSONPath':
             print('Access JSON')
