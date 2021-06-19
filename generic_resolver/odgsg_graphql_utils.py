@@ -110,6 +110,7 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
+        # currently check on ref is not implemented
         ref_condition, ref_data = [], []
         if ref is not None:
             ref_condition = ref[1]
@@ -137,6 +138,7 @@ class Resolver_Utils(object):
 
     @staticmethod
     def get_csv_data_without_filter(url, ref=None):
+        # currently check on ref is not implemented
         ref_condition, ref_data = [], []
         if ref is not None:
             ref_condition = ref[1]
@@ -237,7 +239,8 @@ class Resolver_Utils(object):
             in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
         return in_statement
 
-    def get_mysql_data_without_filter(self, source_request, key_columns, constant_data, db_source, table_name, query, mapping_name=''):
+    def get_mysql_data_without_filter(self, source_request, key_columns, constant_data, db_source, table_name, query, mapping_name='', ref=None):
+        # currently check on ref is not implemented
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
                                                                                             password=db_password,
@@ -273,10 +276,12 @@ class Resolver_Utils(object):
             print('different')
         db_connection = create_engine(db_connection_str)
         df = pd.read_sql(sql_query_str, con=db_connection)
-        if constant_data is not None:
+        '''
+                if constant_data is not None:
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
                 df = df.assign(**kwargs)
+        '''
         result = df.to_dict(orient='records')
         return result
 
@@ -924,7 +929,7 @@ class Resolver_Utils(object):
                     result = self.get_mysql_data_with_filter(source_request, key_attrs, filter_dict,
                                                   constant_data, filter_lst_obj_tag, db_source, table_name, query)
                 else:
-                    result = self.get_mysql_data_without_filter(source_request, key_attrs, constant_data, db_source, table_name, query, mapping_name)
+                    result = self.get_mysql_data_without_filter(source_request, key_attrs, constant_data, db_source, table_name, query, mapping_name, ref)
             else:
                 # csv
                 print('Access CSV')
