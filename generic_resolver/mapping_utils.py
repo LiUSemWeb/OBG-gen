@@ -49,13 +49,18 @@ class RML_Mapping(object):
         return logical_source['source']
 
     def get_db_source(self, logical_source):
-        query = logical_source['query']
+        query = ''
+        table_name = ''
+        if 'query' in logical_source.keys():
+            query = logical_source['query']
+        if 'table' in logical_source.keys():
+            table_name = logical_source['table']
         server_info = None
         for db_source in self.db_sources:
             if db_source['name'] == logical_source['source']:
                 server_info = db_source
                 break
-        return server_info, query
+        return server_info, table_name, query
     @staticmethod
     def get_json_iterator(logical_source):
         iterator = logical_source['iterator']

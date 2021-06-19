@@ -1,0 +1,321 @@
+type Query {
+    UniversityList(filter: UniversityFilter): [University]
+    FacultyList(filter: FacultyFilter): [Faculty]
+    DepartmentList(filter: DepartmentFilter): [Department]
+    ResearchGroupList(filter: ResearchGroupFilter): [ResearchGroup]
+    ProfessorList(filter: ProfessorFilter): [Professor]
+    LecturerList(filter: LecturerFilter): [Lecturer]
+    PublicationList(filter: PublicationFilter): [Publication]
+    GraduateStudentList(filter: GraduateStudentFilter): [GraduateStudent]
+    UndergraduateStudentList(filter: UndergraduateStudentFilter): [UndergraduateStudent]
+    GraduateCourseList(filter: GraduateCourseFilter): [GraduateCourse]
+    UndergraduateCourseList(filter:UndergraduateCourseFilter): [UndergraduateCourse]
+    CoAuthorOfPublicationList(filter: CoAuthorOfPublicationFilter): [CoAuthorOfPublication]
+    GraduateStudentTakeCourseList(filter: GraduateStudentTakeCourseFilter): [GraduateStudentTakeCourse]
+    UndergraduateStudentTakeCourseList(filter: UndergraduateStudentTakeCourseFilter): [UndergraduateStudentTakeCourse]
+}
+
+type University  { 
+	nr: Int! 
+    name: String
+	undergraduateDegreeObtainedByFaculty: [Faculty] 
+	mastergraduateDegreeObtainers: [Faculty]
+	doctoralDegreeObtainers: [Faculty]
+	undergraduateDegreeObtainedBystudent: [GraduateStudent]
+} 
+
+type Faculty  { 
+	nr: Int! 
+    name: String
+	telephone: String 
+	emailAddress: String 
+	undergraduateDegreeFrom: University 
+	masterDegreeFrom: University 
+	doctoralDegreeFrom: University 
+	worksFor: Department 
+	publications: [Publication] 
+} 
+
+type Department  { 
+	nr: Int!
+    name: String
+	subOrganizationOf: University 
+	head: Professor 
+	faculties: [Faculty] 
+} 
+
+type ResearchGroup  { 
+	nr: Int! 
+	subOrganizationOf: Department 
+} 
+
+type Professor{ 
+	nr: Int!
+    professorType: String
+    researchInterest: String 
+    headOf: Department
+    name: String
+	telephone: String 
+	emailAddress: String 
+	undergraduateDegreeFrom: University 
+	masterDegreeFrom: University 
+	doctoralDegreeFrom: University 
+	worksFor: Department 
+	publications: [Publication]
+} 
+ 
+type Lecturer { 
+	nr: Int!
+    name: String 
+	telephone: String 
+	emailAddress: String 
+	undergraduateDegreeFrom: University 
+	masterDegreeFrom: University 
+	doctoralDegreeFrom: University 
+	worksFor: Department 
+	publications: [Publication] 
+} 
+ 
+type Publication  { 
+	nr: Int!
+    name: String
+	title: String 
+	abstract: String 
+	mainAuthor: [Faculty] 
+}  
+
+type GraduateStudent{ 
+	nr: Int!
+    name: String 
+	telephone: String 
+	emailAddress: String 
+	age: Int
+    memberOf: Department 
+    undergraduateDegreeFrom: University 
+	advisor: Professor 
+} 
+ 
+type UndergraduateStudent  { 
+	nr: Int!
+    name: String 
+	telephone: String 
+	emailAddress: String 
+	age: Int
+	memberOf: Department 
+	advisor: Professor 
+} 
+
+type GraduateCourse  { 
+	nr: Int!
+    name: String
+	teacher: Faculty 
+} 
+
+type UndergraduateCourse  { 
+	nr: Int! 
+	teacher: Faculty 
+	teachingAssistants: GraduateStudent 
+} 
+
+type CoAuthorOfPublication{
+    publicationID: Publication
+    graduateStudentID: GraduateStudent
+}
+
+type GraduateStudentTakeCourse{
+    graduateStudentID: GraduateStudent
+    graduateCourseID: GraduateCourse
+}
+
+type UndergraduateStudentTakeCourse{
+    undergraduateStudentID: UndergraduateStudent
+    undergraduateCourseID: UndergraduateCourse
+}
+
+
+input UniversityFilter{
+    _and: [UniversityFilter]
+    _or: [UniversityFilter]
+    _not: UniversityFilter
+	nr: IntFilter! 
+    name: StringFilter
+	undergraduateDegreeObtainedByFaculty: [FacultyFilter] 
+	mastergraduateDegreeObtainers: [FacultyFilter]
+	doctoralDegreeObtainers: [FacultyFilter]
+	undergraduateDegreeObtainedBystudent: [GraduateStudentFilter]
+} 
+
+input FacultyFilter{
+    _and: [FacultyFilter]
+    _or: [FacultyFilter]
+    _not: FacultyFilter
+	nr: IntFilter! 
+    name: StringFilter
+	telephone: StringFilter 
+	emailAddress: StringFilter 
+	undergraduateDegreeFrom: UniversityFilter
+	masterDegreeFrom: UniversityFilter
+	doctoralDegreeFrom: UniversityFilter
+	worksFor: DepartmentFilter
+	publications: [PublicationFilter]
+} 
+
+input DepartmentFilter{
+    _and: [DepartmentFilter]
+    _or: [DepartmentFilter]
+    _not: DepartmentFilter
+	nr: IntFilter!
+    name: StringFilter
+	subOrganizationOf: UniversityFilter
+	head: ProfessorFilter
+	faculties: [FacultyFilter]
+} 
+
+input ResearchGroupFilter{
+    _and: [ResearchGroupFilter]
+    _or: [ResearchGroupFilter]
+    _not: ResearchGroupFilter
+	nr: IntFilter! 
+	subOrganizationOf: DepartmentFilter
+} 
+
+input ProfessorFilter{
+    _and: [ProfessorFilter]
+    _or: [ProfessorFilter]
+    _not: ProfessorFilter
+	nr: IntFilter!
+    professorType: StringFilter
+    researchIntFiltererest: StringFilter 
+    headOf: DepartmentFilter
+    name: StringFilter
+	telephone: StringFilter 
+	emailAddress: StringFilter 
+	undergraduateDegreeFrom: UniversityFilter
+	masterDegreeFrom: UniversityFilter
+	doctoralDegreeFrom: UniversityFilter
+	worksFor: DepartmentFilter
+	publications: [PublicationFilter]
+} 
+ 
+input LecturerFilter{
+    _and: [LecturerFilter]
+    _or: [LecturerFilter]
+    _not: LecturerFilter
+	nr: IntFilter!
+    name: StringFilter 
+	telephone: StringFilter 
+	emailAddress: StringFilter
+	undergraduateDegreeFrom: UniversityFilter
+	masterDegreeFrom: UniversityFilter
+	doctoralDegreeFrom: UniversityFilter
+	worksFor: DepartmentFilter
+	publications: [PublicationFilter] 
+} 
+ 
+input PublicationFilter{
+    _and: [PublicationFilter]
+    _or: [PublicationFilter]
+    _not: PublicationFilter
+	nr: IntFilter!
+    name: StringFilter
+	title: StringFilter 
+	abstract: StringFilter 
+	mainAuthor: [FacultyFilter] 
+}  
+
+input GraduateStudentFilter{
+    _and: [GraduateStudentFilter]
+    _or: [GraduateStudentFilter]
+    _not: GraduateStudentFilter
+	nr: IntFilter!
+    name: StringFilter 
+	telephone: StringFilter 
+	emailAddress: StringFilter 
+	age: IntFilter
+    memberOf: DepartmentFilter
+    undergraduateDegreeFrom: UniversityFilter
+	advisor: ProfessorFilter
+} 
+ 
+input UndergraduateStudentFilter{
+    _and: [UndergraduateStudentFilter]
+    _or: [UndergraduateStudentFilter]
+    _not: UndergraduateStudentFilter
+	nr: IntFilter!
+    name: StringFilter 
+	telephone: StringFilter 
+	emailAddress: StringFilter 
+	age: IntFilter
+	memberOf: DepartmentFilter
+	advisor: ProfessorFilter
+} 
+
+input GraduateCourseFilter{
+    _and: [GraduateCourseFilter]
+    _or: [GraduateCourseFilter]
+    _not: GraduateCourseFilter
+	nr: IntFilter!
+    name: StringFilter
+	teacher: FacultyFilter
+} 
+
+input UndergraduateCourseFilter{
+    _and: [UndergraduateCourseFilter]
+    _or: [UndergraduateCourseFilter]
+    _not: UndergraduateCourseFilter
+	nr: IntFilter! 
+	teacher: FacultyFilter
+	teachingAssistants: GraduateStudentFilter
+} 
+
+input CoAuthorOfPublicationFilter{
+    _and: [CoAuthorOfPublicationFilter]
+    _or: [CoAuthorOfPublicationFilter]
+    _not: CoAuthorOfPublicationFilter
+    publicationID: PublicationFilter
+    graduateStudentID: GraduateStudentFilter
+}
+
+input GraduateStudentTakeCourseFilter{
+    _and: [GraduateStudentTakeCourseFilter]
+    _or: [GraduateStudentTakeCourseFilter]
+    _not: GraduateStudentTakeCourseFilter
+    graduateStudentID: GraduateStudentFilter
+    graduateCourseID: GraduateCourseFilter
+}
+
+input UndergraduateStudentTakeCourseFilter{
+    _and: [UndergraduateStudentTakeCourseFilter]
+    _or: [UndergraduateStudentTakeCourseFilter]
+    _not: UndergraduateStudentTakeCourseFilter
+    undergraduateStudentID: UndergraduateStudentFilter
+    undergraduateCourseID: UndergraduateCourseFilter
+}
+input StringFilter{
+    _eq: String
+    _neq: String
+    _gt: String
+    _egt: String
+    _lt: String
+    _elt: String
+    _in: [String]
+    _nin: [String]
+    _like: String  # string matching along the lines of LIKE in SQL
+    _ilike: String # case-insensitive string matching
+    _nlike: String
+    _nilike: String
+}
+input IntFilter{
+    _eq: Int
+    _neq: Int
+    _gt: Int
+    _egt: Int
+    _lt: Int
+    _elt: Int
+    _in: [Int]
+    _nin: [Int]
+    _like: Int  # string matching along the lines of LIKE in SQL
+    _ilike: Int # case-insensitive string matching
+    _nlike: Int
+    _nilike: Int
+}

@@ -27,6 +27,8 @@ source_server_dict = defaultdict()
 server_schema_dict = defaultdict()
 server_username_dict = defaultdict()
 server_password_dict = defaultdict()
+#rr:tableName  "review";
+table_name_dict = defaultdict()
 query_dict = defaultdict()
 
 
@@ -72,6 +74,9 @@ def parse_mapping(mapping_file='venue-mapper.ttl', mapping_format='n3'):
 		if pred == 'logicalSource':
 			obj = remove_prefix(obj.toPython())
 			logicalSource_dict[subj] = obj
+		if pred == 'tableName':
+			obj = remove_prefix(obj.toPython())
+			table_name_dict[subj] = obj
 		if pred == 'objectMap':
 			obj = remove_prefix(obj.toPython())
 			objectMap_dict[subj] = obj
@@ -139,7 +144,13 @@ def generateLogicalSourceList():
 		if key in iterator_dict.keys():
 			iterator_str = iterator_dict[key]	
 		if remove_prefix(value) in server_schema_dict.keys():
-			ls_record = {'name': key, 'source': remove_prefix(value), 'referenceFormulation': 'mydb:' + referenceFormulation_dict[key], 'query': query_dict[key], 'iterator': iterator_str}
+			table_name = ''
+			query = ''
+			if key in table_name_dict.keys():
+				table_name = table_name_dict[key]
+			if key in query_dict.keys():
+				query = query_dict[key]
+			ls_record = {'name': key, 'source': remove_prefix(value), 'referenceFormulation': 'ql:' + referenceFormulation_dict[key], 'table': table_name, 'query': query, 'iterator': iterator_str}
 		else:
 			ls_record = {'name': key, 'source': value, 'referenceFormulation': 'ql:' + referenceFormulation_dict[key], 'iterator': iterator_str}
 		logical_source_lst.append(ls_record)

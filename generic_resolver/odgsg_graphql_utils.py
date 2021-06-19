@@ -92,12 +92,14 @@ class Resolver_Utils(object):
         self.filter_fields_map = dict()
         self.mapping_attr_pred_dict = defaultdict(dict)
         self.filtered_object_iri = dict()
+        self.filtered_object_columns = dict()
         self.filter_access_data_time = datetime.timedelta()
         self.query_access_data_time = datetime.timedelta()
         self.join_time = datetime.timedelta()
         self.filter_join_time = datetime.timedelta()
         self.filter_df = datetime.timedelta()
         self.filter_df_groupby = datetime.timedelta()
+        self.sql_flag = False
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -108,12 +110,15 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
-        file_name = source_request.split('/')[-1]
+        data = None
         start_time = datetime.datetime.now()
-        data=None
-        with open('./data/' + file_name) as f:
-            data = json.load(f)
-        #r = requests.get(url=url)
+        if source_request[0:4] == 'http':
+            r = requests.get(url=source_request)
+            data = r.json()
+        else:
+            file_name = source_request.split('/')[-1]
+            with open('./data/' + file_name) as f:
+                data = json.load(f)
         end_time = datetime.datetime.now()
         self.query_access_data_time += end_time-start_time
         # data = r.json()
@@ -127,7 +132,7 @@ class Resolver_Utils(object):
             return data
 
     @staticmethod
-    def getCSVData(url, ref=None):
+    def get_csv_data(url, ref=None):
         ref_condition, ref_data = [], []
         if ref is not None:
             ref_condition = ref[1]
@@ -185,12 +190,79 @@ class Resolver_Utils(object):
                 lst_strings += '{delimiter} '.format(delimiter=delimiter)
         return lst_strings
 
-    def get_mysql_data(self, source_request, key_columns, filter_dict, constant_data, filter_lst_obj_tag):
+    @staticmethod
+    def parse_db_config(db_source):
+        # {"name": "MP_DB", "server": "jdbc:mysql://hostname:port/ODGSG_MP", "username": "root", "password": ""}
+        server_address = db_source['server']
+        hostname_port_schema = server_address.split('://')[1]
+        [hostname_port, schema_name] = hostname_port_schema.split('/')
+        [hostname, port] =hostname_port.split(':')
+        return hostname, port, schema_name, db_source['username'], db_source['password']
+
+    def generate_where_statement(self, mapping_name):
+        in_statement = ''
+        if mapping_name in self.filtered_object_columns.keys():
+            column_value = self.filtered_object_columns.get(mapping_name)
+            key, value = list(column_value.items())[0]
+            in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
+        return in_statement
+
+    def get_mysql_data_without_filter(self, source_request, key_columns, constant_data, db_source, table_name, query, mapping_name=''):
+        hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
+        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
+                                                                                            password=db_password,
+                                                                                            server=hostname,
+                                                                                            port=port,
+                                                                                            db=schema_name)
         constant_preds = []
-        if len(constant_data) > 0:
+        if constant_data is not None:
             for (constant_pred, data, data_type) in constant_data:
                 constant_preds.append(constant_pred)
-        table_name = map_data_source[source_request]
+        #table_name = map_data_source[source_request]
+        sql_query_str = ''
+        if len(query) == 0:
+            if len(table_name) > 0:
+                if key_columns is not None:
+                    select_cols = self.convert_lst_strings(key_columns, ',')
+                    if mapping_name in self.filtered_object_columns.keys():
+                        where_statement = self.generate_where_statement(mapping_name)
+                        sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}'.format(select_cols=select_cols, table=table_name, where_statement=where_statement)
+                        self.sql_flag = True
+                    else:
+                        sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+                else:
+                    if mapping_name in self.filtered_object_columns.keys():
+                        print('Having mapping_name', mapping_name)
+                        where_statement = self.generate_where_statement(mapping_name)
+                        sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=where_statement)
+                        print(sql_query_str)
+                        self.sql_flag = True
+                    else:
+                        sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+        else:
+            print('different')
+        db_connection = create_engine(db_connection_str)
+        df = pd.read_sql(sql_query_str, con=db_connection)
+        if constant_data is not None:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                df = df.assign(**kwargs)
+        result = df.to_dict(orient='records')
+        return result
+
+    # currently only working for with filter
+    def get_mysql_data_with_filter(self, source_request, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
+        hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
+        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
+                                                                                            password=db_password,
+                                                                                            server=hostname,
+                                                                                            port=port,
+                                                                                            db=schema_name)
+        constant_preds = []
+        if constant_data is not None:
+            for (constant_pred, data, data_type) in constant_data:
+                constant_preds.append(constant_pred)
+        #table_name = map_data_source[source_request]
         sql_query_str = ''
         constant_pred_filter = dict()
         sql_pred_filter = dict()
@@ -251,13 +323,9 @@ class Resolver_Utils(object):
             else:
                 sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
         #print('SQL Query', sql_query_str)
-        with open('./db_config.json') as f:
-            config = json.load(f)
-        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],
-                                                                                            password=config['password'],
-                                                                                            server=config['server'],
-                                                                                            port=config['port'],
-                                                                                            db=config['db'])
+        #with open('./db_config.json') as f:
+        #config = json.load(f)
+        #db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],password=config['password'],server=config['server'],port=config['port'],db=config['db'])
         db_connection = create_engine(db_connection_str)
         df = pd.read_sql(sql_query_str, con=db_connection)
         if len(constant_data) > 0:
@@ -799,23 +867,28 @@ class Resolver_Utils(object):
     def get_db_source(self, logical_source):
         return self.mu.get_db_source(logical_source)
 
-    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False):
+    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False, mapping_name=''):
         source_type = self.get_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
             source_request = self.get_source_request(logical_source)
             #sql
-            if 'query' in logical_source.keys():
-                print('sql')
-                server_info, query = self.get_db_source(logical_source)
+            if 'query' in logical_source.keys() or 'table' in logical_source.keys():
+                print('Access Mysql')
+                db_source, table_name, query = self.get_db_source(logical_source)
                 group_by_mysql_attrs = copy.copy(key_attrs)
-                result = self.get_mysql_data(source_request, group_by_mysql_attrs, filter_dict,
-                                                  constant_data, filter_lst_obj_tag)
+                # if query in mysql is not tested yet, but should be similar to get_csv_data
+                if filter_flag is True:
+                    result = self.get_mysql_data_with_filter(source_request, group_by_mysql_attrs, filter_dict,
+                                                  constant_data, filter_lst_obj_tag, db_source, table_name, query)
+                else:
+                    result = self.get_mysql_data_without_filter(source_request, group_by_mysql_attrs, constant_data, db_source, table_name, query, mapping_name)
             else:
                 # csv
                 print('CSV')
-                #result = self.getCSVData(source_request, ref)
+                #result = self.get_csv_data(source_request, ref)
         if source_type == 'ql:JSONPath':
+            print('Access JSON')
             source_request = self.get_source_request(logical_source)
             iterator = self.get_json_iterator(logical_source)
             if filter_flag is True:
@@ -1106,7 +1179,10 @@ class Resolver_Utils(object):
             logical_source = self.get_logical_source(mapping)
             template = self.get_template(mapping)
             key_attrs = [self.parse_template(template)[0]]
-            temp_result = self.executor(logical_source, None, False, None, ref)
+            if root_type_flag is True:
+                temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
+            else:
+                temp_result = self.executor(logical_source, None, False, None, ref)
             poms = self.get_predicate_object_maps(mapping, predicates)
             attr_pred, constant_data = [], []
             ref_poms_pred_object_map = []
@@ -1122,10 +1198,11 @@ class Resolver_Utils(object):
                     constant_data.append((predicate, constant_value, constant_datatype))
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
-            if root_type_flag is True:
+            if root_type_flag is True and self.sql_flag is False:
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True, mapping['name'], key_attrs)
             else:
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False, '', key_attrs)
+            self.sql_flag = False
             for (predicate, object_map) in ref_poms_pred_object_map:
                 new_query_ast = self.get_sub_ast(query_ast, self.phi(predicate))
                 parent_mapping, join_condition = self.parse_rom(object_map)
@@ -1190,6 +1267,7 @@ class Resolver_Utils(object):
                             # following copy field's data is used in case the original data has the same field name as the predicate stated in the mapping
                             new_record[new_field] = new_record[pred_key]
                     if wrapping_label == '0' or wrapping_label == '10':
+                        #if len(new_formed_join_data[join_key_value]) >0:
                         new_record[pred_key] = new_formed_join_data[join_key_value][0]
                     else:
                         new_record[pred_key] += new_formed_join_data[join_key_value]

@@ -38,12 +38,19 @@ def generic_resolver(_, info, **kwargs):
             #print('Filter Join time', ru.filter_join_time)
             ru.filter_join_time = datetime.timedelta()
             for key, value in filter_df.items():
+                df_columns = list(value.columns)
                 object_iri_lst = value['iri'].tolist()
                 if len(object_iri_lst) > 0:
                     if key in ru.filtered_object_iri.keys():
                         ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
                     else:
                         ru.filtered_object_iri[key] = object_iri_lst
+                for column in df_columns:
+                    if key in column:
+                        attribute = column.split('-')[1]
+                        column_value=value[column].tolist()
+                        ru.filtered_object_columns[key] = {attribute:column_value}
+                        break
         filter_end_time = datetime.datetime.now()
         print('Filter Time:', (filter_end_time - start_time))
         print('Filter Time without access time:', (filter_end_time - start_time - ru.filter_access_data_time))
@@ -57,6 +64,7 @@ def generic_resolver(_, info, **kwargs):
             end_time = datetime.datetime.now()
             with open('output.json', 'w') as f:
                 json.dump({'data': result}, f)
+            print('Result Size:', len(result))
             print('Query Response Time:', (end_time - filter_end_time))
             print('Query Response Time without access time:', (end_time - filter_end_time - ru.query_access_data_time))
             print('Whole Filter/Query Response Time:', (end_time - start_time))
@@ -70,11 +78,13 @@ def generic_resolver(_, info, **kwargs):
         end_time = datetime.datetime.now()
         with open('output.json', 'w') as f:
             json.dump({'data':result}, f)
+        print('Result Size:', len(result))
         print('(No filter)-Query Response Time:', (end_time - start_time))
         print('Access underling data time', ru.query_access_data_time)
         print('join time', ru.join_time)
         print('(No filter)-Query Response Time without access time:', (end_time - start_time - ru.query_access_data_time))
     ru.filtered_object_iri = dict()
+    ru.filtered_object_columns = dict()
     ru.query_access_data_time = datetime.timedelta()
     ru.filter_access_data_time = datetime.timedelta()
     ru.join_time = datetime.timedelta()
