@@ -110,11 +110,6 @@ class Resolver_Utils(object):
         self.symbol_field_exp = symbol_field_exp
 
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
-        # currently check on ref is not implemented
-        ref_condition, ref_data = [], []
-        if ref is not None:
-            ref_condition = ref[1]
-            ref_data = [record[ref_condition['child']] for record in ref[0]]
         data = None
         start_time = datetime.datetime.now()
         if source_request[0:4] == 'http':
@@ -132,27 +127,36 @@ class Resolver_Utils(object):
             temp_data = data
             for i in range(len(keys)):
                 temp_data = temp_data[keys[i]]
+            if ref is not None:
+                ref_field_name = ref[1]
+                ref_field_values = ref[0]
+                print('before referencing', len(temp_data))
+                temp_data= [x for x in temp_data if x[ref_field_name] in ref_field_values]
+                print('after referencing', len(temp_data))
             return temp_data
         else:
             return data
 
     @staticmethod
     def get_csv_data_without_filter(url, ref=None):
-        # currently check on ref is not implemented
-        ref_condition, ref_data = [], []
-        if ref is not None:
-            ref_condition = ref[1]
-            ref_data = [record[ref_condition['child']] for record in ref[0]]
         result = []
-        #ref = None
+        ref_field_name = ''
+        ref_field_values = []
+        if ref is not None:
+            ref_field_name = ref[1]
+            ref_field_values = ref[0]
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(codecs.iterdecode(r.iter_lines(), 'utf-8'), delimiter=';')
+            i=0
             for record in reader:
-                #if ref is not None:
-                    #if record[ref_condition['parent']] in ref_data:
-                        #result.append(record)
-                #else:
-                result.append(record)
+                i+=1
+                if ref is not None:
+                    if record[ref_field_name] in ref_field_values:
+                        result.append(record)
+                else:
+                    result.append(record)
+        print('before csv referencing', i)
+        print('after csv referencing', len(result))
         return result
 
     def get_csv_data_with_filter(self, url, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
@@ -239,6 +243,15 @@ class Resolver_Utils(object):
             in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
         return in_statement
 
+    @staticmethod
+    def generate_ref_sql_statement(ref):
+        sql_statement = ''
+        if ref is not None:
+            values = str(ref[0])[1:-1]
+            column_name = ref[1]
+            sql_statement = '`{column}` in ({values})'.format(column=column_name, values=values)
+        return sql_statement
+
     def get_mysql_data_without_filter(self, source_request, key_columns, constant_data, db_source, table_name, query, mapping_name='', ref=None):
         # currently check on ref is not implemented
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
@@ -246,7 +259,8 @@ class Resolver_Utils(object):
                                                                                             password=db_password,
                                                                                             server=hostname,
                                                                                             port=port,
-                                                                                            db=schema_name)
+                                                                                        db=schema_name)
+
         constant_preds = []
         if constant_data is not None:
             for (constant_pred, data, data_type) in constant_data:
@@ -262,7 +276,14 @@ class Resolver_Utils(object):
                         sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}'.format(select_cols=select_cols, table=table_name, where_statement=where_statement)
                         self.sql_flag = True
                     else:
-                        sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+                        ref_statement = self.generate_ref_sql_statement(ref)
+                        if len(ref_statement) > 0:
+                            print('ref_statement', ref_statement)
+                            sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols,
+                                                                                         table=table_name)
+                            #sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}}'.format(select_cols=select_cols, table=table_name, where_statement=ref_statement)
+                        else:
+                            sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                 else:
                     if mapping_name in self.filtered_object_columns.keys():
                         print('Having mapping_name', mapping_name)
@@ -271,7 +292,13 @@ class Resolver_Utils(object):
                         print(sql_query_str)
                         self.sql_flag = True
                     else:
-                        sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+                        ref_statement = self.generate_ref_sql_statement(ref)
+                        if len(ref_statement) > 0:
+                            print('ref_statement', ref_statement)
+                            sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=ref_statement)
+                        else:
+                            sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+                        print(sql_query_str)
         else:
             print('different')
         db_connection = create_engine(db_connection_str)
@@ -357,10 +384,6 @@ class Resolver_Utils(object):
                 sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
             else:
                 sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
-        #print('SQL Query', sql_query_str)
-        #with open('./db_config.json') as f:
-        #config = json.load(f)
-        #db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=config['username'],password=config['password'],server=config['server'],port=config['port'],db=config['db'])
         db_connection = create_engine(db_connection_str)
         df = pd.read_sql(sql_query_str, con=db_connection)
         if len(constant_data) > 0:
@@ -1260,8 +1283,11 @@ class Resolver_Utils(object):
                 parent_mapping, join_condition = self.parse_rom(object_map)
                 child_field, parent_field = self.parse_join_condition(join_condition)
                 child_data = self.get_child_data(temp_result, child_field)
-                ref = (child_data, join_condition)
+                #ref = (child_data, join_condition)
+                ref_data = [x[child_field] for x in child_data]
+                ref = (ref_data, parent_field)
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
+                ref = None
                 # result2join.append((parent_data, join_condition, self.phi(predicate), new_query_ast))
                 result_join[self.phi(predicate)].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             # if len(result2join) > 0:
