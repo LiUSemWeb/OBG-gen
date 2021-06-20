@@ -4,8 +4,8 @@ from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from generic_resolver.odgsg_graphql_utils import Resolver_Utils
-from generic_resolver.filter_utils import Filter_Utils
-import json
+# from generic_resolver.filter_utils import Filter_Utils
+# import json
 
 global ru
 global type_defs
@@ -15,8 +15,10 @@ global query
 # Define types using Schema Definition Language (https://graphql.org/learn/schema/)
 # Wrapping string in gql function provides validation and better error traceback
 # Resolvers are simple python functions
+'''
 
-def generic_resolver(_, info, **kwargs):
+
+def resolver(_, info, **kwargs):
     result = []
     start_time = datetime.datetime.now()
     # print('info', info)
@@ -89,12 +91,16 @@ def generic_resolver(_, info, **kwargs):
     ru.filter_access_data_time = datetime.timedelta()
     ru.join_time = datetime.timedelta()
     return result
+'''
 
+def resolver(_, info, **kwargs):
+    print('Test Resolver')
+    result = ru.generic_resolver_func(type_defs, info, kwargs)
+    return result
 
 # Create an ASGI app using the schema, running in debug mode
 # app = GraphQL(schema, debug=True)
 app = Flask("__name__")
-
 
 @app.route("/graphql", methods=["GET"])
 def graphql_playground():
@@ -103,7 +109,6 @@ def graphql_playground():
     # but keep on mind this will not prohibit clients from
     # exploring your API using desktop GraphQL Playground app.
     return PLAYGROUND_HTML, 200
-
 
 @app.route("/graphql", methods=["POST"])
 def graphql_server():
@@ -117,33 +122,17 @@ def graphql_server():
         context_value=request,
         debug=app.debug
     )
-
     status_code = 200 if success else 400
     return jsonify(result), status_code
-
 
 moesif_settings = {
     'APPLICATION_ID': 'eyJhcHAiOiIxOTg6MTM2NyIsInZlciI6IjIuMCIsIm9yZyI6Ijg4OjE4NjgiLCJpYXQiOjE2MTcyMzUyMDB9.-5RPUC5FFb4QTUCWSoII35La-cQWp7VYZ-y27ewVh4Q',
     'CAPTURE_OUTGOING_REQUESTS': False,  # Set to True to also capture outgoing calls to 3rd parties.
 }
 
-'''
-def CalculationList(_, info):
-    print('In Calculation')
-    result = Generic_Resolver(info)
-    return result
-    return [
-        {"ID": "123", "hasOutputStructure": [{"hasComposition": {"ReducedFormula": "SiO2"}}]  },
-        {"ID": "456", "hasOutputStructure": [{"hasComposition": {"ReducedFormula": "SiC"}}]   }
-    ]
-query.set_field("CalculationList", Generic_Resolver)
-'''
-
-
 def register_queries(query_entries):
     for query_entry in query_entries:
-        query.set_field(query_entry, generic_resolver)
-
+        query.set_field(query_entry, resolver)
 
 # main function
 if __name__ == "__main__":

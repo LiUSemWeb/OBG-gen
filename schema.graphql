@@ -8,9 +8,9 @@ type Query {
 }
 
 type Calculation {
-    hasOutputStructure: [Structure!]!
-    hasOutputCalculatedProperty: [CalculatedProperty!]!
-    ID: String!
+    hasOutputStructure(filter: StructureFilter): [Structure!]!
+    hasOutputCalculatedProperty(filter:CalculatedPropertyFilter): [CalculatedProperty!]!
+    ID(filter: StringFilter): String!
 }
 type Structure {
     StructureID: String!
