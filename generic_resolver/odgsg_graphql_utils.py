@@ -171,8 +171,9 @@ class Resolver_Utils(object):
 
     def generate_where_statement(self, mapping_name):
         in_statement = ''
-        if mapping_name in self.filtered_object_columns.keys():
-            column_value = self.filtered_object_columns.get(mapping_name)
+        filtered_object_columns = self.filtered_object_columns
+        if mapping_name in filtered_object_columns.keys():
+            column_value = filtered_object_columns.get(mapping_name)
             key, value = list(column_value.items())[0]
             in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
         return in_statement
@@ -202,9 +203,10 @@ class Resolver_Utils(object):
         sql_query_str = ''
         if len(query) == 0:
             if len(table_name) > 0:
+                filtered_object_columns = self.filtered_object_columns
                 if key_columns is not None:
                     select_cols = self.convert_lst_strings(key_columns, ',')
-                    if mapping_name in self.filtered_object_columns.keys():
+                    if mapping_name in filtered_object_columns.keys():
                         where_statement = self.generate_where_statement(mapping_name)
                         sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}'.format(select_cols=select_cols, table=table_name, where_statement=where_statement)
                         self.sql_flag = True
@@ -217,7 +219,7 @@ class Resolver_Utils(object):
                         else:
                             sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                 else:
-                    if mapping_name in self.filtered_object_columns.keys():
+                    if mapping_name in filtered_object_columns.keys():
                         where_statement = self.generate_where_statement(mapping_name)
                         sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=where_statement)
                         self.sql_flag = True
@@ -547,11 +549,12 @@ class Resolver_Utils(object):
         encode_labels = ''
         if 'type' in field.keys:
             # named_type: 0, list_type: 2, non_null_type 1
-            if self.check_node_type(field.type) == 'non_null_type':
+            node_type = self.check_node_type(field.type)
+            if node_type == 'non_null_type':
                 value, labels = self.parse_field(field.type)
                 named_type_value = value
                 encode_labels = '1' + labels
-            elif self.check_node_type(field.type) == 'list_type':
+            elif node_type == 'list_type':
                 value, labels = self.parse_field(field.type)
                 named_type_value = value
                 encode_labels = '2' + labels
@@ -926,18 +929,21 @@ class Resolver_Utils(object):
         return super_filters
 
     def get_join_cache(self, symbolic_filter):
-        if symbolic_filter in self.join_cache.keys():
-            return self.join_cache[symbolic_filter]
+        join_cache = self.join_cache
+        if symbolic_filter in join_cache.keys():
+            return join_cache[symbolic_filter]
         else:
             return None
 
     def get_single_cache(self, symbolic_filter):
-        if symbolic_filter in self.single_cache.keys():
-            return self.single_cache[symbolic_filter]
+        single_cache = self.single_cache
+        if symbolic_filter in single_cache.keys():
+            return single_cache[symbolic_filter]
         else:
             return None
 
     def localize_filter(self, entity_type, pred_attr, filter_fields=None, query_fields=None, filter_constant_field=None):
+        schema_ast = self.schema_ast
         if len(filter_fields) == 0:
             return
         else:
@@ -945,12 +951,12 @@ class Resolver_Utils(object):
             for key, value in filter_fields.items():
                 if key in pred_attr.keys():
                     localized_filter_fields[key]['local_name'] = pred_attr[key]
-                    localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
+                    localized_filter_fields[key]['attribute_type'] = schema_ast[entity_type][key]['base_type']
                     localized_filter_fields[key]['filter'] = value
                 else:
                     if len(filter_constant_field) > 0:
                         localized_filter_fields[key]['local_name'] = key
-                        localized_filter_fields[key]['attribute_type'] = self.schema_ast[entity_type][key]['base_type']
+                        localized_filter_fields[key]['attribute_type'] = schema_ast[entity_type][key]['base_type']
                         localized_filter_fields[key]['filter'] = value
             return localized_filter_fields
 
@@ -974,10 +980,11 @@ class Resolver_Utils(object):
             filter_constant = []
             for pom in poms:
                 predicate, object_map = self.parse_pom(pom)
-                if self.type_of_object_map(object_map) == 1:
+                object_map_type = self.type_of_object_map(object_map)
+                if object_map_type == 1:
                     reference_attribute = self.get_reference_attribute(object_map)
                     pred_attr[self.phi(predicate)] = reference_attribute
-                if self.type_of_object_map(object_map) == 2:
+                if object_map_type == 2:
                     constant_value, constant_datatype = self.get_constant_value(object_map)
                     constant_data.append((predicate, constant_value, constant_datatype))
                     filter_constant.append(predicate)
@@ -1115,8 +1122,6 @@ class Resolver_Utils(object):
         else:
             mappings.append(mapping)
         predicates = self.translate(query_fields)
-        predicate_filter_map = dict()
-        predicate_filter_ast = dict()
         for mapping in mappings:
             logical_source = self.get_logical_source(mapping)
             template = self.get_template(mapping)
@@ -1127,21 +1132,17 @@ class Resolver_Utils(object):
             result_join = defaultdict(list)
             for pom in poms:
                 predicate, object_map = self.parse_pom(pom)
-                if self.type_of_object_map(object_map) == 1:
+                object_map_type = self.type_of_object_map(object_map)
+                if object_map_type == 1:
                     reference_attribute = self.get_reference_attribute(object_map)
                     attr_pred.append((reference_attribute, self.phi(predicate)))
                     direct_fields.append(self.phi(predicate))
                     key_attrs.append(reference_attribute)
-                if self.type_of_object_map(object_map) == 2:
+                if object_map_type == 2:
                     constant_value, constant_datatype = self.get_constant_value(object_map)
                     constant_data.append((predicate, constant_value, constant_datatype))
-                if self.type_of_object_map(object_map) == 3:
+                if object_map_type == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
-            '''
-            for field in direct_fields:
-                # it is not tree structured filter
-                field_filter = self.get_field_filter(query_ast, field)
-            '''
             if root_type_flag is True:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
             else:
@@ -1154,7 +1155,8 @@ class Resolver_Utils(object):
                                                '', key_attrs)
             self.sql_flag = False
             for (predicate, object_map) in ref_poms_pred_object_map:
-                new_query_ast = self.get_sub_ast(query_ast, self.phi(predicate))
+                phi_predicate = self.phi(predicate)
+                new_query_ast = self.get_sub_ast(query_ast, phi_predicate)
                 parent_mapping, join_condition = self.parse_rom(object_map)
                 child_field, parent_field = self.parse_join_condition(join_condition)
                 child_data = self.get_child_data(temp_result, child_field)
@@ -1176,7 +1178,7 @@ class Resolver_Utils(object):
                 '''
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
                 ref = None
-                result_join[self.phi(predicate)].append((parent_data, join_condition, new_query_ast['wrapping_label']))
+                result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             if len(result_join) > 0:
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
             result = self.merge(result, temp_result)
