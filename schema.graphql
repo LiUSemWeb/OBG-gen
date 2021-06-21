@@ -1,5 +1,9 @@
+interface Thing {
+    iri: String!
+}
 
 type Query {
+    ThingList: [Thing!]
     CalculationList(filter: CalculationFilter): [Calculation!]
     StructureList(filter: StructureFilter): [Structure!]
     CompositionList(filter: CompositionFilter): [Composition!]
@@ -7,12 +11,14 @@ type Query {
     SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup!]
 }
 
-type Calculation {
+type Calculation implements Thing {
+    iri: String!
     hasOutputStructure(filter: StructureFilter): [Structure!]!
     hasOutputCalculatedProperty(filter:CalculatedPropertyFilter): [CalculatedProperty!]!
     ID(filter: StringFilter): String!
 }
-type Structure {
+type Structure implements Thing {
+    iri: String!
     StructureID: String!
     hasComposition: Composition
     hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup

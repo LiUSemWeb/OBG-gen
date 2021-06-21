@@ -40,6 +40,8 @@ class Resolver_Utils(object):
         self.filter_df = datetime.timedelta()
         self.filter_df_groupby = datetime.timedelta()
         self.sql_flag = False
+        self.interfaces = []
+        self.interface_query_entries = []
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -69,9 +71,9 @@ class Resolver_Utils(object):
             if ref is not None:
                 ref_field_name = ref[1]
                 ref_field_values = ref[0]
-                print('before referencing', len(temp_data))
+                # print('before referencing', len(temp_data))
                 temp_data= [x for x in temp_data if x[ref_field_name] in ref_field_values]
-                print('after referencing', len(temp_data))
+                # print('after referencing', len(temp_data))
             return temp_data
         else:
             return data
@@ -94,8 +96,6 @@ class Resolver_Utils(object):
                         result.append(record)
                 else:
                     result.append(record)
-        print('before csv referencing', i)
-        print('after csv referencing', len(result))
         return result
 
     def get_csv_data_with_filter(self, url, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
@@ -212,27 +212,28 @@ class Resolver_Utils(object):
                     else:
                         ref_statement = self.generate_ref_sql_statement(ref)
                         if len(ref_statement) > 0:
-                            print('ref_statement', ref_statement)
-                            #sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+                            # print('ref_statement', ref_statement)
+                            # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                             sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}}'.format(select_cols=select_cols, table=table_name, where_statement=ref_statement)
                         else:
                             sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                 else:
                     if mapping_name in self.filtered_object_columns.keys():
-                        print('Having mapping_name', mapping_name)
+                        # print('Having mapping_name', mapping_name)
                         where_statement = self.generate_where_statement(mapping_name)
                         sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=where_statement)
-                        print(sql_query_str)
+                        # print(sql_query_str)
                         self.sql_flag = True
                     else:
                         ref_statement = self.generate_ref_sql_statement(ref)
                         if len(ref_statement) > 0:
-                            print('ref_statement', ref_statement)
+                            # print('ref_statement', ref_statement)
                             sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=ref_statement)
                         else:
                             sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
                         print(sql_query_str)
         else:
+            # for future update
             print('different')
         db_connection = create_engine(db_connection_str)
         df = pd.read_sql(sql_query_str, con=db_connection)
@@ -574,16 +575,30 @@ class Resolver_Utils(object):
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         if definition.name.value == 'Query':
                             self.filter_fields_map[(wrapped_field.name.value, 'filter')] = (named_type_value, encode_labels)
+
                         else:
                             self.filter_fields_map[(definition.name.value, wrapped_field.name.value)] = (named_type_value, encode_labels)
-                        schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
-                                                                                       'wrapping_label': encode_labels}
+                            interface_names = [x.name.value for x in definition.interfaces]
+                            for interface_name in interface_names:
+                                schema_ast[interface_name]['sub_types'].append(definition.name.value)
+                        schema_ast[definition.name.value][wrapped_field.name.value] = {
+                            'base_type': named_type_value,
+                            'wrapping_label': encode_labels}
                 if definition.kind == 'input_object_type_definition':
                     schema_ast[definition.name.value] = dict()
                     for wrapped_field in definition.fields:
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
+                if definition.kind == 'interface_type_definition':
+                    self.interfaces.append(definition.name.value)
+                    schema_ast[definition.name.value] = dict()
+                    schema_ast[definition.name.value]['sub_types'] = []
+                    for wrapped_field in definition.fields:
+                        named_type_value, encode_labels = self.parse_field(wrapped_field)
+                        schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
+                                                                                       'wrapping_label': encode_labels}
+
             self.schema_ast = schema_ast
             return self.schema_ast
         else:
@@ -591,8 +606,16 @@ class Resolver_Utils(object):
 
     def get_query_entries(self, schema):
         schema_ast = self.generate_schema_ast(schema)
-        query_entries = list(schema_ast['Query'].keys())
-        return query_entries
+        object_type_query_entries = []
+        interface_type_query_entries = []
+        for query_name_key, query_entry_schema in schema_ast['Query'].items():
+            if query_entry_schema['base_type'] in self.interfaces:
+                interface_type_query_entries.append(query_name_key)
+            else:
+                object_type_query_entries.append(query_name_key)
+        # query_entries = list(schema_ast['Query'].keys())
+        self.interface_query_entries = interface_type_query_entries
+        return object_type_query_entries, interface_type_query_entries
 
     def fill_return_type(self, query_ast, schema_ast, super_type):
         if len(query_ast['fields']) > 0:
@@ -605,13 +628,23 @@ class Resolver_Utils(object):
             query_ast['fields'] = temp_fields
         return query_ast
 
-    def generate_query_ast(self, schema, query_info):
-        schema_ast = self.generate_schema_ast(schema)
-        self.schema_ast = schema_ast
+    def generate_query_asts(self, query_info):
+        schema_ast = self.schema_ast
+        query_field_nodes = query_info.field_nodes
+        query_ast = self.parse_query_fields('Query', query_field_nodes)
+        inline_query_asts = query_ast['fields']
+        for inline_query_ast in inline_query_asts:
+            inline_fragment_type = inline_query_ast['type']
+            self.fill_return_type(inline_query_ast, schema_ast, inline_fragment_type)
+        return inline_query_asts
+
+    def generate_query_ast(self, query_info):
+        schema_ast = self.schema_ast
         query_field_nodes = query_info.field_nodes
         query_ast = self.parse_query_fields('Query', query_field_nodes)
         query_entry_name = query_ast['fields'][0]['name']
-        query_ast['fields'][0]['type'] = schema_ast['Query'][query_entry_name]['base_type']
+        if len(query_ast['fields'][0]['type'] ) == 0:
+            query_ast['fields'][0]['type'] = schema_ast['Query'][query_entry_name]['base_type']
         query_ast['fields'][0]['wrapping_label'] = schema_ast['Query'][query_entry_name]['wrapping_label']
         # query_ast is changed inside fill_return_type
         self.fill_return_type(query_ast['fields'][0], schema_ast, query_ast['fields'][0]['type'])
@@ -677,7 +710,7 @@ class Resolver_Utils(object):
     def parse_join_condition(self, join_condition):
         return self.mu.parse_join_condition(join_condition)
 
-    def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes= []):
+    def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes= [],filtered_object_iri =None):
         key, template = self.parse_template(template)
         i = 0
         while i < len(temp_result):
@@ -686,8 +719,8 @@ class Resolver_Utils(object):
                 temp_result[i][constant_pred] = constant_data
             iri = template.format(temp_result[i][key])
             if root_type_flag is True:
-                if mapping_name in self.filtered_object_iri.keys() and iri in self.filtered_object_iri[mapping_name] or \
-                        self.filtered_object_iri['filter'] is False:
+                if mapping_name in filtered_object_iri.keys() and iri in filtered_object_iri[mapping_name] or \
+                        filtered_object_iri['filter'] is False:
                     temp_result[i]['iri'] = iri
                     for attr_pred_tuple in attr_pred_lst:
                         if '.' in attr_pred_tuple[0]:
@@ -739,18 +772,38 @@ class Resolver_Utils(object):
         return 0
 
     def parse_query_fields(self, root_name, query_field_notes):
+        resolve_type = ''
         result = dict()
         result['name'] = root_name
         result['type'] = ''
         fields = []
         for qfn in query_field_notes:
-            if qfn.selection_set is not None:
-                next_level_qfns = qfn.selection_set.selections
-                temp_result = self.parse_query_fields(qfn.name.value, next_level_qfns)
-                fields.append(temp_result)
+            if qfn.kind == 'inline_fragment':
+                # print('--inline--')
+                break
             else:
-                field = {'name': qfn.name.value, 'type': '', 'fields': []}
-                fields.append(field)
+                if qfn.selection_set is not None:
+                    next_level_qfns = qfn.selection_set.selections
+                    inline_fragement_selections = []
+                    query_selections = []
+                    for selection in next_level_qfns:
+                        if selection.kind == 'inline_fragment':
+                            inline_fragement_selections.append(selection)
+                        else:
+                            query_selections.append(selection)
+                    if len(query_selections) > 0:
+                        temp_result = self.parse_query_fields(qfn.name.value, query_selections)
+                        fields.append(temp_result)
+                    if len(inline_fragement_selections) > 0:
+                        for inline_fragment_selection in inline_fragement_selections:
+                            resolve_type = inline_fragment_selection.type_condition.name.value
+                            inline_next_level_qfns = inline_fragment_selection.selection_set.selections
+                            temp_result = self.parse_query_fields(qfn.name.value, inline_next_level_qfns)
+                            temp_result['type'] = resolve_type
+                            fields.append(temp_result)
+                else:
+                    field = {'name': qfn.name.value, 'type': '', 'fields': []}
+                    fields.append(field)
         result['fields'] = fields
         return result
 
@@ -772,7 +825,7 @@ class Resolver_Utils(object):
         if source_type == 'ql:CSV':
             source_request = self.get_source_request(logical_source)
             if 'query' in logical_source.keys() or 'table' in logical_source.keys():
-                print('Access Mysql')
+                # print('Access Mysql')
                 db_source, table_name, query = self.get_db_source(logical_source)
                 group_by_mysql_attrs = copy.copy(key_attrs)
                 if filter_flag is True:
@@ -781,14 +834,14 @@ class Resolver_Utils(object):
                 else:
                     result = self.get_mysql_data_without_filter(source_request, key_attrs, constant_data, db_source, table_name, query, mapping_name, ref)
             else:
-                print('Access CSV')
+                # print('Access CSV')
                 if filter_flag is True:
                     result = self.get_csv_data_with_filter(source_request, key_attrs, filter_dict,
                                                   constant_data, filter_lst_obj_tag)
                 else:
                     result = self.get_csv_data_without_filter(source_request, ref)
         if source_type == 'ql:JSONPath':
-            print('Access JSON')
+            # print('Access JSON')
             source_request = self.get_source_request(logical_source)
             iterator = self.get_json_iterator(logical_source)
             if filter_flag is True:
@@ -919,7 +972,7 @@ class Resolver_Utils(object):
         if len(super_mappings_name) == 0:
             mappings = self.get_mappings(entity_type)
         else:
-            mappings = []
+            mappings = self.get_mappings_by_names([super_mappings_name])
         query_fields = filter_fields.keys()
         predicates = self.translate(query_fields)
         for mapping in mappings:
@@ -960,7 +1013,7 @@ class Resolver_Utils(object):
         exp = tuple(sorted(exp))
         return exp
 
-    def filter_evaluator(self, filter_ast, cpe, rse, super_filters={}, super_result=None):
+    def filter_evaluator(self, filter_ast, cpe, rse, super_filters={}, super_result=None, super_mapping_name=''):
         root_node_filter = filter_ast.get_current_filter()
         if len(root_node_filter) == 0:
             root_node_filter = {filter_ast.name + '-ALL': {}}
@@ -974,8 +1027,8 @@ class Resolver_Utils(object):
                 entity_type = filter_ast.name
                 filter_fields = filter_ast.filter_dict
                 filter_lst_obj_tag = filter_ast.list_obj_flag
-                super_mappings_name = []
-                temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag)
+                #super_mappings_name = []
+                temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mapping_name, filter_lst_obj_tag)
                 if symbolic_root_filter in rse:
                     self.cache[symbolic_root_filter] = temp_result
             super_node_type = filter_ast.parent.name
@@ -1050,6 +1103,13 @@ class Resolver_Utils(object):
                                 super_result[mapping_key] = super_result[mapping_key][0:0] # give it as empty
         return super_result
 
+    def get_field_filter(self, query_ast, field):
+        return
+
+    def get_interface_sub_types(self, interface_name):
+        sub_types = self.schema_ast[interface_name]['sub_types']
+        return sub_types
+
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):
         result, mappings = [], []
         concept_type, query_fields = self.parse_ast(query_ast)
@@ -1057,36 +1117,49 @@ class Resolver_Utils(object):
             if len(filtered_root_mappings) > 0:
                 mappings = self.get_mappings_by_names(filtered_root_mappings)
             else:
-                mappings = self.get_mappings(concept_type)
+                if concept_type in self.interfaces:
+                    mappings = []
+                    sub_types = self.get_interface_sub_types(concept_type)
+                    for sub_type in sub_types:
+                        mappings += self.get_mappings((sub_type))
+                else:
+                    mappings = self.get_mappings(concept_type)
         else:
             mappings.append(mapping)
         predicates = self.translate(query_fields)
+        predicate_filter_map = dict()
+        predicate_filter_ast = dict()
         for mapping in mappings:
             logical_source = self.get_logical_source(mapping)
             template = self.get_template(mapping)
             key_attrs = [self.parse_template(template)[0]]
-            if root_type_flag is True:
-                temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
-            else:
-                temp_result = self.executor(logical_source, None, False, None, ref)
             poms = self.get_predicate_object_maps(mapping, predicates)
-            attr_pred, constant_data = [], []
+            attr_pred, constant_data, direct_fields = [], [], []
             ref_poms_pred_object_map = []
             result_join = defaultdict(list)
-            # following loop may need to be moved to before executor if filter needed
             for pom in poms:
                 predicate, object_map = self.parse_pom(pom)
                 if self.type_of_object_map(object_map) == 1:
                     reference_attribute = self.get_reference_attribute(object_map)
                     attr_pred.append((reference_attribute, self.phi(predicate)))
+                    direct_fields.append(self.phi(predicate))
                     key_attrs.append(reference_attribute)
                 if self.type_of_object_map(object_map) == 2:
                     constant_value, constant_datatype = self.get_constant_value(object_map)
                     constant_data.append((predicate, constant_value, constant_datatype))
                 if self.type_of_object_map(object_map) == 3:
                     ref_poms_pred_object_map.append((predicate, object_map))
+            '''
+            for dfield in direct_fields:
+                # it is not tree structured filter
+                field_filter = self.get_field_filter(query_ast, dfield)
+            '''
+            if root_type_flag is True:
+                temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
+            else:
+                temp_result = self.executor(logical_source, None, False, None, ref, None, False, '')
             if root_type_flag is True and self.sql_flag is False:
-                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True, mapping['name'], key_attrs)
+                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True, mapping['name'], key_attrs, self.filtered_object_iri)
             else:
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False, '', key_attrs)
             self.sql_flag = False
@@ -1097,6 +1170,18 @@ class Resolver_Utils(object):
                 child_data = self.get_child_data(temp_result, child_field)
                 ref_data = [x[child_field] for x in child_data]
                 ref = (ref_data, parent_field)
+                # here can output the DNF
+                # filter evaluator
+                field_filter_condition = None
+                if field_filter_condition is not None:
+                    if self.phi(predicate) not in predicate_filter_map.keys():
+                        predicate_filter_map[self.phi(predicate)] = self.get_field_filter(new_query_ast, self.phi(predicate))
+                    if self.phi(predicate) not in predicate_filter_ast.keys():
+                        filter_asts, common_prefix, repeated_single_exp = self.get_field_filter_asts(
+                            predicate_filter_map[self.phi(predicate)])
+                        predicate_filter_ast[self.phi(predicate)] = (filter_asts, common_prefix, repeated_single_exp)
+                    self.resolve_field_filter(predicate_filter_ast[self.phi(predicate)][0:], parent_mapping)
+
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
                 ref = None
                 result_join[self.phi(predicate)].append((parent_data, join_condition, new_query_ast['wrapping_label']))
@@ -1160,6 +1245,38 @@ class Resolver_Utils(object):
         self.join_time += end_time-start_time
         return result
 
+    def get_field_filter_asts(self, filter_condition):
+        if filter_condition is not None and len(filter_condition) > 0:
+            fu = Filter_Utils()
+            fu.parse_cond(filter_condition)
+            dnf_lst = fu.simplify()
+            filter_asts, common_prefix, repeated_single_exp = self.generate_filter_asts(fu.field_exp_symbol,
+                                                                                        fu.symbol_field_exp, dnf_lst,
+                                                                                        'CalculationList')
+            return filter_asts, common_prefix, repeated_single_exp
+        else:
+            None, None, None
+
+    def resolve_field_filter(self, filter_asts, common_prefix, repeated_single_exp, mapping):
+        for filter_ast in filter_asts:
+            filter_df = self.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp, {}, None, mapping['name'])
+            # print('Filter Join time', self.filter_join_time)
+            self.filter_join_time = datetime.timedelta()
+            for key, value in filter_df.items():
+                df_columns = list(value.columns)
+                object_iri_lst = value['iri'].tolist()
+                if len(object_iri_lst) > 0:
+                    if key in self.filtered_object_iri.keys():
+                        self.filtered_object_iri[key] = list(set(self.filtered_object_iri[key] + object_iri_lst))
+                    else:
+                        self.filtered_object_iri[key] = object_iri_lst
+                for column in df_columns:
+                    if key in column:
+                        attribute = column.split('-')[1]
+                        column_value = value[column].tolist()
+                        self.filtered_object_columns[key] = {attribute: column_value}
+                        break
+
     def generic_resolver_func(self, type_defs, info, filter_condition):
         result = []
         start_time = datetime.datetime.now()
@@ -1202,7 +1319,7 @@ class Resolver_Utils(object):
                 print('Filtered', key, len(value))
             if len(self.filtered_object_iri.keys()) > 0:
                 self.filtered_object_iri['filter'] = True
-                query_ast = self.generate_query_ast(type_defs, info)
+                query_ast = self.generate_query_ast(info)
                 # result = self.DataFetcher(query_ast['fields'][0])
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True, self.filtered_object_iri.keys())
                 end_time = datetime.datetime.now()
@@ -1217,19 +1334,30 @@ class Resolver_Utils(object):
                       (end_time - start_time - self.filter_access_data_time - self.query_access_data_time))
         else:
             self.filtered_object_iri['filter'] = False
-            query_ast = self.generate_query_ast(type_defs, info)
-            # result = self.DataFetcher(query_ast['fields'][0])
-            result = self.query_evaluator(query_ast['fields'][0], None, None, True)
-            # print(result)
-            end_time = datetime.datetime.now()
-            with open('output.json', 'w') as f:
-                json.dump({'data': result}, f)
-            print('Result Size:', len(result))
-            print('(No filter)-Query Response Time:', (end_time - start_time))
-            print('Access underling data time', self.query_access_data_time)
-            print('join time', self.join_time)
-            print('(No filter)-Query Response Time without access time:',
-                  (end_time - start_time - self.query_access_data_time))
+            field_type = info.field_nodes[0].selection_set.selections[0].kind
+            if info.field_name in self.interface_query_entries and field_type == 'inline_fragment':
+                '''
+                This block is about query interfaces with inline fragments provided.
+                Right now, this solution is for root queried interface type.
+                '''
+                inline_query_asts = self.generate_query_asts(info)
+                for inline_query_ast in inline_query_asts:
+                    temp_result = self.query_evaluator(inline_query_ast, None, None, True)
+                    result += temp_result
+            else:
+                query_ast = self.generate_query_ast(info)
+                # result = self.DataFetcher(query_ast['fields'][0])
+                result = self.query_evaluator(query_ast['fields'][0], None, None, True)
+                # print(result)
+                end_time = datetime.datetime.now()
+                with open('output.json', 'w') as f:
+                    json.dump({'data': result}, f)
+                print('Result Size:', len(result))
+                print('(No filter)-Query Response Time:', (end_time - start_time))
+                print('Access underling data time', self.query_access_data_time)
+                print('join time', self.join_time)
+                print('(No filter)-Query Response Time without access time:',
+                      (end_time - start_time - self.query_access_data_time))
         self.filtered_object_iri = dict()
         self.filtered_object_columns = dict()
         self.query_access_data_time = datetime.timedelta()

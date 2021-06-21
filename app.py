@@ -1,100 +1,30 @@
 import sys
 import datetime
-from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema_from_path
+from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema_from_path, InterfaceType,ObjectType
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from generic_resolver.odgsg_graphql_utils import Resolver_Utils
-# from generic_resolver.filter_utils import Filter_Utils
-# import json
 
 global ru
 global type_defs
 global query
 
+thing = InterfaceType("Thing")
+
+@thing.type_resolver
+def resolve_search_result_type(obj, *_):
+    #print(obj)
+    if 'calculation' in obj['iri']:
+        return 'Calculation'
+    if 'structure' in obj['iri']:
+        return 'Structure'
 
 # Define types using Schema Definition Language (https://graphql.org/learn/schema/)
 # Wrapping string in gql function provides validation and better error traceback
 # Resolvers are simple python functions
-'''
 
-
-def resolver(_, info, **kwargs):
-    result = []
-    start_time = datetime.datetime.now()
-    # print('info', info)
-    filter_condition = kwargs
-    if len(filter_condition) > 0:
-        fu = Filter_Utils()
-        fu.parse_cond(filter_condition)
-        dnf_lst = fu.simplify()
-        ru.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
-        #print('DNF', dnf_lst)
-        # print('ru_filter_fields_map', ru.filter_fields_map)
-        filter_asts, common_prefix, repeated_single_exp = ru.generate_filter_asts(ru.filter_fields_map,
-                                                                                  ru.symbol_field_exp, dnf_lst,
-                                                                                  'CalculationList')
-        # print('CP:', common_prefix)
-        #vprint('RSP:', repeated_single_exp)
-        for filter_ast in filter_asts:
-            filter_df = ru.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
-            #print('Filter Join time', ru.filter_join_time)
-            ru.filter_join_time = datetime.timedelta()
-            for key, value in filter_df.items():
-                df_columns = list(value.columns)
-                object_iri_lst = value['iri'].tolist()
-                if len(object_iri_lst) > 0:
-                    if key in ru.filtered_object_iri.keys():
-                        ru.filtered_object_iri[key] = list(set(ru.filtered_object_iri[key] + object_iri_lst))
-                    else:
-                        ru.filtered_object_iri[key] = object_iri_lst
-                for column in df_columns:
-                    if key in column:
-                        attribute = column.split('-')[1]
-                        column_value=value[column].tolist()
-                        ru.filtered_object_columns[key] = {attribute:column_value}
-                        break
-        filter_end_time = datetime.datetime.now()
-        print('Filter Time:', (filter_end_time - start_time))
-        print('Filter Time without access time:', (filter_end_time - start_time - ru.filter_access_data_time))
-        for key, value in ru.filtered_object_iri.items():
-            print('Filtered', key, len(value))
-        if len(ru.filtered_object_iri.keys()) > 0:
-            ru.filtered_object_iri['filter'] = True
-            query_ast = ru.generate_query_ast(type_defs, info)
-            # result = ru.DataFetcher(query_ast['fields'][0])
-            result = ru.query_evaluator(query_ast['fields'][0], None, None, True, ru.filtered_object_iri.keys())
-            end_time = datetime.datetime.now()
-            with open('output.json', 'w') as f:
-                json.dump({'data': result}, f)
-            print('Result Size:', len(result))
-            print('Query Response Time:', (end_time - filter_end_time))
-            print('Query Response Time without access time:', (end_time - filter_end_time - ru.query_access_data_time))
-            print('Whole Filter/Query Response Time:', (end_time - start_time))
-            print('Whole Filter/Query Response Time:', (end_time - start_time - ru.filter_access_data_time - ru.query_access_data_time))
-    else:
-        ru.filtered_object_iri['filter'] = False
-        query_ast = ru.generate_query_ast(type_defs, info)
-        # result = ru.DataFetcher(query_ast['fields'][0])
-        result = ru.query_evaluator(query_ast['fields'][0], None, None, True)
-        #print(result)
-        end_time = datetime.datetime.now()
-        with open('output.json', 'w') as f:
-            json.dump({'data':result}, f)
-        print('Result Size:', len(result))
-        print('(No filter)-Query Response Time:', (end_time - start_time))
-        print('Access underling data time', ru.query_access_data_time)
-        print('join time', ru.join_time)
-        print('(No filter)-Query Response Time without access time:', (end_time - start_time - ru.query_access_data_time))
-    ru.filtered_object_iri = dict()
-    ru.filtered_object_columns = dict()
-    ru.query_access_data_time = datetime.timedelta()
-    ru.filter_access_data_time = datetime.timedelta()
-    ru.join_time = datetime.timedelta()
-    return result
-'''
-
-def resolver(_, info, **kwargs):
-    print('Test Resolver')
+def resolver(obj, info, **kwargs):
+    print('resolver')
     result = ru.generic_resolver_func(type_defs, info, kwargs)
     return result
 
@@ -130,7 +60,11 @@ moesif_settings = {
     'CAPTURE_OUTGOING_REQUESTS': False,  # Set to True to also capture outgoing calls to 3rd parties.
 }
 
-def register_queries(query_entries):
+def register_object_type_queries(query_entries):
+    for query_entry in query_entries:
+        query.set_field(query_entry, resolver)
+
+def register_interface_type_queries(query_entries):
     for query_entry in query_entries:
         query.set_field(query_entry, resolver)
 
@@ -146,9 +80,8 @@ if __name__ == "__main__":
     ru = Resolver_Utils(mapping_file, o2g_file)
     end_time = datetime.datetime.now()
     print('Prepare time', end_time -start_time)
-    # ru.set_mappings(mapping_file)
-    # ru.set_Phi()
-    register_queries(ru.get_query_entries(type_defs))
-    # print('ru', ru.filter_fields_map)
-    schema = make_executable_schema(type_defs, query)
+    object_type_query_entries, interface_type_query_entries = ru.get_query_entries(type_defs)
+    register_object_type_queries(object_type_query_entries)
+    register_interface_type_queries(interface_type_query_entries)
+    schema = make_executable_schema(type_defs, [query, thing])
     app.run(debug=True)

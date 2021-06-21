@@ -99,5 +99,6 @@
     "hasBasis": "hasBasis",
     "has_c_axisVector": "has_c_axisVector",
     "wasAssociatedWith": "wasAssociatedWith",
-    "hasAngleVector": "hasAngleVector"
+    "hasAngleVector": "hasAngleVector",
+    "iri": "iri"
 }
