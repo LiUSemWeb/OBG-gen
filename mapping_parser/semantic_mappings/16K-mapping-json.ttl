@@ -17,58 +17,58 @@
 @prefix qudt-unit: <http://qudt.org/vocab/unit/>.
 @prefix qudt: <http://qudt.org/schema/qudt#>.
 @prefix hydra: <http://www.w3.org/ns/hydra/core#>.
+@prefix d2rq: <http://www.wiwiss.fu-berlin.de/suhl/bizer/D2RQ/0.1#>.
 @base <http://example.com/ns#>.
 
-
 <Calculation_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/mp/mp-calculation-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <Structure_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/mp/mp-structure-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <Composition_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <BandGap_Property_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <FormationEnergy_Property_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/mp/mp-formationenergy-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <Calculation_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-calculation-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 <Structure_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <BandGap_Property_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 
 <FormationEnergy_Property_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 
 
 <Composition_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-1K.json"; 
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-composition-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
@@ -326,4 +326,3 @@
         ]
     ].
 
-    

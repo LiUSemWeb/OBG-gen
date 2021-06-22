@@ -14,6 +14,7 @@ import ast
 import copy
 import datetime
 from sqlalchemy import create_engine
+import os
 
 
 class Resolver_Utils(object):
@@ -1324,12 +1325,12 @@ class Resolver_Utils(object):
                 with open('output.json', 'w') as f:
                     json.dump({'data': result}, f)
                 print('Result Size:', len(result))
-                print('Query Response Time:', (end_time - filter_end_time))
+                print('Query Response Time:', (end_time - filter_end_time).total_seconds())
                 print('Query Response Time without access time:',
-                      (end_time - filter_end_time - self.query_access_data_time))
-                print('Whole Filter/Query Response Time:', (end_time - start_time))
+                      (end_time - filter_end_time - self.query_access_data_time).total_seconds())
+                print('Whole Filter/Query Response Time:', (end_time - start_time).total_seconds())
                 print('Whole Filter/Query Response Time:',
-                      (end_time - start_time - self.filter_access_data_time - self.query_access_data_time))
+                      (end_time - start_time - self.filter_access_data_time - self.query_access_data_time).total_seconds())
         else:
             self.filtered_object_iri['filter'] = False
             field_type = info.field_nodes[0].selection_set.selections[0].kind
@@ -1343,8 +1344,15 @@ class Resolver_Utils(object):
                     temp_result = self.query_evaluator(inline_query_ast, None, None, True)
                     result += temp_result
                 end_time = datetime.datetime.now()
+                with open('output.json', 'w') as f:
+                    json.dump({'data': result}, f)
+                query_name = json.loads(info.context.data)['operationName']
+                output_json_file_size = os.stat('./output.json').st_size
+                result_length = len(result)
+                response_time = (end_time - start_time).total_seconds()
+                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
                 print('Result Size:', len(result))
-                print('(No filter)-Query Response Time:', (end_time - start_time))
+                print('(No filter)-Query Response Time:', (end_time - start_time).total_seconds())
             else:
                 query_ast = self.generate_query_ast(info)
                 # result = self.DataFetcher(query_ast['fields'][0])
@@ -1352,12 +1360,19 @@ class Resolver_Utils(object):
                 end_time = datetime.datetime.now()
                 with open('output.json', 'w') as f:
                     json.dump({'data': result}, f)
-                print('Result Size:', len(result))
-                print('(No filter)-Query Response Time:', (end_time - start_time))
+                query_name = json.loads(info.context.data)['operationName']
+                output_json_file_size = os.stat('./output.json').st_size
+                result_length = len(result)
+                response_time = (end_time - start_time).total_seconds()
+                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
+                print('context: ', query_name)
+                print('Result json file size: ', output_json_file_size)
+                print('Result Size: ', result_length)
+                print('(No filter)-Query Response Time:', response_time)
                 print('Access underling data time', self.query_access_data_time)
                 print('join time', self.join_time)
                 print('(No filter)-Query Response Time without access time:',
-                      (end_time - start_time - self.query_access_data_time))
+                      (end_time - start_time - self.query_access_data_time).total_seconds())
         self.filtered_object_iri = dict()
         self.filtered_object_columns = dict()
         self.join_cache = dict()
@@ -1366,3 +1381,11 @@ class Resolver_Utils(object):
         self.filter_access_data_time = datetime.timedelta()
         self.join_time = datetime.timedelta()
         return result
+
+    def write_evaluation_result(self, query_name, response_time, json_file_size, result_length):
+        header = ['Query', 'Response_Time', 'JSON_File_Size', 'Result_Num']
+        data = [query_name, response_time, json_file_size, result_length]
+        with open('experiments_result.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(data)
+        return
