@@ -3,13 +3,9 @@ import csv
 import codecs
 from contextlib import closing
 from generic_resolver.mapping_utils import RML_Mapping
-from graphql import parse
 import json
-import pymongo
 from collections import defaultdict
 import pandas as pd
-from generic_resolver.filter_ast import Filter_AST
-from generic_resolver.filter_utils import Filter_Utils
 import ast
 import copy
 import datetime
@@ -18,27 +14,16 @@ import os
 
 
 class Resolver_Utils(object):
-    def __init__(self, mapping_file, o2graphql_file='o2graphql.json'):
+    def __init__(self, mapping_file, o2graphql_file):
         self.mu = RML_Mapping(mapping_file)
-        # self.operator_1 = ['_and', '_or', '_not']
-        # self.operator_2 = ['_eq', '_neq', '_gt']
         self.field_exp_symbol = dict()
         self.symbol_field_exp = dict()
         self.schema_ast = dict()
-        # self.sql_cache = dict()
         self.join_cache = dict()
         self.single_cache = dict()
-        # self.common_exp_symbols = []
         self.filter_fields_map = dict()
-        # self.mapping_attr_pred_dict = defaultdict(dict)
         self.filtered_object_iri = dict()
         self.filtered_object_columns = dict()
-        self.filter_access_data_time = datetime.timedelta()
-        self.query_access_data_time = datetime.timedelta()
-        self.join_time = datetime.timedelta()
-        self.filter_join_time = datetime.timedelta()
-        self.filter_df = datetime.timedelta()
-        self.filter_df_groupby = datetime.timedelta()
         self.sql_flag = False
         self.interfaces = []
         self.interface_query_entries = []
@@ -48,12 +33,10 @@ class Resolver_Utils(object):
             self.GraphQL_schema2ontology = self.ontology2GraphQL_schema
 
     def set_symbol_field_maps(self, field_exp_symbol, symbol_field_exp):
-        self.field_exp_symbol = field_exp_symbol
-        self.symbol_field_exp = symbol_field_exp
+        self.field_exp_symbol, self.symbol_field_exp = field_exp_symbol, symbol_field_exp
 
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
         data = None
-        start_time = datetime.datetime.now()
         if source_request[0:4] == 'http':
             r = requests.get(url=source_request)
             data = r.json()
@@ -61,8 +44,6 @@ class Resolver_Utils(object):
             file_name = source_request.split('/')[-1]
             with open('./data/' + file_name) as f:
                 data = json.load(f)
-        end_time = datetime.datetime.now()
-        self.query_access_data_time += end_time-start_time
         if iterator is not None:
             keys = self.parse_iterator(iterator)
             temp_data = data
@@ -80,9 +61,7 @@ class Resolver_Utils(object):
 
     @staticmethod
     def get_csv_data_without_filter(url, ref=None):
-        result = []
-        ref_field_name = ''
-        ref_field_values = []
+        result, ref_field_name, ref_field_values = [], '', []
         if ref is not None:
             ref_field_name = ref[1]
             ref_field_values = ref[0]
@@ -103,8 +82,7 @@ class Resolver_Utils(object):
         result = []
         with closing(requests.get(url, stream=True)) as r:
             reader = csv.DictReader(codecs.iterdecode(r.iter_lines(), 'utf-8'), delimiter=';')
-            for row in reader:
-                result.append(row)
+            result = [row for row in reader]
         result = pd.json_normalize(result)
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
@@ -114,41 +92,16 @@ class Resolver_Utils(object):
             if filter_lst_obj_tag is False:
                 # print('filter')
                 # print('shape', result.shape[0])
-                start_time = datetime.datetime.now()
                 # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
-                end_time = datetime.datetime.now()
-                self.filter_df += end_time - start_time
                 # print(result)
                 # print('shape', result.shape[0])
                 return result
             else:
-                start_time = datetime.datetime.now()
                 temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
-                end_time = datetime.datetime.now()
-                self.filter_df_groupby += end_time - start_time
                 return temp_result
         else:
             return result
-
-    def getMongoDBData(self, server_info, query, iterator=None, ref=None):
-        result = []
-        parameters = query.split(';')
-        mongodb_client_address = server_info['server']
-        database = parameters[2]
-        collection_name = parameters[1]
-        projection = ast.literal_eval(parameters[0])
-        dbclient = pymongo.MongoClient(mongodb_client_address)
-        mongodb = dbclient[database]
-        mongodb_collection = mongodb[collection_name]
-        if ref is None:
-            result = list(mongodb_collection.find({}, projection))
-            temp_data = result[0]
-            keys = self.parse_iterator(iterator)
-            for i in range(len(keys)):
-                temp_data = temp_data[keys[i]]
-            result = temp_data
-        return result
 
     @staticmethod
     def convert_lst_strings(columns_lst, delimiter):
@@ -188,7 +141,7 @@ class Resolver_Utils(object):
             sql_statement = '`{column}` in ({values})'.format(column=column_name, values=values)
         return sql_statement
 
-    def get_mysql_data_without_filter(self, source_request, key_columns, constant_data, db_source,
+    def get_mysql_data_without_filter(self, key_columns, db_source,
                                       table_name, query, mapping_name='', ref=None):
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
@@ -196,11 +149,6 @@ class Resolver_Utils(object):
                                                                                             server=hostname,
                                                                                             port=port,
                                                                                             db=schema_name)
-
-        constant_preds = []
-        if constant_data is not None:
-            for (constant_pred, data, data_type) in constant_data:
-                constant_preds.append(constant_pred)
         sql_query_str = ''
         if len(query) == 0:
             if len(table_name) > 0:
@@ -240,7 +188,7 @@ class Resolver_Utils(object):
         result = df.to_dict(orient='records')
         return result
 
-    def get_mysql_data_with_filter(self, source_request, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
+    def get_mysql_data_with_filter(self, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
                                                                                             password=db_password,
@@ -256,7 +204,7 @@ class Resolver_Utils(object):
         sql_pred_filter = dict()
         if filter_dict is not None:
             for pred, filter_dict_value in filter_dict.items():
-                if pred not in constant_preds and filter_dict_value['local_name'] not in key_columns:
+                if filter_dict_value['local_name'] not in key_columns and pred not in constant_preds:
                     key_columns.append(filter_dict_value['local_name'])
                 if pred in constant_preds:
                     constant_pred_filter[pred] = filter_dict_value
@@ -325,10 +273,7 @@ class Resolver_Utils(object):
 
     def get_json_data_with_filter(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         group_by_attrs = copy.copy(key_attrs)
-        start_time = datetime.datetime.now()
         r = requests.get(url=url)
-        end_time = datetime.datetime.now()
-        self.filter_access_data_time += end_time - start_time
         if filter_dict is not None:
             for key, value in filter_dict.items():
                 if value['local_name'] not in key_attrs:
@@ -356,19 +301,13 @@ class Resolver_Utils(object):
             if filter_lst_obj_tag is False:
                 # print('filter')
                 # print('shape', result.shape[0])
-                start_time = datetime.datetime.now()
                 # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
-                end_time = datetime.datetime.now()
-                self.filter_df += end_time - start_time
                 # print(result)
                 # print('shape', result.shape[0])
                 return result
             else:
-                start_time = datetime.datetime.now()
                 temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
-                end_time = datetime.datetime.now()
-                self.filter_df_groupby += end_time - start_time
                 return temp_result
         else:
             return result
@@ -528,14 +467,6 @@ class Resolver_Utils(object):
         return filter_str
 
     @staticmethod
-    def parse_ast(query_ast):
-        entity_type = query_ast['type']
-        query_fields = []
-        for field in query_ast['fields']:
-            query_fields.append(field['name'])
-        return entity_type, query_fields
-
-    @staticmethod
     def get_sub_ast(query_ast, predicate):
         fields = query_ast['fields']
         new_ast = None
@@ -546,8 +477,7 @@ class Resolver_Utils(object):
         return new_ast
 
     def parse_field(self, field):
-        named_type_value = ''
-        encode_labels = ''
+        named_type_value, encode_labels = '', ''
         if 'type' in field.keys:
             # named_type: 0, list_type: 2, non_null_type 1
             node_type = self.check_node_type(field.type)
@@ -565,6 +495,7 @@ class Resolver_Utils(object):
         return named_type_value, encode_labels
 
     def generate_schema_ast(self, schema):
+        from graphql import parse
         if len(self.schema_ast) == 0:
             schema_ast = dict()
             document = parse(schema)
@@ -606,8 +537,7 @@ class Resolver_Utils(object):
 
     def get_query_entries(self, schema):
         schema_ast = self.generate_schema_ast(schema)
-        object_type_query_entries = []
-        interface_type_query_entries = []
+        object_type_query_entries, interface_type_query_entries = [], []
         for query_name_key, query_entry_schema in schema_ast['Query'].items():
             if query_entry_schema['base_type'] in self.interfaces:
                 interface_type_query_entries.append(query_name_key)
@@ -650,54 +580,17 @@ class Resolver_Utils(object):
         self.fill_return_type(query_ast['fields'][0], schema_ast, query_ast['fields'][0]['type'])
         return query_ast
 
-    def get_mappings(self, concept_type=None):
-        return self.mu.get_mappings_by_type(concept_type)
-
-    def get_mappings_by_names(self, mappings_name=None):
-        return self.mu.get_mappings_by_names(mappings_name)
-
-    def get_logical_source(self, mapping):
-        return self.mu.get_logical_source_by_mapping(mapping)
-
-    def get_template(self, mapping):
-        return self.mu.get_subject_template_by_mapping(mapping)
-
-    def get_predicate_object_maps(self, mapping, predicates):
-        return self.mu.get_pom_by_predicates(mapping, predicates)
-
-    def get_constant_value(self, object_map):
-        return self.mu.get_constant_value_type(object_map)
-
-    def get_reference_attribute(self, term_map):
-        return self.mu.get_reference(term_map)
-
-    @staticmethod
-    def get_child_data(temp_result, child_field):
-        return [{child_field: record[child_field]} for record in temp_result]
-
     @staticmethod
     def parse_iterator(iterator):
         iterator_elements = iterator.split('.')
         iterator_elements = list(filter(None, iterator_elements))
         return iterator_elements
 
-    def parse_pom(self, pom):
-        return self.mu.parse_pom(pom)
-
-    def parse_rom(self, object_map):
-        return self.mu.parse_rom(object_map)
-
     def phi(self, ontology_term):
         return self.ontology2GraphQL_schema[ontology_term]
 
     def inverse_phi(self, graphql_term):
         return self.GraphQL_schema2ontology[graphql_term]
-
-    def translate(self, query_fields):
-        predicates = []
-        for field in query_fields:
-            predicates.append(self.inverse_phi(field))
-        return predicates
 
     @staticmethod
     def parse_template(template):
@@ -706,9 +599,6 @@ class Resolver_Utils(object):
         key = template[start_pos + 1: end_pos]
         new_template = template.replace(key, '')
         return key, new_template
-
-    def parse_join_condition(self, join_condition):
-        return self.mu.parse_join_condition(join_condition)
 
     def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes=[], filtered_object_iri=None):
         key, template = self.parse_template(template)
@@ -749,17 +639,6 @@ class Resolver_Utils(object):
                             temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
                 i += 1
         return temp_result
-
-    @staticmethod
-    def merge(result, temp_result):
-        return result + temp_result
-
-    @staticmethod
-    def duplicate_detection_fusion(result):
-        return result
-
-    def type_of_object_map(self, object_map):
-        return self.mu.type_of_object_map(object_map)
 
     @staticmethod
     def check_node_type(node):
@@ -806,54 +685,37 @@ class Resolver_Utils(object):
         result['fields'] = fields
         return result
 
-    def get_source_type(self, logical_source):
-        return self.mu.get_logical_source_type(logical_source)
-
-    def get_source_request(self, logical_source):
-        return self.mu.get_source(logical_source)
-
-    def get_json_iterator(self, logical_source):
-        return self.mu.get_json_iterator(logical_source)
-
-    def get_db_source(self, logical_source):
-        return self.mu.get_db_source(logical_source)
-
     def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False, mapping_name=''):
-        source_type = self.get_source_type(logical_source)
+        source_type = self.mu.get_logical_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
-            source_request = self.get_source_request(logical_source)
-            if 'query' in logical_source.keys() or 'table' in logical_source.keys():
-                db_source, table_name, query = self.get_db_source(logical_source)
-                group_by_mysql_attrs = copy.copy(key_attrs)
+            if 'table' in logical_source.keys() or 'query' in logical_source.keys():
+                db_source, table_name, query = self.mu.get_db_source(logical_source)
+                # group_by_mysql_attrs = copy.copy(key_attrs)
                 if filter_flag is True:
-                    result = self.get_mysql_data_with_filter(source_request, key_attrs, filter_dict,
+                    result = self.get_mysql_data_with_filter(key_attrs, filter_dict,
                                                              constant_data, filter_lst_obj_tag, db_source, table_name, query)
                 else:
-                    result = self.get_mysql_data_without_filter(source_request, key_attrs, constant_data,
-                                                                db_source, table_name, query, mapping_name, ref)
+                    result = self.get_mysql_data_without_filter(key_attrs, db_source, table_name, query, mapping_name, ref)
             else:
+                source_request = self.mu.get_source(logical_source)
                 if filter_flag is True:
                     result = self.get_csv_data_with_filter(source_request, key_attrs, filter_dict,
                                                            constant_data, filter_lst_obj_tag)
                 else:
                     result = self.get_csv_data_without_filter(source_request, ref)
         if source_type == 'ql:JSONPath':
-            source_request = self.get_source_request(logical_source)
-            iterator = self.get_json_iterator(logical_source)
+            source_request = self.mu.get_source(logical_source)
+            iterator = self.mu.get_json_iterator(logical_source)
             if filter_flag is True:
                 # data frame here
-                group_by_mysql_attrs = copy.copy(key_attrs)
+                # group_by_mysql_attrs = copy.copy(key_attrs)
                 result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
             else:
                 result = self.get_json_data_without_filter(source_request, iterator, ref)
-        if source_type == 'mydb:mongodb':
-            iterator = self.get_json_iterator(logical_source)
-            server_info, query = self.get_db_source(logical_source)
-            result = self.getMongoDBData(server_info, query, iterator)
         return result
 
-    def refine_data_frame(self, df, pred_attr_dict, constant, template, mapping_name):
+    def refine_data_frame(self, df, pred_attr_dict, template, mapping_name):
         key, template = self.parse_template(template)
         new_column_name = mapping_name + '-' + key
         df[new_column_name] = df[key]
@@ -868,6 +730,7 @@ class Resolver_Utils(object):
 
     @staticmethod
     def generate_filter_asts(filter_fields_map, symbol_exp_dict, conjunctive_exp_lst, entry=''):
+        from generic_resolver.filter_ast import Filter_AST
         filter_asts = []
         common_prefix = set()
         prefix_dict = defaultdict(int)
@@ -943,7 +806,7 @@ class Resolver_Utils(object):
         else:
             return None
 
-    def localize_filter(self, entity_type, pred_attr, filter_fields=None, query_fields=None, filter_constant_field=None):
+    def localize_filter(self, entity_type, pred_attr, filter_fields=None, filter_constant_field=None):
         schema_ast = self.schema_ast
         if len(filter_fields) == 0:
             return
@@ -962,36 +825,37 @@ class Resolver_Utils(object):
             return localized_filter_fields
 
     def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag=False):
-        result = defaultdict()
+        result = dict()
         if len(super_mappings_name) == 0:
-            mappings = self.get_mappings(entity_type)
+            mappings = self.mu.get_mappings_by_type(entity_type)
         else:
-            mappings = self.get_mappings_by_names([super_mappings_name])
+            mappings = self.mu.get_mappings_by_names([super_mappings_name])
         query_fields = filter_fields.keys()
-        predicates = self.translate(query_fields)
+        predicates = [self.inverse_phi(field) for field in query_fields]
         for mapping in mappings:
             mapping_name = mapping['name']
-            logical_source = self.get_logical_source(mapping)
-            template = self.get_template(mapping)
+            logical_source = self.mu.get_logical_source_by_mapping(mapping)
+            template = self.mu.get_subject_template_by_mapping(mapping)
             # may change if multiple key attributes
             key_attrs = [self.parse_template(template)[0]]
-            poms = self.get_predicate_object_maps(mapping, predicates)
+            poms = self.mu.get_poms_by_predicates(mapping, predicates)
             pred_attr = dict()
             constant_data = []
             filter_constant = []
             for pom in poms:
-                predicate, object_map = self.parse_pom(pom)
-                object_map_type = self.type_of_object_map(object_map)
+                predicate, object_map = self.mu.parse_pom(pom)
+                phi_predicate = self.phi(predicate)
+                object_map_type = self.mu.type_of_object_map(object_map)
                 if object_map_type == 1:
-                    reference_attribute = self.get_reference_attribute(object_map)
-                    pred_attr[self.phi(predicate)] = reference_attribute
+                    reference_attribute = self.mu.get_reference(object_map)
+                    pred_attr[phi_predicate] = reference_attribute
                 if object_map_type == 2:
-                    constant_value, constant_datatype = self.get_constant_value(object_map)
-                    constant_data.append((predicate, constant_value, constant_datatype))
-                    filter_constant.append(predicate)
-            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, query_fields, filter_constant)
+                    constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
+                    constant_data.append((phi_predicate, constant_value, constant_datatype))
+                    filter_constant.append(phi_predicate)
+            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
-            temp_result = self.refine_data_frame(temp_result, pred_attr, constant_data, template, mapping_name)
+            temp_result = self.refine_data_frame(temp_result, pred_attr, template, mapping_name)
             if temp_result.empty is not True:
                 result[mapping_name] = temp_result
         return result
@@ -1011,7 +875,7 @@ class Resolver_Utils(object):
     def filter_evaluator(self, filter_ast, cpe, rse, super_filters={}, super_result=None, super_mapping_name=''):
         root_node_filter = filter_ast.get_current_filter()
         if len(root_node_filter) == 0:
-            root_node_filter = {filter_ast.name + '-ALL': {}}
+            root_node_filter = {filter_ast.name + '-ALL': {}} # For type without filter provided expilicitly
         new_filter = self.new_filter(super_filters, root_node_filter)
         symbolic_new_filter = self.symbolic_filter(new_filter)
         joined_result = self.get_join_cache(symbolic_new_filter)
@@ -1022,19 +886,14 @@ class Resolver_Utils(object):
                 entity_type = filter_ast.name
                 filter_fields = filter_ast.filter_dict
                 filter_lst_obj_tag = filter_ast.list_obj_flag
-                # super_mappings_name = []
                 temp_result = self.filter_data_fetcher(entity_type, filter_fields, super_mapping_name, filter_lst_obj_tag)
                 if symbolic_root_filter in rse:
                     self.single_cache[symbolic_root_filter] = copy.copy(temp_result)
             super_node_type = filter_ast.parent.name
-            current_node_type = filter_ast.name
+            # current_node_type = filter_ast.name
             super_field = filter_ast.parent_edge
             if super_field != 'filter':
-                start_time = datetime.datetime.now()
-                super_result = self.filter_join(super_result, temp_result, super_node_type, current_node_type,
-                                                super_field)
-                end_time = datetime.datetime.now()
-                self.filter_join_time += end_time - start_time
+                super_result = self.filter_join(super_result, temp_result, super_node_type, super_field)
             else:
                 super_result = temp_result
             # check CPE
@@ -1047,24 +906,24 @@ class Resolver_Utils(object):
             self.filter_evaluator(sub_filter_ast, cpe, rse, new_filter, super_result)
         return super_result
 
-    def filter_join(self, super_result, current_node_result, super_node_type, current_node_type, super_field):
-        super_mappings = self.get_mappings(super_node_type)
-        predicates = self.translate([super_field])
-        result2_join = []
+    def filter_join(self, super_result, current_node_result, super_node_type, super_field):
+        super_mappings = self.mu.get_mappings_by_type(super_node_type)
+        predicates = [self.inverse_phi(field) for field in [super_field]]
+        result2join = []
         supper_mappings2join = []
         for mapping in super_mappings:
-            poms = self.get_predicate_object_maps(mapping, predicates)
+            poms = self.mu.get_poms_by_predicates(mapping, predicates)
             for pom in poms:
-                predicate, object_map = self.parse_pom(pom)
-                if self.type_of_object_map(object_map) == 3:
-                    parent_mapping, join_condition = self.parse_rom(object_map)
-                    child_field, parent_field = self.parse_join_condition(join_condition)
+                predicate, object_map = self.mu.parse_pom(pom)
+                if self.mu.type_of_object_map(object_map) == 3:
+                    parent_mapping, join_condition = self.mu.parse_rom(object_map)
+                    child_field, parent_field = self.mu.parse_join_condition(join_condition)
                     if parent_mapping['name'] in current_node_result.keys():
-                        result2_join.append((mapping['name'], parent_mapping['name'], child_field, parent_field))
+                        result2join.append((mapping['name'], parent_mapping['name'], child_field, parent_field))
                         supper_mappings2join.append(mapping['name'])
         for mapping_key in super_result.keys():
             if mapping_key in supper_mappings2join:
-                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
+                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2join:
                     if super_mapping_name == mapping_key:
                         right_df = current_node_result[current_mapping_name]
                         right_df = right_df.drop(['iri'], axis=1)
@@ -1080,7 +939,7 @@ class Resolver_Utils(object):
                         if right_new_column_name not in list(super_result[mapping_key].columns):
                             super_result[mapping_key][right_new_column_name] = super_result[mapping_key][left_new_column_name]
             else:
-                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2_join:
+                for (super_mapping_name, current_mapping_name, super_field, current_field) in result2join:
                     if super_mapping_name != mapping_key:
                         left_new_column_name = super_mapping_name + '-' + super_field
                         if left_new_column_name in super_result[mapping_key].columns.values.tolist():
@@ -1098,52 +957,50 @@ class Resolver_Utils(object):
                                 super_result[mapping_key] = super_result[mapping_key][0:0]  # give it as empty
         return super_result
 
-    def get_field_filter(self, query_ast, field):
-        return
-
     def get_interface_sub_types(self, interface_name):
         sub_types = self.schema_ast[interface_name]['sub_types']
         return sub_types
 
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):
         result, mappings = [], []
-        concept_type, query_fields = self.parse_ast(query_ast)
+        concept_type = query_ast['type']
+        query_fields = [field['name'] for field in query_ast['fields']]
         if mapping is None:
             if len(filtered_root_mappings) > 0:
                 filtered_root_mappings = [x for x in filtered_root_mappings if x != 'filter']
-                mappings = self.get_mappings_by_names(filtered_root_mappings)
+                mappings = self.mu.get_mappings_by_names(filtered_root_mappings)
             else:
                 if concept_type in self.interfaces:
                     mappings = []
                     sub_types = self.get_interface_sub_types(concept_type)
                     for sub_type in sub_types:
-                        mappings += self.get_mappings(sub_type)
+                        mappings += self.mu.get_mappings_by_type(sub_type)
                 else:
-                    mappings = self.get_mappings(concept_type)
+                    mappings = self.mu.get_mappings_by_type(concept_type)
         else:
             mappings.append(mapping)
-        predicates = self.translate(query_fields)
+        predicates = [self.inverse_phi(field) for field in query_fields]
         for mapping in mappings:
-            logical_source = self.get_logical_source(mapping)
-            template = self.get_template(mapping)
+            logical_source = self.mu.get_logical_source_by_mapping(mapping)
+            template = self.mu.get_subject_template_by_mapping(mapping)
             key_attrs = [self.parse_template(template)[0]]
-            poms = self.get_predicate_object_maps(mapping, predicates)
-            attr_pred, constant_data, direct_fields = [], [], []
+            poms = self.mu.get_poms_by_predicates(mapping, predicates)
+            attr_pred, constant_data = [], []
             ref_poms_pred_object_map = []
             result_join = defaultdict(list)
             for pom in poms:
-                predicate, object_map = self.parse_pom(pom)
-                object_map_type = self.type_of_object_map(object_map)
+                predicate, object_map = self.mu.parse_pom(pom)
+                phi_predicate = self.phi(predicate)
+                object_map_type = self.mu.type_of_object_map(object_map)
                 if object_map_type == 1:
-                    reference_attribute = self.get_reference_attribute(object_map)
-                    attr_pred.append((reference_attribute, self.phi(predicate)))
-                    direct_fields.append(self.phi(predicate))
+                    reference_attribute = self.mu.get_reference(object_map)
+                    attr_pred.append((reference_attribute, phi_predicate))
                     key_attrs.append(reference_attribute)
                 if object_map_type == 2:
-                    constant_value, constant_datatype = self.get_constant_value(object_map)
-                    constant_data.append((predicate, constant_value, constant_datatype))
+                    constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
+                    constant_data.append((phi_predicate, constant_value, constant_datatype))
                 if object_map_type == 3:
-                    ref_poms_pred_object_map.append((predicate, object_map))
+                    ref_poms_pred_object_map.append((phi_predicate, object_map))
             if root_type_flag is True:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
             else:
@@ -1152,63 +1009,24 @@ class Resolver_Utils(object):
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True,
                                                mapping['name'], key_attrs, self.filtered_object_iri)
             else:
-                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False,
-                                               '', key_attrs)
+                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False,'', key_attrs)
             self.sql_flag = False
-            for (predicate, object_map) in ref_poms_pred_object_map:
-                phi_predicate = self.phi(predicate)
+            for (phi_predicate, object_map) in ref_poms_pred_object_map:
                 new_query_ast = self.get_sub_ast(query_ast, phi_predicate)
-                parent_mapping, join_condition = self.parse_rom(object_map)
-                child_field, parent_field = self.parse_join_condition(join_condition)
-                child_data = self.get_child_data(temp_result, child_field)
+                parent_mapping, join_condition = self.mu.parse_rom(object_map)
+                child_field, parent_field = self.mu.parse_join_condition(join_condition)
+                child_data = [{child_field: record[child_field]} for record in temp_result]
                 ref_data = [x[child_field] for x in child_data]
                 ref = (ref_data, parent_field)
-                # here can output the DNF
-                # filter evaluator
-                '''
-                
-                field_filter_condition = None
-                if field_filter_condition is not None:
-                    if self.phi(predicate) not in predicate_filter_map.keys():
-                        predicate_filter_map[self.phi(predicate)] = self.get_field_filter(new_query_ast, self.phi(predicate))
-                    if self.phi(predicate) not in predicate_filter_ast.keys():
-                        filter_asts, common_prefix, repeated_single_exp = self.get_field_filter_asts(
-                            predicate_filter_map[self.phi(predicate)])
-                        predicate_filter_ast[self.phi(predicate)] = (filter_asts, common_prefix, repeated_single_exp)
-                    self.resolve_field_filter(predicate_filter_ast[self.phi(predicate)][0:], parent_mapping)
-                '''
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
                 ref = None
                 result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             if len(result_join) > 0:
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
-            result = self.merge(result, temp_result)
-        return self.duplicate_detection_fusion(result)
-
-    def incremental_join(self, temp_result, result_join):
-        start_time = datetime.datetime.now()
-        result = []
-        for pred_key, data_join_lst in result_join.items():
-            for (join_data, join_condition, wrapping_label) in data_join_lst:
-                for join_record in join_data:
-                    for record in temp_result:
-                        new_record = record
-                        if pred_key not in new_record.keys() and wrapping_label != '0' and wrapping_label != '10':
-                            new_record[pred_key] = []
-                        if record[join_condition['child']] == join_record[join_condition['parent']]:
-                            if wrapping_label == '0' or wrapping_label == '10':
-                                new_record[pred_key] = join_record
-                            else:
-                                new_record[pred_key].append(join_record)
-                            # May need to be updated
-                            if new_record not in result:
-                                result.append(new_record)
-        end_time = datetime.datetime.now()
-        self.join_time += end_time-start_time
+            result += temp_result
         return result
 
     def incremental_optimized_join(self, temp_result, result_join):
-        start_time = datetime.datetime.now()
         result = []
         for pred_key, data_join_lst in result_join.items():
             for (join_data, join_condition, wrapping_label) in data_join_lst:
@@ -1237,45 +1055,10 @@ class Resolver_Utils(object):
                         new_record[pred_key] += new_formed_join_data[join_key_value]
                     if new_record not in result:
                         result.append(new_record)
-        end_time = datetime.datetime.now()
-        self.join_time += end_time-start_time
         return result
 
-    '''
-    def get_field_filter_asts(self, filter_condition):
-        if filter_condition is not None and len(filter_condition) > 0:
-            fu = Filter_Utils()
-            fu.parse_cond(filter_condition)
-            dnf_lst = fu.simplify()
-            filter_asts, common_prefix, repeated_single_exp = self.generate_filter_asts(fu.field_exp_symbol,
-                                                                                        fu.symbol_field_exp, dnf_lst,
-                                                                                        'CalculationList')
-            return filter_asts, common_prefix, repeated_single_exp
-        else:
-            None, None, None
-    '''
-
-    def resolve_field_filter(self, filter_asts, common_prefix, repeated_single_exp, mapping):
-        for filter_ast in filter_asts:
-            filter_df = self.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp, {}, None, mapping['name'])
-            # print('Filter Join time', self.filter_join_time)
-            self.filter_join_time = datetime.timedelta()
-            for key, value in filter_df.items():
-                df_columns = list(value.columns)
-                object_iri_lst = value['iri'].tolist()
-                if len(object_iri_lst) > 0:
-                    if key in self.filtered_object_iri.keys():
-                        self.filtered_object_iri[key] = list(set(self.filtered_object_iri[key] + object_iri_lst))
-                    else:
-                        self.filtered_object_iri[key] = object_iri_lst
-                for column in df_columns:
-                    if key in column:
-                        attribute = column.split('-')[1]
-                        column_value = value[column].tolist()
-                        self.filtered_object_columns[key] = {attribute: column_value}
-                        break
-
     def generic_resolver_func(self, info, filter_condition):
+        from generic_resolver.filter_utils import Filter_Utils
         result = []
         start_time = datetime.datetime.now()
         # print('info', info)
@@ -1295,8 +1078,6 @@ class Resolver_Utils(object):
             # print('RSP:', repeated_single_exp)
             for filter_ast in filter_asts:
                 filter_df = self.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
-                # print('Filter Join time', self.filter_join_time)
-                self.filter_join_time = datetime.timedelta()
                 for key, value in filter_df.items():
                     df_columns = list(value.columns)
                     object_iri_lst = value['iri'].tolist()
@@ -1312,10 +1093,9 @@ class Resolver_Utils(object):
                             self.filtered_object_columns[key] = {attribute: column_value}
                             break
             filter_end_time = datetime.datetime.now()
-            print('Filter Time:', (filter_end_time - start_time))
-            print('Filter Time without access time:', (filter_end_time - start_time - self.filter_access_data_time))
-            for key, value in self.filtered_object_iri.items():
-                print('Filtered', key, len(value))
+            print('Filter Time:', (filter_end_time - start_time).total_seconds())
+            # for key, value in self.filtered_object_iri.items():
+                # print('Filtered', key, len(value))
             if len(self.filtered_object_iri.keys()) > 0:
                 self.filtered_object_iri['filter'] = True
                 query_ast = self.generate_query_ast(info)
@@ -1326,11 +1106,7 @@ class Resolver_Utils(object):
                     json.dump({'data': result}, f)
                 print('Result Size:', len(result))
                 print('Query Response Time:', (end_time - filter_end_time).total_seconds())
-                print('Query Response Time without access time:',
-                      (end_time - filter_end_time - self.query_access_data_time).total_seconds())
                 print('Whole Filter/Query Response Time:', (end_time - start_time).total_seconds())
-                print('Whole Filter/Query Response Time:',
-                      (end_time - start_time - self.filter_access_data_time - self.query_access_data_time).total_seconds())
         else:
             self.filtered_object_iri['filter'] = False
             field_type = info.field_nodes[0].selection_set.selections[0].kind
@@ -1369,17 +1145,7 @@ class Resolver_Utils(object):
                 print('Result json file size: ', output_json_file_size)
                 print('Result Size: ', result_length)
                 print('(No filter)-Query Response Time:', response_time)
-                print('Access underling data time', self.query_access_data_time)
-                print('join time', self.join_time)
-                print('(No filter)-Query Response Time without access time:',
-                      (end_time - start_time - self.query_access_data_time).total_seconds())
-        self.filtered_object_iri = dict()
-        self.filtered_object_columns = dict()
-        self.join_cache = dict()
-        self.single_cache = dict()
-        self.query_access_data_time = datetime.timedelta()
-        self.filter_access_data_time = datetime.timedelta()
-        self.join_time = datetime.timedelta()
+        self.reinitialize_ru_object()
         return result
 
     def write_evaluation_result(self, query_name, response_time, json_file_size, result_length):
@@ -1389,3 +1155,11 @@ class Resolver_Utils(object):
             writer = csv.writer(f)
             writer.writerow(data)
         return
+
+    def reinitialize_ru_object(self):
+        self.filtered_object_iri = dict()
+        self.filtered_object_columns = dict()
+        self.join_cache = dict()
+        self.single_cache = dict()
+        self.field_exp_symbol = dict()
+        self.symbol_field_exp = dict()

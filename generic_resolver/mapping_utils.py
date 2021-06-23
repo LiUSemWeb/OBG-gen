@@ -61,6 +61,7 @@ class RML_Mapping(object):
                 server_info = db_source
                 break
         return server_info, table_name, query
+
     @staticmethod
     def get_json_iterator(logical_source):
         iterator = logical_source['iterator']
@@ -70,7 +71,7 @@ class RML_Mapping(object):
         else:
             return iterator[1:]
 
-    def get_pom_by_predicates(self, mapping, predicates):
+    def get_poms_by_predicates(self, mapping, predicates):
         poms = self.get_pom(mapping)
         poms = [pom for pom in poms if pom['predicate'] in predicates]
         return poms

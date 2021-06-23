@@ -9,6 +9,7 @@ global ru
 global type_defs
 global query
 
+
 thing = InterfaceType("Thing")
 
 
@@ -19,6 +20,8 @@ def resolve_search_result_type(obj, *_):
         return 'Calculation'
     if 'structure' in obj['iri']:
         return 'Structure'
+
+
 
 # Define types using Schema Definition Language (https://graphql.org/learn/schema/)
 # Wrapping string in gql function provides validation and better error traceback
