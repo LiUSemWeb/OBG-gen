@@ -4,6 +4,7 @@ from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
 from generic_resolver.odgsg_graphql_utils import Resolver_Utils
+from sqlalchemy import create_engine
 
 global ru
 global type_defs
@@ -95,5 +96,7 @@ if __name__ == "__main__":
     register_object_type_queries(object_type_query_entries)
     register_interface_type_queries(interface_type_query_entries)
     schema = make_executable_schema(type_defs, [query, thing])
+    db_connection_str = 'mysql+pymysql://root:6973278lhy@127.0.0.1:3306/'
+    db_connection = create_engine(db_connection_str)
     # schema = make_executable_schema(type_defs, [query])
     app.run(debug=True)

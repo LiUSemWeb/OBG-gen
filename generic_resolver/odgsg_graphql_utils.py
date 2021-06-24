@@ -9,7 +9,7 @@ import pandas as pd
 import ast
 import copy
 import datetime
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import os
 
 
@@ -27,6 +27,7 @@ class Resolver_Utils(object):
         self.sql_flag = False
         self.interfaces = []
         self.interface_query_entries = []
+        self.mysql_without_filter = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -183,9 +184,11 @@ class Resolver_Utils(object):
         else:
             # for future update
             print('different')
-        db_connection = create_engine(db_connection_str)
-        df = pd.read_sql(sql_query_str, con=db_connection)
+        db_engine = create_engine(db_connection_str, pool_recycle=3600)
+        df = pd.read_sql(text(sql_query_str), con=db_engine)
         result = df.to_dict(orient='records')
+        #db_engine.close()
+        db_engine.dispose()
         return result
 
     def get_mysql_data_with_filter(self, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
@@ -252,14 +255,16 @@ class Resolver_Utils(object):
                         filter_str += ' AND '
                 group_by_cols = self.convert_lst_strings(key_columns, ',')
                 sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
+                print(sql_query_str)
         else:
             select_cols = self.convert_lst_strings(key_columns, ',')
             if filter_lst_obj_tag is False:
                 sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
             else:
                 sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
-        db_connection = create_engine(db_connection_str)
-        df = pd.read_sql(sql_query_str, con=db_connection)
+                print(sql_query_str)
+        db_engine = create_engine(db_connection_str)
+        df = pd.read_sql(text(sql_query_str), con=db_engine)
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
@@ -313,7 +318,24 @@ class Resolver_Utils(object):
             return result
 
     @staticmethod
-    def transform_operator(operator, negation_flag=False):
+    def transform_operator_mysql(operator, negation_flag=False):
+        if operator == '_eq':
+            return '=' if not negation_flag else '!='
+        elif operator == '_gt':
+            return '>' if not negation_flag else '<='
+        elif operator == '_lt':
+            return '<' if not negation_flag else '>='
+        elif operator == '_in':
+            return 'in' if not negation_flag else 'not in'
+        elif operator == '_like':
+            return 'like'
+        elif operator == '_ilike':
+            return 'ilike'
+        else:
+            return operator
+
+    @staticmethod
+    def transform_operator_df(operator, negation_flag=False):
         if operator == '_eq':
             return '==' if not negation_flag else '!='
         elif operator == '_gt':
@@ -332,13 +354,30 @@ class Resolver_Utils(object):
     @staticmethod
     def transform_lambda_func(column_name, operator, value, negation_flag=False):
         if operator == '_eq':
-            return lambda x: x[column_name].eq(value).any() if not negation_flag else lambda x: x[column_name].ne(value).any()
+            if negation_flag is False:
+                return lambda x: x[column_name].eq(value).any()
+            else:
+                return lambda x: x[column_name].ne(value).any()
         elif operator == '_gt':
-            return lambda x: x[column_name].gt(value).any() if not negation_flag else lambda x: x[column_name].le(value).any()
+            if negation_flag is False:
+                return lambda x: x[column_name].gt(value).any()
+            else:
+                return lambda x: x[column_name].le(value).any()
         elif operator == '_lt':
-            return lambda x: x[column_name].lt(value).any() if not negation_flag else lambda x: x[column_name].ge(value).any()
+            if negation_flag is False:
+                return lambda x: x[column_name].lt(value).any()
+            else:
+                return lambda x: x[column_name].ge(value).any()
         elif operator == '_in':
-            return lambda x: x[column_name].isin(value).any() if not negation_flag else lambda x: ~x[column_name].isin(value).any()
+            if negation_flag is False:
+                return lambda x: x[column_name].isin(value).any()
+            else:
+                return lambda x: ~x[column_name].isin(value).any()
+        elif operator == '_like':
+            if negation_flag is False:
+                return lambda x: x[column_name].str.match(value).any()
+            else:
+                return lambda x: ~x[column_name].str.match(value).any()
         else:
             return None
 
@@ -358,15 +397,21 @@ class Resolver_Utils(object):
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
             for atom_filter in filter_dict_value['filter']:
-                filter_str = self.generate_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],
-                                                      atom_filter['value'], atom_filter['negation'], attr_type)
+                filter_str = self.generate_df_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],
+                                                         atom_filter['value'], atom_filter['negation'], attr_type)
                 if attr_type == 'Int':
                     if df.dtypes[local_name] != 'int64':
                         df = df.astype({local_name: int})
                 if attr_type == 'Float':
                     if df.dtypes[local_name] != 'float64':
                         df = df.astype({local_name: float})
-                df = df.query(filter_str)
+                if atom_filter['operator'] not in ['_like', '_nlike']:
+                    df = df.query(filter_str)
+                else:
+                    if atom_filter['negation'] is True:
+                        df = df[df[local_name].str.match(filter_str) == False]
+                    else:
+                        df = df[df[local_name].str.match(filter_str) == True]
         return df
 
     def filter_data_frame_group_by(self, df, filter_dict, key_attrs):
@@ -386,6 +431,16 @@ class Resolver_Utils(object):
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
         return df
 
+    @staticmethod
+    def generate_regex_str(pattern_str):
+        if pattern_str[0] != '%':
+            pattern_str = '^' + pattern_str
+        if pattern_str[-1] != '%':
+            pattern_str = pattern_str + '$'
+        pattern_str = pattern_str.replace('_', '.')
+        pattern_str = pattern_str.replace('%', '.*')
+        return pattern_str
+
     def generate_filter_lambda_func(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         lambda_func = None
         if operator_str in ['_in', '_nin']:
@@ -396,6 +451,9 @@ class Resolver_Utils(object):
             else:
                 new_value = ast.literal_eval(value_str)
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+        elif operator_str in ['_like', '_nlike']:
+            new_value =self.generate_regex_str(value_str)
+            lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
         else:
             if attr_type == 'String' or attr_type == 'ID':
                 if column_type == 'int64':
@@ -412,9 +470,9 @@ class Resolver_Utils(object):
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
         return lambda_func
 
-    def generate_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
+    def generate_df_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
-        new_operator = self.transform_operator(operator_str, negation_flag)
+        new_operator = self.transform_operator_df(operator_str, negation_flag)
         if operator_str in ['_in', '_nin']:
             if column_type == 'int64':
                 new_value = ast.literal_eval(value_str)
@@ -424,6 +482,8 @@ class Resolver_Utils(object):
             else:
                 filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
                                                                    value=value_str)
+        elif operator_str in ['_like', '_nlike']:
+            filter_str = self.generate_regex_str(value_str)
         else:
             if attr_type == 'String' or 'ID':
                 if column_type == 'int64':
@@ -446,7 +506,7 @@ class Resolver_Utils(object):
 
     def generate_mysql_filter_str(self, column_name, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
-        new_operator = self.transform_operator(operator_str, negation_flag)
+        new_operator = self.transform_operator_mysql(operator_str, negation_flag)
         if operator_str in ['_in', '_nin']:
             values = value_str[1:-1]
             # new_value = ast.literal_eval(value_str)
@@ -454,7 +514,7 @@ class Resolver_Utils(object):
         else:
             if attr_type == 'String' or 'ID':
                 new_value = str(value_str)
-                filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
+                filter_str = '`{column}` {operator} \'{value}\''.format(column=column_name, operator=new_operator,
                                                                     value=new_value)
             if attr_type == 'Int':
                 new_value = int(value_str)
@@ -697,6 +757,7 @@ class Resolver_Utils(object):
                                                              constant_data, filter_lst_obj_tag, db_source, table_name, query)
                 else:
                     result = self.get_mysql_data_without_filter(key_attrs, db_source, table_name, query, mapping_name, ref)
+
             else:
                 source_request = self.mu.get_source(logical_source)
                 if filter_flag is True:
@@ -980,6 +1041,7 @@ class Resolver_Utils(object):
         else:
             mappings.append(mapping)
         predicates = [self.inverse_phi(field) for field in query_fields]
+
         for mapping in mappings:
             logical_source = self.mu.get_logical_source_by_mapping(mapping)
             template = self.mu.get_subject_template_by_mapping(mapping)
@@ -1001,15 +1063,18 @@ class Resolver_Utils(object):
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
                 if object_map_type == 3:
                     ref_poms_pred_object_map.append((phi_predicate, object_map))
+
             if root_type_flag is True:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
             else:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, '')
+
             if root_type_flag is True and self.sql_flag is False:
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True,
                                                mapping['name'], key_attrs, self.filtered_object_iri)
             else:
                 temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False,'', key_attrs)
+
             self.sql_flag = False
             for (phi_predicate, object_map) in ref_poms_pred_object_map:
                 new_query_ast = self.get_sub_ast(query_ast, phi_predicate)
@@ -1024,6 +1089,7 @@ class Resolver_Utils(object):
             if len(result_join) > 0:
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
             result += temp_result
+
         return result
 
     def incremental_optimized_join(self, temp_result, result_join):
@@ -1104,8 +1170,13 @@ class Resolver_Utils(object):
                 end_time = datetime.datetime.now()
                 with open('output.json', 'w') as f:
                     json.dump({'data': result}, f)
-                print('Result Size:', len(result))
-                print('Query Response Time:', (end_time - filter_end_time).total_seconds())
+                query_name = json.loads(info.context.data)['operationName']
+                output_json_file_size = os.stat('./output.json').st_size
+                result_length = len(result)
+                response_time = (end_time - start_time).total_seconds()
+                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
+                # print('Result Size:', len(result))
+                # print('Query Response Time:', (end_time - filter_end_time).total_seconds())
                 print('Whole Filter/Query Response Time:', (end_time - start_time).total_seconds())
         else:
             self.filtered_object_iri['filter'] = False
@@ -1132,7 +1203,10 @@ class Resolver_Utils(object):
             else:
                 query_ast = self.generate_query_ast(info)
                 # result = self.DataFetcher(query_ast['fields'][0])
+                query_eval_start_time = datetime.datetime.now()
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True)
+                query_eval_end_time = datetime.datetime.now()
+                print('Query evaluator time:', (query_eval_end_time-query_eval_start_time).total_seconds())
                 end_time = datetime.datetime.now()
                 with open('output.json', 'w') as f:
                     json.dump({'data': result}, f)
