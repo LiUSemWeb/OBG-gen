@@ -120,7 +120,7 @@ def parse_mapping(mapping_file='venue-mapper.ttl', mapping_format='n3'):
 			server_password_dict[subj] = obj.toPython()
 		if pred == 'jdbcDSN':
 			server_schema_dict[subj] = obj.toPython()
-		if pred == 'query':
+		if pred == 'sqlQuery':
 			query_dict[subj] = obj.toPython()
 	return mapping_graph
 

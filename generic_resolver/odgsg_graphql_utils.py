@@ -139,7 +139,10 @@ class Resolver_Utils(object):
         if ref is not None:
             values = str(ref[0])[1:-1]
             column_name = ref[1]
-            sql_statement = '`{column}` in ({values})'.format(column=column_name, values=values)
+            if len(values) > 0:
+                sql_statement = '`{column}` in ({values})'.format(column=column_name, values=values)
+            else:
+                sql_statement = ''
         return sql_statement
 
     def get_mysql_data_without_filter(self, key_columns, db_source,
@@ -183,7 +186,43 @@ class Resolver_Utils(object):
                         # print(sql_query_str)
         else:
             # for future update
-            print('different')
+            filtered_object_columns = self.filtered_object_columns
+            select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
+            if key_columns is not None:
+                print()
+                select_cols = self.convert_lst_strings(key_columns, ',')
+                if mapping_name in filtered_object_columns.keys():
+                    where_statement = self.generate_where_statement(mapping_name)
+                    sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {where_statement}'.format(
+                        select_cols=select_cols, select_statement=select_statement, where_statement=where_statement)
+                    self.sql_flag = True
+                else:
+                    ref_statement = self.generate_ref_sql_statement(ref)
+                    if len(ref_statement) > 0:
+                        # print('ref_statement', ref_statement)
+                        # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+
+                        sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {where_statement}}'.format(
+                            select_cols=select_cols, select_statement=select_statement, where_statement=ref_statement)
+                    else:
+                        sql_query_str = 'SELECT {select_cols} FROM {select_statement}'.format(select_cols=select_cols,
+                                                                                     select_statement=select_statement)
+            else:
+                print()
+                if mapping_name in filtered_object_columns.keys():
+                    where_statement = self.generate_where_statement(mapping_name)
+                    sql_query_str = 'SELECT * FROM {select_statement} WHERE {where_statement}'.format(select_statement=select_statement,
+                                                                                             where_statement=where_statement)
+                    self.sql_flag = True
+                else:
+                    ref_statement = self.generate_ref_sql_statement(ref)
+                    if len(ref_statement) > 0:
+                        # print('ref_statement', ref_statement)
+                        sql_query_str = 'SELECT * FROM {select_statement} WHERE {where_statement}'.format(select_statement=select_statement,
+                                                                                                 where_statement=ref_statement)
+                    else:
+                        sql_query_str = 'SELECT * FROM {select_statement}'.format(select_statement=select_statement)
+        print(sql_query_str)
         db_engine = create_engine(db_connection_str, pool_recycle=3600)
         df = pd.read_sql(text(sql_query_str), con=db_engine)
         result = df.to_dict(orient='records')
@@ -1116,7 +1155,8 @@ class Resolver_Utils(object):
                             # as the predicate stated in the mapping
                             new_record[new_field] = new_record[pred_key]
                     if wrapping_label == '0' or wrapping_label == '10':
-                        new_record[pred_key] = new_formed_join_data[join_key_value][0]
+                        if len(new_formed_join_data[join_key_value]) > 0:
+                            new_record[pred_key] = new_formed_join_data[join_key_value][0]
                     else:
                         new_record[pred_key] += new_formed_join_data[join_key_value]
                     if new_record not in result:
@@ -1158,8 +1198,8 @@ class Resolver_Utils(object):
                             column_value = value[column].tolist()
                             self.filtered_object_columns[key] = {attribute: column_value}
                             break
-            filter_end_time = datetime.datetime.now()
-            print('Filter Time:', (filter_end_time - start_time).total_seconds())
+            # filter_end_time = datetime.datetime.now()
+            # print('Filter Time:', (filter_end_time - start_time).total_seconds())
             # for key, value in self.filtered_object_iri.items():
                 # print('Filtered', key, len(value))
             if len(self.filtered_object_iri.keys()) > 0:
