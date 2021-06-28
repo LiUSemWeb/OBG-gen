@@ -142,6 +142,18 @@ class Filter_Utils(object):
                 key, value = list(cond.items())[0]
                 if key in ['_eq', '_neq', '_gt', '_egt', '_lt', '_elt', '_in', '_nin', '_like', '_nlike', '_ilike',
                            '_nilike']:
+                    field_name = ''
+                    for field in self.fields_stack1[1:]:
+                        field_name += field
+                        field_name += '.'
+                    self.expression_str.append(field_name[0:-1])
+                    self.expression_str.append(key)
+                    if key == '_in' or key =='_nin':
+                        value = str(value)
+                    self.expression_str.append(value)
+                    new_symbol = self.translate_field_exp((field_name[0:-1], key, value))
+                    self.translated_expression_str.append(new_symbol)
+                    '''
                     if key in ['_neq', '_nin', '_nlike', '_nilike']:
                         self.operator_stack1.append('_not')
                         self.expression_str.append('_not')
@@ -169,6 +181,7 @@ class Filter_Utils(object):
                         self.expression_str.append(value)
                         new_symbol = self.translate_field_exp((field_name[0:-1], key, value))
                         self.translated_expression_str.append(new_symbol)
+                    '''
                 else:
                     # no need to append field_stack here
                     if key not in ['_and', '_or', '_not']:

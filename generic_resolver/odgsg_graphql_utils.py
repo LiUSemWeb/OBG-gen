@@ -23,7 +23,7 @@ class Resolver_Utils(object):
         self.single_cache = dict()
         self.filter_fields_map = dict()
         self.filtered_object_iri = dict()
-        self.filtered_object_columns = dict()
+        self.filtered_object_columns = defaultdict(defaultdict)
         self.sql_flag = False
         self.interfaces = []
         self.interface_query_entries = []
@@ -33,9 +33,19 @@ class Resolver_Utils(object):
             self.ontology2GraphQL_schema = json.load(f)
             self.GraphQL_schema2ontology = self.ontology2GraphQL_schema
 
+    '''
+        This function passes the maps between symbols and expressions from Filter_Utils object to Resolver_Utils object.
+    '''
     def set_symbol_field_maps(self, field_exp_symbol, symbol_field_exp):
         self.field_exp_symbol, self.symbol_field_exp = field_exp_symbol, symbol_field_exp
 
+    '''
+        This function gets the data from json source in query evaluation phase. 
+            source_request: supposed to be the url to the json data;
+            iterator: the iterating pattern to the json data;
+            ref: referencing data based on the semantic mapping.
+        return data in json 
+    '''
     def get_json_data_without_filter(self, source_request, iterator=None, ref=None):
         data = None
         if source_request[0:4] == 'http':
@@ -60,6 +70,12 @@ class Resolver_Utils(object):
         else:
             return data
 
+    '''
+        This function gets the data from csv source in query evaluation phase. 
+            url: supposed to be the url to the json data;
+            ref: referencing data based on the semantic mapping.
+        return data in json 
+    '''
     @staticmethod
     def get_csv_data_without_filter(url, ref=None):
         result, ref_field_name, ref_field_values = [], '', []
@@ -78,6 +94,15 @@ class Resolver_Utils(object):
                     result.append(record)
         return result
 
+    '''
+        This function gets the data from csv source in filter evaluation phase. 
+            url: supposed to be the url to the json data;
+            key_attrs: 
+            filter_dict: filter expression dictionary;
+            constant data: constant data based on semantic mappings;
+            filter_lst_obj_tag: True means objects in a list.
+        return data in pandas dataframe 
+    '''
     def get_csv_data_with_filter(self, url, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         group_by_attrs = copy.copy(key_attrs)
         result = []
@@ -116,6 +141,9 @@ class Resolver_Utils(object):
                 lst_strings += '{delimiter} '.format(delimiter=delimiter)
         return lst_strings
 
+    '''
+        Parsing the database config defined in the semantic mapping.
+    '''
     @staticmethod
     def parse_db_config(db_source):
         server_address = db_source['server']
@@ -124,12 +152,16 @@ class Resolver_Utils(object):
         [hostname, port] = hostname_port.split(':')
         return hostname, port, schema_name, db_source['username'], db_source['password']
 
+    '''
+        Generate where statement
+    '''
     def generate_where_statement(self, mapping_name):
         in_statement = ''
         filtered_object_columns = self.filtered_object_columns
         if mapping_name in filtered_object_columns.keys():
             column_value = filtered_object_columns.get(mapping_name)
             key, value = list(column_value.items())[0]
+            value = list(set(value))
             in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
         return in_statement
 
@@ -145,6 +177,16 @@ class Resolver_Utils(object):
                 sql_statement = ''
         return sql_statement
 
+    '''
+        This function gets the data from mysql source in query evaluation phase. 
+            key_columns: ;
+            db_source: database config in the semantic mapping;
+            table_name: name of the table defined in logical source in the semantic mapping;
+            query: sql query declared in logical source in the semantic mapping;
+            mapping_name:
+            ref: referencing data based on the semantic mapping.
+        return data in json 
+    '''
     def get_mysql_data_without_filter(self, key_columns, db_source,
                                       table_name, query, mapping_name='', ref=None):
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
@@ -157,6 +199,7 @@ class Resolver_Utils(object):
         if len(query) == 0:
             if len(table_name) > 0:
                 filtered_object_columns = self.filtered_object_columns
+                # filtered_object_columns = list(set(filtered_object_columns))
                 if key_columns is not None:
                     select_cols = self.convert_lst_strings(key_columns, ',')
                     if mapping_name in filtered_object_columns.keys():
@@ -189,7 +232,6 @@ class Resolver_Utils(object):
             filtered_object_columns = self.filtered_object_columns
             select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
             if key_columns is not None:
-                print()
                 select_cols = self.convert_lst_strings(key_columns, ',')
                 if mapping_name in filtered_object_columns.keys():
                     where_statement = self.generate_where_statement(mapping_name)
@@ -208,7 +250,6 @@ class Resolver_Utils(object):
                         sql_query_str = 'SELECT {select_cols} FROM {select_statement}'.format(select_cols=select_cols,
                                                                                      select_statement=select_statement)
             else:
-                print()
                 if mapping_name in filtered_object_columns.keys():
                     where_statement = self.generate_where_statement(mapping_name)
                     sql_query_str = 'SELECT * FROM {select_statement} WHERE {where_statement}'.format(select_statement=select_statement,
@@ -222,7 +263,7 @@ class Resolver_Utils(object):
                                                                                                  where_statement=ref_statement)
                     else:
                         sql_query_str = 'SELECT * FROM {select_statement}'.format(select_statement=select_statement)
-        print(sql_query_str)
+        # print(sql_query_str)
         db_engine = create_engine(db_connection_str, pool_recycle=3600)
         df = pd.read_sql(text(sql_query_str), con=db_engine)
         result = df.to_dict(orient='records')
@@ -230,6 +271,17 @@ class Resolver_Utils(object):
         db_engine.dispose()
         return result
 
+    '''
+        This function gets the data from mysql source in filter evaluation phase. 
+            key_columns: 
+            filter_dict: filter expression dictionary;
+            constant data: constant data based on semantic mappings;
+            filter_lst_obj_tag: True means objects in a list;
+            db_source: database config in the semantic mapping;
+            table_name: name of the table defined in logical source in the semantic mapping;
+            query: sql query declared in logical source in the semantic mapping.
+        return data in json
+    '''
     def get_mysql_data_with_filter(self, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
@@ -247,7 +299,8 @@ class Resolver_Utils(object):
         if filter_dict is not None:
             for pred, filter_dict_value in filter_dict.items():
                 if filter_dict_value['local_name'] not in key_columns and pred not in constant_preds:
-                    key_columns.append(filter_dict_value['local_name'])
+                    # key_columns.append(filter_dict_value['local_name'])
+                    print('Do not append')
                 if pred in constant_preds:
                     constant_pred_filter[pred] = filter_dict_value
                 else:
@@ -272,9 +325,14 @@ class Resolver_Utils(object):
                     if i < sql_filter_columns_num:
                         filter_str += ' AND '
                 select_cols = self.convert_lst_strings(key_columns, ',')
-                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+                if len(table_name) > 0:
+                    sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+                if len(query) > 0:
+                    select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
+                    sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter}'.format(select_cols=select_cols, select_statement=select_statement, filter=filter_str)
             else:
-                filter_str = ''
+                # filter_str = ''
+                having_str = ''
                 sql_filter_columns_num = len(sql_pred_filter)
                 i = 0
                 for pred, filter_dict_value in sql_pred_filter.items():
@@ -283,25 +341,41 @@ class Resolver_Utils(object):
                     atom_filter_num = len(filter_dict_value['filter'])
                     j = 0
                     for atom_filter in filter_dict_value['filter']:
-                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
-                                                                     atom_filter['value'], atom_filter['negation'],
-                                                                     attr_type)
+                        # filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'], atom_filter['value'], atom_filter['negation'], attr_type)
+                        having_str += self.generate_mysql_having_statement(local_name, atom_filter['operator'],
+                                                                           atom_filter['value'], atom_filter['negation'],
+                                                                           attr_type)
                         j += 1
                         if j < atom_filter_num:
-                            filter_str += ' AND '
+                            #filter_str += ' AND '
+                            having_str += ' AND '
                     i += 1
                     if i < sql_filter_columns_num:
-                        filter_str += ' AND '
+                        #filter_str += ' AND '
+                        having_str += ' AND '
                 group_by_cols = self.convert_lst_strings(key_columns, ',')
-                sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
-                print(sql_query_str)
+                #print('GROUP BY', group_by_cols)
+                #print('HAVING ', having_str)
+
+                if len(table_name) > 0:
+                    # sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
+                    sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols} HAVING {having_statement}'.format(select_cols=group_by_cols, table=table_name, group_cols=group_by_cols, having_statement=having_str)
+                    # print(sql_query_str)
+                if len(query) > 0:
+                    select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
+                    # sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, select_statement=select_statement, filter=filter_str, group_cols=group_by_cols)
+                    sql_query_str = 'SELECT {select_cols} FROM {select_statement} GROUP BY {group_cols}  HAVING {having_statement}'.format(select_cols=group_by_cols, select_statement=select_statement, group_cols=group_by_cols, having_statement = having_str)
+                    # print(sql_query_str)
+                # print(sql_query_str)
         else:
-            select_cols = self.convert_lst_strings(key_columns, ',')
+            # select_cols = self.convert_lst_strings(key_columns, ',')
             if filter_lst_obj_tag is False:
-                sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+                # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
+                sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
             else:
-                sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
-                print(sql_query_str)
+                # sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
+                sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+                # print(sql_query_str)
         db_engine = create_engine(db_connection_str)
         df = pd.read_sql(text(sql_query_str), con=db_engine)
         if len(constant_data) > 0:
@@ -315,6 +389,16 @@ class Resolver_Utils(object):
                 df = self.filter_data_frame_group_by(df, constant_pred_filter, key_columns)
         return df
 
+    '''
+        This function gets the data from json source in filter evaluation phase. 
+            url: supposed to be the url to the json data;
+            iterator: the iterating pattern to the json data;
+            key_attrs: 
+            filter_dict: filter expression dictionary;
+            constant data: constant data based on semantic mappings;
+            filter_lst_obj_tag: True means objects in a list.
+        return data in json
+    '''
     def get_json_data_with_filter(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         group_by_attrs = copy.copy(key_attrs)
         r = requests.get(url=url)
@@ -366,6 +450,31 @@ class Resolver_Utils(object):
             return '<' if not negation_flag else '>='
         elif operator == '_in':
             return 'in' if not negation_flag else 'not in'
+        elif operator == '_nin':
+            return 'not in' if not negation_flag else 'in'
+        elif operator == '_like':
+            return 'like'
+        elif operator == '_ilike':
+            return 'ilike'
+        else:
+            return operator
+
+    @staticmethod
+    def direct_transform_operator(operator):
+        if operator == '_eq':
+            return '='
+        elif operator == '_gt':
+            return '>'
+        elif operator == '_egt':
+            return '>='
+        elif operator == '_lt':
+            return '<'
+        elif operator == '_elt':
+            return '<='
+        elif operator == '_in':
+            return 'in'
+        elif operator == '_nin':
+            return 'not in'
         elif operator == '_like':
             return 'like'
         elif operator == '_ilike':
@@ -383,6 +492,8 @@ class Resolver_Utils(object):
             return '<' if not negation_flag else '>='
         elif operator == '_in':
             return 'in' if not negation_flag else 'not in'
+        elif operator == '_nin':
+            return 'not in' if not negation_flag else 'in'
         elif operator == '_like':
             return 'like'
         elif operator == '_ilike':
@@ -390,6 +501,9 @@ class Resolver_Utils(object):
         else:
             return operator
 
+    '''
+        Generate the lambda function based on the operator
+    '''
     @staticmethod
     def transform_lambda_func(column_name, operator, value, negation_flag=False):
         if operator == '_eq':
@@ -397,26 +511,51 @@ class Resolver_Utils(object):
                 return lambda x: x[column_name].eq(value).any()
             else:
                 return lambda x: x[column_name].ne(value).any()
+        elif operator == '_neq':
+            if negation_flag is False:
+                return lambda x: x[column_name].neq(value).any()
+            else:
+                return lambda x: x[column_name].neq(value).all()
         elif operator == '_gt':
             if negation_flag is False:
                 return lambda x: x[column_name].gt(value).any()
             else:
                 return lambda x: x[column_name].le(value).any()
+        elif operator == '_egt':
+            if negation_flag is False:
+                return lambda x: x[column_name].ge(value).any()
+            else:
+                return lambda x: x[column_name].lt(value).any()
         elif operator == '_lt':
             if negation_flag is False:
                 return lambda x: x[column_name].lt(value).any()
             else:
                 return lambda x: x[column_name].ge(value).any()
+        elif operator == '_le':
+            if negation_flag is False:
+                return lambda x: x[column_name].le(value).any()
+            else:
+                return lambda x: x[column_name].gt(value).any()
         elif operator == '_in':
             if negation_flag is False:
                 return lambda x: x[column_name].isin(value).any()
             else:
                 return lambda x: ~x[column_name].isin(value).any()
+        elif operator == '_nin':
+            if negation_flag is False:
+                return lambda x: ~x[column_name].isin(value).any()
+            else:
+                return lambda x: x[column_name].isin(value).all()
         elif operator == '_like':
             if negation_flag is False:
                 return lambda x: x[column_name].str.match(value).any()
             else:
                 return lambda x: ~x[column_name].str.match(value).any()
+        elif operator == '_nlike':
+            if negation_flag is False:
+                return lambda x: ~x[column_name].str.match(value).any()
+            else:
+                return lambda x: x[column_name].str.match(value).all()
         else:
             return None
 
@@ -431,6 +570,9 @@ class Resolver_Utils(object):
             convert_type_dict = {column_name: 'float64'}
         return convert_type_dict
 
+    '''
+        Filter operation on pandas data frame
+    '''
     def filter_data_frame(self, df, filter_dict):
         for pred, filter_dict_value in filter_dict.items():
             local_name = filter_dict_value['local_name']
@@ -453,6 +595,9 @@ class Resolver_Utils(object):
                         df = df[df[local_name].str.match(filter_str) == True]
         return df
 
+    '''
+        Filter and group by operations on pandas data frame
+    '''
     def filter_data_frame_group_by(self, df, filter_dict, key_attrs):
         for pred, filter_dict_value in filter_dict.items():
             local_name = filter_dict_value['local_name']
@@ -467,9 +612,13 @@ class Resolver_Utils(object):
                 if attr_type == 'Float':
                     if df.dtypes[local_name] != 'float64':
                         df = df.astype({local_name: float})
+                # print('GROUP BY', key_attrs)
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
         return df
 
+    '''
+        Generate the regex expression for pandas dataframe, to answer 'like', 'nlike' in the GraphQL query
+    '''
     @staticmethod
     def generate_regex_str(pattern_str):
         if pattern_str[0] != '%':
@@ -480,6 +629,10 @@ class Resolver_Utils(object):
         pattern_str = pattern_str.replace('%', '.*')
         return pattern_str
 
+    '''
+        Generate the filter lambda function for pandas dataframe, given the atomic filter representation, 
+        futhermore will be used for group by operation
+    '''
     def generate_filter_lambda_func(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         lambda_func = None
         if operator_str in ['_in', '_nin']:
@@ -509,6 +662,9 @@ class Resolver_Utils(object):
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
         return lambda_func
 
+    '''
+        Generate the filter string for pandas dataframe, given the atomic filter representation
+    '''
     def generate_df_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
         new_operator = self.transform_operator_df(operator_str, negation_flag)
@@ -543,6 +699,54 @@ class Resolver_Utils(object):
                                                                    value=new_value)
         return filter_str
 
+    '''
+        Generate the having statement for MYSQL, given the atomic filter representation
+    '''
+    def generate_mysql_having_statement(self, column_name, operator_str, value_str, negation_flag, attr_type):
+        having_str = ''
+        new_operator = self.direct_transform_operator(operator_str)
+        if operator_str in ['_in', '_nin']:
+            values = value_str[1:-1]
+            if negation_flag is True:
+                having_str = 'sum(`{column}` {operator} ({values})) = 0'.format(column=column_name, operator=new_operator, values=values)
+            else:
+                having_str = 'sum(`{column}` {operator} ({values})) > 0'.format(column=column_name, operator=new_operator, values=values)
+        else:
+            if attr_type == 'String' or attr_type == 'ID':
+                new_value = str(value_str)
+                if negation_flag is True:
+                    having_str = 'sum(`{column}` {operator} \'{value}\') = 0'.format(column=column_name,
+                                                                                    operator=new_operator,
+                                                                                    value=new_value)
+                else:
+                    having_str = 'sum(`{column}` {operator} \'{value}\') > 0'.format(column=column_name,
+                                                                                    operator=new_operator,
+                                                                                    value=new_value)
+            if attr_type == 'Int':
+                new_value = int(value_str)
+                if negation_flag is True:
+                    having_str = 'sum(`{column}` {operator} {value}) = 0'.format(column=column_name,
+                                                                                operator=new_operator,
+                                                                                value=new_value)
+                else:
+                    having_str = 'sum(`{column}` {operator} {value}) > 0'.format(column=column_name,
+                                                                                operator=new_operator,
+                                                                                value=new_value)
+            if attr_type == 'Float':
+                new_value = float(value_str)
+                if negation_flag is True:
+                    having_str = 'sum(`{column}` {operator} {value}) = 0'.format(column=column_name,
+                                                                                operator=new_operator,
+                                                                                value=new_value)
+                else:
+                    having_str = 'sum(`{column}` {operator} {value}) > 0'.format(column=column_name,
+                                                                                 operator=new_operator,
+                                                                                 value=new_value)
+        return having_str
+
+    '''
+        Generate the filter string for MYSQL, given the atomic filter representation
+    '''
     def generate_mysql_filter_str(self, column_name, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
         new_operator = self.transform_operator_mysql(operator_str, negation_flag)
@@ -551,7 +755,7 @@ class Resolver_Utils(object):
             # new_value = ast.literal_eval(value_str)
             filter_str = '`{column}` {operator} ({values})'.format(column=column_name, operator=new_operator, values=values)
         else:
-            if attr_type == 'String' or 'ID':
+            if attr_type == 'String' or attr_type == 'ID':
                 new_value = str(value_str)
                 filter_str = '`{column}` {operator} \'{value}\''.format(column=column_name, operator=new_operator,
                                                                     value=new_value)
@@ -565,6 +769,9 @@ class Resolver_Utils(object):
                                                                     value=new_value)
         return filter_str
 
+    '''
+        Get the sub-AST of a query AST
+    '''
     @staticmethod
     def get_sub_ast(query_ast, predicate):
         fields = query_ast['fields']
@@ -593,6 +800,9 @@ class Resolver_Utils(object):
                 encode_labels = '0'
         return named_type_value, encode_labels
 
+    '''
+        Generate the AST of GraphQL schema
+    '''
     def generate_schema_ast(self, schema):
         from graphql import parse
         if len(self.schema_ast) == 0:
@@ -634,6 +844,9 @@ class Resolver_Utils(object):
         else:
             return self.schema_ast
 
+    '''
+        Get all the query entries based on GraphQL schema
+    '''
     def get_query_entries(self, schema):
         schema_ast = self.generate_schema_ast(schema)
         object_type_query_entries, interface_type_query_entries = [], []
@@ -657,6 +870,9 @@ class Resolver_Utils(object):
             query_ast['fields'] = temp_fields
         return query_ast
 
+    '''
+        Generate multiple query ASTs in which the GraphQL query is to traversal an interface
+    '''
     def generate_query_asts(self, query_info):
         schema_ast = self.schema_ast
         query_field_nodes = query_info.field_nodes
@@ -667,6 +883,9 @@ class Resolver_Utils(object):
             self.fill_return_type(inline_query_ast, schema_ast, inline_fragment_type)
         return inline_query_asts
 
+    '''
+        Generate the AST of the GraphQL query
+    '''
     def generate_query_ast(self, query_info):
         schema_ast = self.schema_ast
         query_field_nodes = query_info.field_nodes
@@ -699,6 +918,9 @@ class Resolver_Utils(object):
         new_template = template.replace(key, '')
         return key, new_template
 
+    '''
+        Refine json data with field names according to the ontology and add iri column
+    '''
     def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes=[], filtered_object_iri=None):
         key, template = self.parse_template(template)
         i = 0
@@ -784,6 +1006,9 @@ class Resolver_Utils(object):
         result['fields'] = fields
         return result
 
+    '''
+        The entry to access underlying data sources
+    '''
     def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False, mapping_name=''):
         source_type = self.mu.get_logical_source_type(logical_source)
         result = []
@@ -815,6 +1040,9 @@ class Resolver_Utils(object):
                 result = self.get_json_data_without_filter(source_request, iterator, ref)
         return result
 
+    '''
+        Refine data frame's column names and add iri column
+    '''
     def refine_data_frame(self, df, pred_attr_dict, template, mapping_name):
         key, template = self.parse_template(template)
         new_column_name = mapping_name + '-' + key
@@ -828,6 +1056,9 @@ class Resolver_Utils(object):
         df = df.drop([key], axis=1)
         return df
 
+    '''
+        Generate ASTs of filter expression in DNF
+    '''
     @staticmethod
     def generate_filter_asts(filter_fields_map, symbol_exp_dict, conjunctive_exp_lst, entry=''):
         from generic_resolver.filter_ast import Filter_AST
@@ -887,6 +1118,9 @@ class Resolver_Utils(object):
                 repeated_single_exp.add(key)
         return filter_asts, common_prefix, repeated_single_exp
 
+    '''
+        Combine super filter and current node filter
+    '''
     @staticmethod
     def new_filter(super_filters, current_filter):
         super_filters.update(current_filter)
@@ -906,6 +1140,9 @@ class Resolver_Utils(object):
         else:
             return None
 
+    '''
+        Transform filter expressions based on underlying data sources' terminologies
+    '''
     def localize_filter(self, entity_type, pred_attr, filter_fields=None, filter_constant_field=None):
         schema_ast = self.schema_ast
         if len(filter_fields) == 0:
@@ -924,6 +1161,13 @@ class Resolver_Utils(object):
                         localized_filter_fields[key]['filter'] = value
             return localized_filter_fields
 
+    '''
+        Fetching data from underlying data sources for a node in AST, in the filter evaluation phase
+            entity_type: the type of the node in AST;
+            filter_fields: the fields have filter expressions for the node of the AST;
+            supper_mappings_name: mapping names of mappings that declare the super node;
+            filter_lst_obj_tag:
+    '''
     def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag=False):
         result = dict()
         if len(super_mappings_name) == 0:
@@ -955,8 +1199,8 @@ class Resolver_Utils(object):
                     filter_constant.append(phi_predicate)
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
-            temp_result = self.refine_data_frame(temp_result, pred_attr, template, mapping_name)
             if temp_result.empty is not True:
+                temp_result = self.refine_data_frame(temp_result, pred_attr, template, mapping_name)
                 result[mapping_name] = temp_result
         return result
 
@@ -972,6 +1216,15 @@ class Resolver_Utils(object):
         exp = tuple(sorted(exp))
         return exp
 
+    '''
+        Filter Evaluation
+            filter_ast: the abstract syntax tree of the filter expression;
+            cpe: common prefix expressions;
+            rse: repeated single expressions;
+            super_filters: filter structure of the super tree;
+            super_result: the result of super tree;
+            supper_mapping_name: the mapping name of super node.
+    '''
     def filter_evaluator(self, filter_ast, cpe, rse, super_filters={}, super_result=None, super_mapping_name=''):
         root_node_filter = filter_ast.get_current_filter()
         if len(root_node_filter) == 0:
@@ -993,7 +1246,10 @@ class Resolver_Utils(object):
             # current_node_type = filter_ast.name
             super_field = filter_ast.parent_edge
             if super_field != 'filter':
-                super_result = self.filter_join(super_result, temp_result, super_node_type, super_field)
+                if len(temp_result) == 0:
+                    super_result = dict()
+                else:
+                    super_result = self.filter_join(super_result, temp_result, super_node_type, super_field)
             else:
                 super_result = temp_result
             # check CPE
@@ -1003,9 +1259,13 @@ class Resolver_Utils(object):
             super_result = joined_result
         sub_filter_asts = filter_ast.get_sub_trees()
         for sub_filter_ast in sub_filter_asts:
-            self.filter_evaluator(sub_filter_ast, cpe, rse, new_filter, super_result)
+            if len(super_result) > 0:
+                super_result = self.filter_evaluator(sub_filter_ast, cpe, rse, new_filter, super_result)
         return super_result
 
+    '''
+        Join function in filter evaluation phase
+    '''
     def filter_join(self, super_result, current_node_result, super_node_type, super_field):
         super_mappings = self.mu.get_mappings_by_type(super_node_type)
         predicates = [self.inverse_phi(field) for field in [super_field]]
@@ -1032,6 +1292,8 @@ class Resolver_Utils(object):
                         if left_new_column_name not in list(super_result[mapping_key].columns):
                             super_result[mapping_key][left_new_column_name] = super_result[mapping_key][super_field]
                         super_result[mapping_key].set_index(left_new_column_name)  # set index
+                        if right_new_column_name not in list(right_df.columns):
+                            right_df[right_new_column_name] = right_df[current_field]
                         right_df.set_index(right_new_column_name)
                         super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
                                                              left_on=left_new_column_name,
@@ -1047,6 +1309,8 @@ class Resolver_Utils(object):
                             right_df = right_df.drop(['iri'], axis=1)
                             right_new_column_name = current_mapping_name + '-' + current_field
                             super_result[mapping_key].set_index(left_new_column_name)  # set index
+                            if right_new_column_name not in list(right_df.columns):
+                                right_df[right_new_column_name] = right_df[current_field]
                             right_df.set_index(right_new_column_name)
                             super_result[mapping_key] = pd.merge(super_result[mapping_key], right_df, how='inner',
                                                                  left_on=left_new_column_name, right_on=right_new_column_name)
@@ -1061,6 +1325,14 @@ class Resolver_Utils(object):
         sub_types = self.schema_ast[interface_name]['sub_types']
         return sub_types
 
+    '''
+        Query evaluation function
+            query_ast: the abstract syntax tree of the GraphQL query
+            mapping:
+            ref:
+            root_type_flag:
+            filtered_root_mappings:
+    '''
     def query_evaluator(self, query_ast, mapping=None, ref=None, root_type_flag=False, filtered_root_mappings=[]):
         result, mappings = [], []
         concept_type = query_ast['type']
@@ -1104,6 +1376,7 @@ class Resolver_Utils(object):
                     ref_poms_pred_object_map.append((phi_predicate, object_map))
 
             if root_type_flag is True:
+                # print('ROOT REF', ref)
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
             else:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, '')
@@ -1121,6 +1394,7 @@ class Resolver_Utils(object):
                 child_field, parent_field = self.mu.parse_join_condition(join_condition)
                 child_data = [{child_field: record[child_field]} for record in temp_result]
                 ref_data = [x[child_field] for x in child_data]
+                ref_data = list(set(ref_data))
                 ref = (ref_data, parent_field)
                 parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
                 ref = None
@@ -1128,7 +1402,6 @@ class Resolver_Utils(object):
             if len(result_join) > 0:
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
             result += temp_result
-
         return result
 
     def incremental_optimized_join(self, temp_result, result_join):
@@ -1163,6 +1436,12 @@ class Resolver_Utils(object):
                         result.append(new_record)
         return result
 
+    '''
+        Generic Resolver Function
+        info:
+        filter_condition:
+        return: a list of json objects
+    '''
     def generic_resolver_func(self, info, filter_condition):
         from generic_resolver.filter_utils import Filter_Utils
         result = []
@@ -1191,17 +1470,23 @@ class Resolver_Utils(object):
                         if key in self.filtered_object_iri.keys():
                             self.filtered_object_iri[key] = list(set(self.filtered_object_iri[key] + object_iri_lst))
                         else:
-                            self.filtered_object_iri[key] = object_iri_lst
+                            self.filtered_object_iri[key] = list(set(object_iri_lst))
                     for column in df_columns:
                         if key in column:
                             attribute = column.split('-')[1]
                             column_value = value[column].tolist()
-                            self.filtered_object_columns[key] = {attribute: column_value}
-                            break
+                            # self.filtered_object_columns[key] = {attribute: column_value}
+                            if attribute in self.filtered_object_columns[key].keys():
+                                self.filtered_object_columns[key][attribute] += column_value
+                                break
+                            else:
+                                self.filtered_object_columns[key] = {attribute: column_value}
+                                break
             # filter_end_time = datetime.datetime.now()
             # print('Filter Time:', (filter_end_time - start_time).total_seconds())
             # for key, value in self.filtered_object_iri.items():
                 # print('Filtered', key, len(value))
+            # print('After Filtering')
             if len(self.filtered_object_iri.keys()) > 0:
                 self.filtered_object_iri['filter'] = True
                 query_ast = self.generate_query_ast(info)
@@ -1272,7 +1557,7 @@ class Resolver_Utils(object):
 
     def reinitialize_ru_object(self):
         self.filtered_object_iri = dict()
-        self.filtered_object_columns = dict()
+        self.filtered_object_columns = defaultdict(defaultdict)
         self.join_cache = dict()
         self.single_cache = dict()
         self.field_exp_symbol = dict()
