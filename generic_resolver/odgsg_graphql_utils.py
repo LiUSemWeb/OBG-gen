@@ -6,6 +6,9 @@ from generic_resolver.mapping_utils import RML_Mapping
 import json
 from collections import defaultdict
 import pandas as pd
+#import ray
+#ray.init()
+#import modin.pandas as pd
 import ast
 import copy
 import datetime
@@ -28,6 +31,8 @@ class Resolver_Utils(object):
         self.interfaces = []
         self.interface_query_entries = []
         self.mysql_without_filter = datetime.timedelta()
+        self.join_time = datetime.timedelta()
+        self.access_time = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -207,7 +212,10 @@ class Resolver_Utils(object):
                         sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}'.format(select_cols=select_cols, table=table_name, where_statement=where_statement)
                         self.sql_flag = True
                     else:
-                        ref_statement = self.generate_ref_sql_statement(ref)
+                        if ref is not None:
+                            ref_statement = self.generate_ref_sql_statement(ref)
+                        else:
+                            ref_statement = ''
                         if len(ref_statement) > 0:
                             # print('ref_statement', ref_statement)
                             # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
@@ -220,7 +228,10 @@ class Resolver_Utils(object):
                         sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=where_statement)
                         self.sql_flag = True
                     else:
-                        ref_statement = self.generate_ref_sql_statement(ref)
+                        if ref is not None:
+                            ref_statement = self.generate_ref_sql_statement(ref)
+                        else:
+                            ref_statement = ''
                         if len(ref_statement) > 0:
                             # print('ref_statement', ref_statement)
                             sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=ref_statement)
@@ -239,7 +250,10 @@ class Resolver_Utils(object):
                         select_cols=select_cols, select_statement=select_statement, where_statement=where_statement)
                     self.sql_flag = True
                 else:
-                    ref_statement = self.generate_ref_sql_statement(ref)
+                    if ref is not None:
+                        ref_statement = self.generate_ref_sql_statement(ref)
+                    else:
+                        ref_statement = ''
                     if len(ref_statement) > 0:
                         # print('ref_statement', ref_statement)
                         # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
@@ -256,7 +270,10 @@ class Resolver_Utils(object):
                                                                                              where_statement=where_statement)
                     self.sql_flag = True
                 else:
-                    ref_statement = self.generate_ref_sql_statement(ref)
+                    if ref is not None:
+                        ref_statement = self.generate_ref_sql_statement(ref)
+                    else:
+                        ref_statement = ''
                     if len(ref_statement) > 0:
                         # print('ref_statement', ref_statement)
                         sql_query_str = 'SELECT * FROM {select_statement} WHERE {where_statement}'.format(select_statement=select_statement,
@@ -264,11 +281,15 @@ class Resolver_Utils(object):
                     else:
                         sql_query_str = 'SELECT * FROM {select_statement}'.format(select_statement=select_statement)
         # print(sql_query_str)
-        db_engine = create_engine(db_connection_str, pool_recycle=3600)
-        df = pd.read_sql(text(sql_query_str), con=db_engine)
+        # db_engine = create_engine(db_connection_str, pool_recycle=3600)
+        # df = pd.read_sql(text(sql_query_str), con=db_engine)
+        start_access_time = datetime.datetime.now()
+        df = pd.read_sql_query(text(sql_query_str), db_connection_str)
+        end_access_time = datetime.datetime.now()
+        self.access_time += (end_access_time - start_access_time)
         result = df.to_dict(orient='records')
         #db_engine.close()
-        db_engine.dispose()
+        # db_engine.dispose()
         return result
 
     '''
@@ -300,7 +321,7 @@ class Resolver_Utils(object):
             for pred, filter_dict_value in filter_dict.items():
                 if filter_dict_value['local_name'] not in key_columns and pred not in constant_preds:
                     # key_columns.append(filter_dict_value['local_name'])
-                    print('Do not append')
+                    pass
                 if pred in constant_preds:
                     constant_pred_filter[pred] = filter_dict_value
                 else:
@@ -376,8 +397,12 @@ class Resolver_Utils(object):
                 # sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
                 sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
                 # print(sql_query_str)
-        db_engine = create_engine(db_connection_str)
-        df = pd.read_sql(text(sql_query_str), con=db_engine)
+        # db_engine = create_engine(db_connection_str)
+        # df = pd.read_sql(text(sql_query_str), con=db_engine)
+        start_access_time = datetime.datetime.now()
+        df = pd.read_sql_query(text(sql_query_str), db_connection_str)
+        end_access_time = datetime.datetime.now()
+        self.access_time += (end_access_time - start_access_time)
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
@@ -583,9 +608,11 @@ class Resolver_Utils(object):
                 if attr_type == 'Int':
                     if df.dtypes[local_name] != 'int64':
                         df = df.astype({local_name: int})
-                if attr_type == 'Float':
+                elif attr_type == 'Float':
                     if df.dtypes[local_name] != 'float64':
                         df = df.astype({local_name: float})
+                else:
+                    pass
                 if atom_filter['operator'] not in ['_like', '_nlike']:
                     df = df.query(filter_str)
                 else:
@@ -609,9 +636,11 @@ class Resolver_Utils(object):
                 if attr_type == 'Int':
                     if df.dtypes[local_name] != 'int64':
                         df = df.astype({local_name: int})
-                if attr_type == 'Float':
+                elif attr_type == 'Float':
                     if df.dtypes[local_name] != 'float64':
                         df = df.astype({local_name: float})
+                else:
+                    pass
                 # print('GROUP BY', key_attrs)
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
         return df
@@ -654,12 +683,14 @@ class Resolver_Utils(object):
                 else:
                     new_value = str(value_str)
                     lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
-            if attr_type == 'Int':
+            elif attr_type == 'Int':
                 new_value = int(value_str)
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
-            if attr_type == 'Float':
+            elif attr_type == 'Float':
                 new_value = float(value_str)
                 lambda_func = self.transform_lambda_func(attribute_name, operator_str, new_value, negation_flag)
+            else:
+                pass
         return lambda_func
 
     '''
@@ -689,14 +720,16 @@ class Resolver_Utils(object):
                     new_value = str(value_str)
                     filter_str = "{column} {operator} \"{value}\" ".format(column=attribute_name, operator=new_operator,
                                                                            value=new_value)
-            if attr_type == 'Int':
+            elif attr_type == 'Int':
                 new_value = int(value_str)
                 filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
                                                                    value=new_value)
-            if attr_type == 'Float':
+            elif attr_type == 'Float':
                 new_value = float(value_str)
                 filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
                                                                    value=new_value)
+            else:
+                pass
         return filter_str
 
     '''
@@ -722,7 +755,7 @@ class Resolver_Utils(object):
                     having_str = 'sum(`{column}` {operator} \'{value}\') > 0'.format(column=column_name,
                                                                                     operator=new_operator,
                                                                                     value=new_value)
-            if attr_type == 'Int':
+            elif attr_type == 'Int':
                 new_value = int(value_str)
                 if negation_flag is True:
                     having_str = 'sum(`{column}` {operator} {value}) = 0'.format(column=column_name,
@@ -732,7 +765,7 @@ class Resolver_Utils(object):
                     having_str = 'sum(`{column}` {operator} {value}) > 0'.format(column=column_name,
                                                                                 operator=new_operator,
                                                                                 value=new_value)
-            if attr_type == 'Float':
+            elif attr_type == 'Float':
                 new_value = float(value_str)
                 if negation_flag is True:
                     having_str = 'sum(`{column}` {operator} {value}) = 0'.format(column=column_name,
@@ -742,6 +775,8 @@ class Resolver_Utils(object):
                     having_str = 'sum(`{column}` {operator} {value}) > 0'.format(column=column_name,
                                                                                  operator=new_operator,
                                                                                  value=new_value)
+            else:
+                pass
         return having_str
 
     '''
@@ -759,14 +794,16 @@ class Resolver_Utils(object):
                 new_value = str(value_str)
                 filter_str = '`{column}` {operator} \'{value}\''.format(column=column_name, operator=new_operator,
                                                                     value=new_value)
-            if attr_type == 'Int':
+            elif attr_type == 'Int':
                 new_value = int(value_str)
                 filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
                                                                     value=new_value)
-            if attr_type == 'Float':
+            elif attr_type == 'Float':
                 new_value = float(value_str)
                 filter_str = '`{column}` {operator} {value}'.format(column=column_name, operator=new_operator,
                                                                     value=new_value)
+            else:
+                pass
         return filter_str
 
     '''
@@ -824,13 +861,13 @@ class Resolver_Utils(object):
                         schema_ast[definition.name.value][wrapped_field.name.value] = {
                             'base_type': named_type_value,
                             'wrapping_label': encode_labels}
-                if definition.kind == 'input_object_type_definition':
+                elif definition.kind == 'input_object_type_definition':
                     schema_ast[definition.name.value] = dict()
                     for wrapped_field in definition.fields:
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
-                if definition.kind == 'interface_type_definition':
+                elif definition.kind == 'interface_type_definition':
                     self.interfaces.append(definition.name.value)
                     schema_ast[definition.name.value] = dict()
                     schema_ast[definition.name.value]['sub_types'] = []
@@ -838,6 +875,8 @@ class Resolver_Utils(object):
                         named_type_value, encode_labels = self.parse_field(wrapped_field)
                         schema_ast[definition.name.value][wrapped_field.name.value] = {'base_type': named_type_value,
                                                                                        'wrapping_label': encode_labels}
+                else:
+                    pass
 
             self.schema_ast = schema_ast
             return self.schema_ast
@@ -926,13 +965,31 @@ class Resolver_Utils(object):
         i = 0
         while i < len(temp_result):
             # temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
-            for (constant_pred, constant_data, data_type) in constant:
-                temp_result[i][constant_pred] = constant_data
+            if len(constant) > 0:
+                for (constant_pred, constant_data, data_type) in constant:
+                    temp_result[i][constant_pred] = constant_data
             iri = template.format(temp_result[i][key])
             if root_type_flag is True:
                 if mapping_name in filtered_object_iri.keys() and iri in filtered_object_iri[mapping_name] or \
                         filtered_object_iri['filter'] is False:
                     temp_result[i]['iri'] = iri
+                    if len(attr_pred_lst) > 0:
+                        for attr_pred_tuple in attr_pred_lst:
+                            if '.' in attr_pred_tuple[0]:
+                                keys = self.parse_iterator(attr_pred_tuple[0])
+                                temp_data = temp_result[i]
+                                for i in range(len(keys)):
+                                    temp_data = temp_data[keys[i]]
+                                    temp_result[i][attr_pred_tuple[1]] = temp_data
+                            else:
+                                if attr_pred_tuple[0] in temp_result[i].keys():
+                                    temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                    i += 1
+                else:
+                    del temp_result[i]
+            else:
+                temp_result[i]['iri'] = iri
+                if len(attr_pred_lst) > 0:
                     for attr_pred_tuple in attr_pred_lst:
                         if '.' in attr_pred_tuple[0]:
                             keys = self.parse_iterator(attr_pred_tuple[0])
@@ -943,21 +1000,6 @@ class Resolver_Utils(object):
                         else:
                             if attr_pred_tuple[0] in temp_result[i].keys():
                                 temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
-                    i += 1
-                else:
-                    del temp_result[i]
-            else:
-                temp_result[i]['iri'] = iri
-                for attr_pred_tuple in attr_pred_lst:
-                    if '.' in attr_pred_tuple[0]:
-                        keys = self.parse_iterator(attr_pred_tuple[0])
-                        temp_data = temp_result[i]
-                        for i in range(len(keys)):
-                            temp_data = temp_data[keys[i]]
-                            temp_result[i][attr_pred_tuple[1]] = temp_data
-                    else:
-                        if attr_pred_tuple[0] in temp_result[i].keys():
-                            temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
                 i += 1
         return temp_result
 
@@ -965,10 +1007,12 @@ class Resolver_Utils(object):
     def check_node_type(node):
         if node.kind == 'non_null_type':
             return 'non_null_type'
-        if node.kind == 'named_type':
+        elif node.kind == 'named_type':
             return 'named_type'
-        if node.kind == 'list_type':
+        elif node.kind == 'list_type':
             return 'list_type'
+        else:
+            pass
         return 0
 
     def parse_query_fields(self, root_name, query_field_notes):
@@ -1029,7 +1073,7 @@ class Resolver_Utils(object):
                                                            constant_data, filter_lst_obj_tag)
                 else:
                     result = self.get_csv_data_without_filter(source_request, ref)
-        if source_type == 'ql:JSONPath':
+        elif source_type == 'ql:JSONPath':
             source_request = self.mu.get_source(logical_source)
             iterator = self.mu.get_json_iterator(logical_source)
             if filter_flag is True:
@@ -1038,6 +1082,8 @@ class Resolver_Utils(object):
                 result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
             else:
                 result = self.get_json_data_without_filter(source_request, iterator, ref)
+        else:
+            pass
         return result
 
     '''
@@ -1169,6 +1215,7 @@ class Resolver_Utils(object):
             filter_lst_obj_tag:
     '''
     def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag=False):
+        print('SMN', super_mappings_name)
         result = dict()
         if len(super_mappings_name) == 0:
             mappings = self.mu.get_mappings_by_type(entity_type)
@@ -1193,10 +1240,12 @@ class Resolver_Utils(object):
                 if object_map_type == 1:
                     reference_attribute = self.mu.get_reference(object_map)
                     pred_attr[phi_predicate] = reference_attribute
-                if object_map_type == 2:
+                elif object_map_type == 2:
                     constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
                     filter_constant.append(phi_predicate)
+                else:
+                    pass
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
             if temp_result.empty is not True:
@@ -1365,16 +1414,17 @@ class Resolver_Utils(object):
                 predicate, object_map = self.mu.parse_pom(pom)
                 phi_predicate = self.phi(predicate)
                 object_map_type = self.mu.type_of_object_map(object_map)
-                if object_map_type == 1:
+                if object_map_type == 3:
+                    ref_poms_pred_object_map.append((phi_predicate, object_map))
+                elif object_map_type == 1:
                     reference_attribute = self.mu.get_reference(object_map)
                     attr_pred.append((reference_attribute, phi_predicate))
                     key_attrs.append(reference_attribute)
-                if object_map_type == 2:
+                elif object_map_type == 2:
                     constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
-                if object_map_type == 3:
-                    ref_poms_pred_object_map.append((phi_predicate, object_map))
-
+                else:
+                    print('Unknown object map type')
             if root_type_flag is True:
                 # print('ROOT REF', ref)
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
@@ -1395,16 +1445,20 @@ class Resolver_Utils(object):
                 child_data = [{child_field: record[child_field]} for record in temp_result]
                 ref_data = [x[child_field] for x in child_data]
                 ref_data = list(set(ref_data))
-                ref = (ref_data, parent_field)
-                parent_data = self.query_evaluator(new_query_ast, parent_mapping, ref)
-                ref = None
+                new_ref = (ref_data, parent_field)
+                parent_data = self.query_evaluator(new_query_ast, parent_mapping, new_ref)
+                new_ref = None
                 result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             if len(result_join) > 0:
+                start_join_time = datetime.datetime.now()
                 temp_result = self.incremental_optimized_join(temp_result, result_join)
+                end_join_time = datetime.datetime.now()
+                self.join_time += (end_join_time - start_join_time)
             result += temp_result
         return result
 
-    def incremental_optimized_join(self, temp_result, result_join):
+    @staticmethod
+    def incremental_optimized_join(temp_result, result_join):
         result = []
         for pred_key, data_join_lst in result_join.items():
             for (join_data, join_condition, wrapping_label) in data_join_lst:
@@ -1544,6 +1598,8 @@ class Resolver_Utils(object):
                 print('Result json file size: ', output_json_file_size)
                 print('Result Size: ', result_length)
                 print('(No filter)-Query Response Time:', response_time)
+        print('join_time', self.join_time)
+        print('access_time', self.access_time)
         self.reinitialize_ru_object()
         return result
 
@@ -1562,3 +1618,5 @@ class Resolver_Utils(object):
         self.single_cache = dict()
         self.field_exp_symbol = dict()
         self.symbol_field_exp = dict()
+        self.join_time = datetime.timedelta()
+        self.access_time = datetime.timedelta()
