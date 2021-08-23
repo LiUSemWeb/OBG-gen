@@ -57,8 +57,8 @@ class Resolver_Utils(object):
             r = requests.get(url=source_request)
             data = r.json()
         else:
-            file_name = source_request.split('/')[-1]
-            with open('./data/' + file_name) as f:
+            #file_name = source_request.split('/')[-1]
+            with open(source_request) as f:
                 data = json.load(f)
         if iterator is not None:
             keys = self.parse_iterator(iterator)
@@ -200,6 +200,7 @@ class Resolver_Utils(object):
                                                                                             server=hostname,
                                                                                             port=port,
                                                                                             db=schema_name)
+        print(db_connection_str)
         sql_query_str = ''
         if len(query) == 0:
             if len(table_name) > 0:
@@ -426,13 +427,22 @@ class Resolver_Utils(object):
     '''
     def get_json_data_with_filter(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
         group_by_attrs = copy.copy(key_attrs)
-        r = requests.get(url=url)
         if filter_dict is not None:
             for key, value in filter_dict.items():
                 if value['local_name'] not in key_attrs:
                     key_attrs.append(value['local_name'])
 
-        data = r.json()
+        if url[0:4] == 'http':
+            r = requests.get(url=url)
+            data = r.json()
+        else:
+            #file_name = source_request.split('/')[-1]
+            with open(url) as f:
+                data = json.load(f)
+
+        #r = requests.get(url=url)
+        #json_data = r.json()
+        #temp_data = json_data
         temp_data = data
         if iterator is not None:
             keys = self.parse_iterator(iterator)
@@ -1215,7 +1225,6 @@ class Resolver_Utils(object):
             filter_lst_obj_tag:
     '''
     def filter_data_fetcher(self, entity_type, filter_fields, super_mappings_name, filter_lst_obj_tag=False):
-        print('SMN', super_mappings_name)
         result = dict()
         if len(super_mappings_name) == 0:
             mappings = self.mu.get_mappings_by_type(entity_type)
@@ -1589,7 +1598,8 @@ class Resolver_Utils(object):
                 end_time = datetime.datetime.now()
                 with open('output.json', 'w') as f:
                     json.dump({'data': result}, f)
-                query_name = json.loads(info.context.data)['operationName']
+                query_name = '1'
+                # query_name = json.loads(info.context.data)['operationName']
                 output_json_file_size = os.stat('./output.json').st_size
                 result_length = len(result)
                 response_time = (end_time - start_time).total_seconds()
