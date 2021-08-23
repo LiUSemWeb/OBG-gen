@@ -200,6 +200,10 @@ class Resolver_Utils(object):
                                                                                             server=hostname,
                                                                                             port=port,
                                                                                             db=schema_name)
+        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}/{db}?unix_socket=/proj/theophys/users/x_huali/benchmarks/mysql/mysqld.sock'.format(user=db_username,
+                                                                                            password=db_password,
+                                                                                            server='localhost',
+                                                                                            db=schema_name)
         print(db_connection_str)
         sql_query_str = ''
         if len(query) == 0:
