@@ -72,6 +72,13 @@ You can find query examples in the following folder.
 
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
+## Contact
+
+* [Huanyu Li](https://www.ida.liu.se/~huali50/)
+* [Olaf Hartig](http://olafhartig.de/)
+* [Rickard Armiento](https://rickard.armiento.se)
+* [Patrick Lambrix](https://www.ida.liu.se/~patla00/)
+
 
 [//]: # "## A demo on Heroku of ODGSG for the materials design domain"
 [//]: # "* TO UPDATE"

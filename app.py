@@ -97,7 +97,8 @@ if __name__ == "__main__":
     object_type_query_entries, interface_type_query_entries = ru.get_query_entries(type_defs)
     register_object_type_queries(object_type_query_entries)
     register_interface_type_queries(interface_type_query_entries)
-    schema = make_executable_schema(type_defs, [query, thing])
+    # schema = make_executable_schema(type_defs, [query, thing])
+    schema = make_executable_schema(type_defs, [query])
     db_connection_str = 'mysql+pymysql://root:6973278lhy@127.0.0.1:3306/'
     db_connection = create_engine(db_connection_str)
     # schema = make_executable_schema(type_defs, [query])

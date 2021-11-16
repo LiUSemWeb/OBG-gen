@@ -14,6 +14,7 @@ import copy
 import datetime
 from sqlalchemy import create_engine, text
 import os
+import multiprocessing as mp
 
 
 class Resolver_Utils(object):
@@ -200,10 +201,7 @@ class Resolver_Utils(object):
                                                                                             server=hostname,
                                                                                             port=port,
                                                                                             db=schema_name)
-        db_connection_str = 'mysql+pymysql://{user}:{password}@{server}/{db}?unix_socket=/proj/theophys/users/x_huali/benchmarks/mysql/mysqld.sock'.format(user=db_username,
-                                                                                            password=db_password,
-                                                                                            server='localhost',
-                                                                                            db=schema_name)
+        #db_connection_str = 'mysql+pymysql://{user}:{password}@{server}/{db}?unix_socket=/proj/theophys/users/x_huali/benchmarks/mysql/mysqld.sock'.format(user=db_username,password=db_password, server='localhost', db=schema_name)
         print(db_connection_str)
         sql_query_str = ''
         if len(query) == 0:
@@ -289,6 +287,7 @@ class Resolver_Utils(object):
         # db_engine = create_engine(db_connection_str, pool_recycle=3600)
         # df = pd.read_sql(text(sql_query_str), con=db_engine)
         start_access_time = datetime.datetime.now()
+        print('SQL:', sql_query_str)
         df = pd.read_sql_query(text(sql_query_str), db_connection_str)
         end_access_time = datetime.datetime.now()
         self.access_time += (end_access_time - start_access_time)
@@ -405,6 +404,7 @@ class Resolver_Utils(object):
         # db_engine = create_engine(db_connection_str)
         # df = pd.read_sql(text(sql_query_str), con=db_engine)
         start_access_time = datetime.datetime.now()
+        print('SQL:', sql_query_str)
         df = pd.read_sql_query(text(sql_query_str), db_connection_str)
         end_access_time = datetime.datetime.now()
         self.access_time += (end_access_time - start_access_time)
@@ -1464,12 +1464,57 @@ class Resolver_Utils(object):
                 result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             if len(result_join) > 0:
                 start_join_time = datetime.datetime.now()
-                temp_result = self.incremental_optimized_join(temp_result, result_join)
+                #temp_result = self.incremental_optimized_join(temp_result, result_join)
+                #print('multi: ', self.incremental_multi_join(temp_result, result_join))
+                temp_result = self.incremental_multi_join(temp_result, result_join)
                 end_join_time = datetime.datetime.now()
                 self.join_time += (end_join_time - start_join_time)
             result += temp_result
         return result
 
+    @staticmethod
+    def join_base(temp_result, pred_key, data_join_lst):
+        result = []
+        for (join_data, join_condition, wrapping_label) in data_join_lst:
+            new_formed_join_data = defaultdict(list)
+            for record in join_data:
+                # following copy field
+                modified_field_name = join_condition['parent'] + 'ORIGINAL'
+                if modified_field_name in record.keys():  # check if the data at the right side of the join contains a modified field
+                    new_formed_join_data[record[modified_field_name]].append(record)
+                else:
+                    new_formed_join_data[record[join_condition['parent']]].append(record)
+            for record in temp_result:
+                new_record = record
+                join_key_value = record[join_condition['child']]
+                if pred_key not in new_record.keys() and wrapping_label != '0' and wrapping_label != '10':
+                    new_record[pred_key] = []
+                else:
+                    if pred_key in new_record.keys():
+                        new_field = pred_key + 'ORIGINAL'
+                        # following copy field's data is used in case the original data has the same field name
+                        # as the predicate stated in the mapping
+                        new_record[new_field] = new_record[pred_key]
+                if wrapping_label == '0' or wrapping_label == '10':
+                    if len(new_formed_join_data[join_key_value]) > 0:
+                        new_record[pred_key] = new_formed_join_data[join_key_value][0]
+                else:
+                    new_record[pred_key] += new_formed_join_data[join_key_value]
+                if new_record not in result:
+                    result.append(new_record)
+        return result
+    def incremental_multi_join(self, temp_result, result_join):
+        result = []
+        pool = mp.Pool(processes=4)
+        print(len(result_join.items()))
+        mp_join_results = [pool.apply(self.join_base, args=(temp_result, pred_key, data_join_lst)) for pred_key, data_join_lst in result_join.items()]
+        print('length', len(mp_join_results))
+        for mjr in mp_join_results:
+            for e in mjr:
+                if e not in result:
+                    result.append(e)
+        pool.close()
+        return result
     @staticmethod
     def incremental_optimized_join(temp_result, result_join):
         result = []
@@ -1620,6 +1665,7 @@ class Resolver_Utils(object):
     def write_evaluation_result(self, query_name, response_time, json_file_size, result_length):
         header = ['Query', 'Response_Time', 'JSON_File_Size', 'Result_Num']
         data = [query_name, response_time, json_file_size, result_length]
+        print('Result number of objects:', result_length)
         with open('experiments_result.csv', 'a') as f:
             writer = csv.writer(f)
             writer.writerow(data)
