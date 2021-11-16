@@ -1,6 +1,9 @@
 interface Thing {
     iri: String!
 }
+interface test{
+    iri:String!
+}
 
 type Query {
     ThingList: [Thing!]
