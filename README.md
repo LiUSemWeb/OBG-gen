@@ -72,6 +72,10 @@ You can find query examples in the following folder.
 
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
+## Evaluation
+
+You can find more details regarding the evaluation of the framework in [this folder](https://github.com/huanyu-li/ODGSG/blob/main/evaluation/).
+
 ## Contact
 
 * [Huanyu Li](https://www.ida.liu.se/~huali50/)
