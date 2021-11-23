@@ -5,7 +5,7 @@
 A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
 ## The Framework of ODGSG for Data Access and Integration
-![entities](https://huanyu-li.github.io/figures/odgsg/generic-framework.png "The framework of ODGSG")
+![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/generic-framework.png "The framework of ODGSG")
 
 * (c): Ontology-based GraphQL schema generation
 * (d): Semantic mappings-based GraphQL resolvers generation
