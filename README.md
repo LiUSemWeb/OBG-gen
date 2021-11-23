@@ -1,11 +1,11 @@
-<img alt="ODGSG Logo" align="left" src="https://huanyu-li.github.io/figures/odgsg/ODGSG-icon.svg" width="15%" />
+<img alt="ODGSG Logo" align="left" src="https://LiUSemWeb.github.io/figures/OBG-gen/OBG-gen-icon.svg" width="15%" />
 
 ##
-# ODGSG: Ontology-Driven GraphQL Server Generation for Data Access and Integration
+# OBG-gen: Ontology-Based GraphQL Server Generation for Data Access and Integration
 A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
-## The Framework of ODGSG for Data Access and Integration
-![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/generic-framework.png "The framework of ODGSG")
+## The Framework of OBG-gen for Data Access and Integration
+![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/generic-framework.png "The framework of OBG-gen")
 
 * (c): Ontology-based GraphQL schema generation
 * (d): Semantic mappings-based GraphQL resolvers generation
@@ -13,9 +13,9 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [schema_generator/graphql_schema_gen.py](https://github.com/huanyu-li/ODGSG/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
-* [mapping_parser/mapping_parser.py](https://github.com/huanyu-li/ODGSG/blob/main/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
-* [app.py](https://github.com/huanyu-li/ODGSG/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
+* [schema_generator/graphql_schema_gen.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
+* [mapping_parser/mapping_parser.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
+* [app.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
 ## Installation (TO UPDATE)
@@ -64,17 +64,17 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as shown below.
 
-![first_query](https://huanyu-li.github.io/figures/odgsg/first_query.png "GraphQL query example")
+![first_query](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/first_query.png "GraphQL query example")
 
 You can find query examples in the following folder.
 
-[query examples](https://github.com/huanyu-li/ODGSG/blob/main/query_examples/)
+[query examples](https://github.com/LiUSemWeb/OBG-gen/blob/main/query_examples/)
 
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
 ## Evaluation
 
-You can find more details regarding the evaluation of the framework in [this folder](https://github.com/huanyu-li/ODGSG/blob/main/evaluation/).
+You can find more details regarding the evaluation of the framework in [this folder](https://github.com/LiUSemWeb/OBG-gen/blob/main/evaluation/).
 
 ## Contact
 
@@ -84,6 +84,6 @@ You can find more details regarding the evaluation of the framework in [this fol
 * [Patrick Lambrix](https://www.ida.liu.se/~patla00/)
 
 
-[//]: # "## A demo on Heroku of ODGSG for the materials design domain"
+[//]: # "## A demo on Heroku of OBG-gen for the materials design domain"
 [//]: # "* TO UPDATE"
-[//]: # "[ODGSG-Demo](https://odgsg-demo.herokuapp.com)"
+[//]: # "[OBG-gen-Demo](https://OBG-gen-demo.herokuapp.com)"

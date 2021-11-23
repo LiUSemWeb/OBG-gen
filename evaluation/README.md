@@ -1,2 +1,2 @@
 ## Evaluation Workflow 
-![entities](https://huanyu-li.github.io/figures/odgsg/evaluation-workflow.png "evaluation workflow")
+![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/evaluation-workflow.png "evaluation workflow")
