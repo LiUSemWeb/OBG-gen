@@ -1,4 +1,4 @@
-[//]: <img alt="ODGSG Logo" align="left" src="https://LiUSemWeb.github.io/figures/OBG-gen/OBG-gen-icon.svg" width="15%" />
+[//]: <img alt="OBG-gen Logo" align="left" src="https://LiUSemWeb.github.io/figures/OBG-gen/OBG-gen-icon.svg" width="15%" />
 
 ##
 # OBG-gen: Ontology-Based GraphQL Server Generation for Data Access and Integration
