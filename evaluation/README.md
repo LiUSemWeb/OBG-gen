@@ -1,10 +1,11 @@
-## Evaluation Workflow 
+[//]: ## Evaluation Workflow 
 
-* For the evaluation, we consider two scenarios: a real application scenario in the materials design domain and a synthetic benchmark scenario bason on [Linköping GraphQL Benchmark](https://github.com/LiUGraphQL/LinGBM) (LinGBM).
+[//]: * For the evaluation, we consider two scenarios: a real application scenario in the materials design domain and a synthetic benchmark scenario bason on [Linköping GraphQL Benchmark](https://github.com/LiUGraphQL/LinGBM) (LinGBM).
 
 ### Real Case Evaluation
 
 * An example query without filter expression is shown below. (List all structures including reduced formula.)
+  
   {
       StructureList{
           hasComposition{
@@ -14,6 +15,7 @@
   }
 
 * An example query with filter expression is shown below. (List all calculations including ID, output calculated property name and value, where ID in a given list of values.)
+  
   {
     CalculationList(
       filter: { ID: { _in: ["6332", "8088", "21331", "mp-561628", "mp-614918"] } }
@@ -37,6 +39,7 @@
 ### Synthetic Evaluation
 
 * An example query is shown below.
+  
   { 
     UniversityList (filter:{nr:{_eq:973}}) { 
       undergraduateDegreeObtainedBystudent{ 
