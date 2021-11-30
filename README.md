@@ -75,15 +75,3 @@ You can find query examples in the following folder.
 ## Evaluation
 
 You can find more details regarding the evaluation of the framework in [this folder](https://github.com/LiUSemWeb/OBG-gen/blob/main/evaluation/).
-
-## Contact
-
-* [Huanyu Li](https://www.ida.liu.se/~huali50/)
-* [Olaf Hartig](http://olafhartig.de/)
-* [Rickard Armiento](https://rickard.armiento.se)
-* [Patrick Lambrix](https://www.ida.liu.se/~patla00/)
-
-
-[//]: # "## A demo on Heroku of OBG-gen for the materials design domain"
-[//]: # "* TO UPDATE"
-[//]: # "[OBG-gen-Demo](https://OBG-gen-demo.herokuapp.com)"
