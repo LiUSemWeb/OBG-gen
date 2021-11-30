@@ -66,10 +66,6 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 
 ![first_query](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/first_query.png "GraphQL query example")
 
-[//]: You can find query examples in the following folder.
-
-[//]: [query examples](https://github.com/LiUSemWeb/OBG-gen/blob/main/query_examples/)
-
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
 ## Evaluation
