@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%nonflowering%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

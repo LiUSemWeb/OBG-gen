@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%outstretches%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

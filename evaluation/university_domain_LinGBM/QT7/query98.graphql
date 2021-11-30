@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%grandly%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

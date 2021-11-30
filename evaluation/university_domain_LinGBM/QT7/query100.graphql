@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%stressed%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

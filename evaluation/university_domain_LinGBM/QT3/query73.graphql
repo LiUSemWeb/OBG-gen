@@ -1,0 +1,13 @@
+{ 
+  ResearchGroupList(filter:{nr:{_eq:21201}}) { 
+    subOrganizationOf { 
+      head { 
+        nr 
+        emailAddress 
+        doctoralDegreeFrom {nr} 
+      } 
+    } 
+  } 
+} 
+
+ 

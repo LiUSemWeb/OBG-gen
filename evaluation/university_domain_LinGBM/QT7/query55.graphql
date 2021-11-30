@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%flicks%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

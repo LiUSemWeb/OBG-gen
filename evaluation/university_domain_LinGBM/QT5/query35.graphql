@@ -1,0 +1,27 @@
+{ 
+  DepartmentList(filter:{nr:{_eq:320}}) {
+    nr 
+    subOrganizationOf{ 
+      nr
+      undergraduateDegreeObtainedBystudent {
+        nr 
+        emailAddress 
+        memberOf{ 
+          nr 
+          subOrganizationOf{
+            nr 
+            undergraduateDegreeObtainedBystudent {
+              nr 
+              emailAddress 
+              memberOf{ 
+                nr
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+ 

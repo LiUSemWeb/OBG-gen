@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%enamelled%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

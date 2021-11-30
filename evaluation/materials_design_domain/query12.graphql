@@ -1,0 +1,9 @@
+{
+  StructureList(
+    filter: { hasComposition: { ReducedFormula: { _like: "%Cu%" } } }
+  ) {
+    hasComposition {
+      ReducedFormula
+    }
+  }
+}

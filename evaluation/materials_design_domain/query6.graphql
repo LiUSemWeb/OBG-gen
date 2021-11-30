@@ -1,0 +1,18 @@
+{
+    ThingList{
+    ... on Calculation{
+      ID
+      hasOutputStructure{
+        hasComposition{
+          ReducedFormula
+        }
+      }
+      hasOutputCalculatedProperty{
+        PropertyName
+        numericalValue
+      }
+    }
+  }
+}
+ 
+

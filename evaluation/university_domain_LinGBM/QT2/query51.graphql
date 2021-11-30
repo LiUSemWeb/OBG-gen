@@ -1,0 +1,9 @@
+{ 
+	UniversityList(filter:{nr:{_eq:153}}){ 
+		doctoralDegreeObtainers{ 
+			publications{title} 
+		} 
+	} 
+}
+
+ 

@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%reorganization%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

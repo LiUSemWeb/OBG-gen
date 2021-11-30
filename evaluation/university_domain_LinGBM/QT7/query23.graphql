@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%anglos%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

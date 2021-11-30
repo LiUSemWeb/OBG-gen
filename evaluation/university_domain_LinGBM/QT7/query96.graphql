@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%congaed%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

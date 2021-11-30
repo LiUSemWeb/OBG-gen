@@ -5,7 +5,7 @@
 A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
 ## The Framework of OBG-gen for Data Access and Integration
-![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/generic-framework.png "The framework of OBG-gen")
+![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/OBG-gen-framework.png "The framework of OBG-gen")
 
 * (c): Ontology-based GraphQL schema generation
 * (d): Semantic mappings-based GraphQL resolvers generation

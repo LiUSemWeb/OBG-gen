@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%potsy%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

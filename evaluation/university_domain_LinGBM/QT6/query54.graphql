@@ -1,0 +1,11 @@
+{ 
+	UniversityList (filter:{nr:{_eq:370}}) { 
+		undergraduateDegreeObtainedBystudent{ 
+			advisor { 
+				worksFor{nr} 
+			} 
+		} 
+	} 
+} 
+
+ 

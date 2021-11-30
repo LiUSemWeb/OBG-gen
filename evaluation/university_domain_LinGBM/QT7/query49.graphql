@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%hooliganism%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

@@ -1,0 +1,9 @@
+{ 
+	FacultyList(filter:{nr:{_eq:210034}}){ 
+		doctoralDegreeFrom { 
+			undergraduateDegreeObtainedBystudent{nr emailAddress} 
+		} 
+	} 
+}
+
+ 

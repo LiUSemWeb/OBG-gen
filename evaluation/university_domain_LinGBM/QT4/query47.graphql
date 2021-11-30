@@ -1,0 +1,18 @@
+{ 
+  LecturerList(filter:{nr:{_eq:311014}}) { 
+    doctoralDegreeFrom { 
+      nr 
+      undergraduateDegreeObtainedBystudent { 
+        nr 
+        emailAddress 
+        advisor { 
+          nr 
+          emailAddress  
+          worksFor {nr} 
+        } 
+      } 
+    } 
+  } 
+} 
+
+ 

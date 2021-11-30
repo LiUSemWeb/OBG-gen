@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%misbehaving%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

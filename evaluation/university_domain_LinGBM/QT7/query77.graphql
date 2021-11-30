@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%enzymes%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

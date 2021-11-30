@@ -1,0 +1,11 @@
+{
+    CalculationList{
+        hasOutputStructure{
+            hasComposition{
+                ReducedFormula
+            }
+        }
+    }
+}
+ 
+

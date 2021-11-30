@@ -1,0 +1,12 @@
+{
+  CalculationList(
+    filter: { ID: { _in: ["6332", "8088", "21331", "mp-561628", "mp-614918"] } }
+  ) {
+    ID
+    hasOutputCalculatedProperty {
+      PropertyName
+      numericalValue
+    }
+  }
+}
+

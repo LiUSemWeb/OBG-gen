@@ -1,0 +1,8 @@
+{ 
+	GraduateStudentList (filter:{undergraduateDegreeFrom:{nr:{_eq:428}}}) { 
+		nr 
+		advisor {nr} 
+	} 
+}
+
+ 

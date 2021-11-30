@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%henceforward%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

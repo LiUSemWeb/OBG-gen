@@ -1,0 +1,9 @@
+{ 
+	PublicationList(filter:{title:{_like: "%bathyscaph%"}}) { 
+		nr 
+		title 
+		abstract 
+	} 
+} 
+
+ 

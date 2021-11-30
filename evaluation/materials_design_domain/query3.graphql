@@ -1,0 +1,10 @@
+{
+    CalculationList{
+        hasOutputCalculatedProperty{
+            PropertyName
+            numericalValue
+        }
+    }
+}
+ 
+
