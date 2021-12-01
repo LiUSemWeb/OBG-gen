@@ -28,12 +28,12 @@
     }
 ```
 
-* You can find all the 12 queries at [this folder](https://github.com/LiUSemWeb/OBG-gen/tree/main/evaluation/materials_design_domain).
+* You can find all the 12 queries at [this folder](./materials_design_domain).
 
 * Query Execution Time (QET) per data size on materials dataset.
-![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/evaluation-md-QETs-per-dataset.png "per-dataset")
+![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
 * Query Execution Time (QET) per query on materials dataset.
-![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/evaluation-md-QETs-per-query.png "The framework of OBG-gen")
+![entities](../figures/evaluation-md-QETs-per-query.png "The framework of OBG-gen")
 
 ### Synthetic Evaluation
 
@@ -49,4 +49,4 @@
       } 
     } 
 ```
-* You can find all the 8 query sets at [this folder](https://github.com/LiUSemWeb/OBG-gen/tree/main/evaluation/university_domain_LinGBM).
+* You can find all the 8 query sets at [this folder](./university_domain_LinGBM).
