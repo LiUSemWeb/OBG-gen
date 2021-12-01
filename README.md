@@ -10,9 +10,9 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [schema_generator/graphql_schema_gen.py](https://anonymous.4open.science/r/OBG-gen/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
-* [mapping_parser/mapping_parser.py](https://anonymous.4open.science/r/OBG-gen/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
-* [app.py](https://anonymous.4open.science/r/OBG-gen/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
+* [schema_generator/graphql_schema_gen.py](/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
+* [mapping_parser/mapping_parser.py](/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
+* [app.py](./app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
 ## Installation (TO UPDATE)
@@ -61,10 +61,10 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as shown below.
 
-![first_query](https://anonymous.4open.science/r/OBG-gen/figures/first_query.png "GraphQL query example")
+![first_query](/figures/first_query.png "GraphQL query example")
 
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
 ## Evaluation
 
-You can find more details regarding the evaluation of the framework in [this folder](https://anonymous.4open.science/r/OBG-gen/evaluation/README.md).
+You can find more details regarding the evaluation of the framework in [this folder](n/evaluation/README.md).
