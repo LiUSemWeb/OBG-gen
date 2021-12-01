@@ -3,16 +3,7 @@ from ontology import Ontology
 import json
 import datetime
 import sys
-
-from yaml import load, dump, FullLoader
 from rdflib import Graph
-
-#A = ['Calculation', 'Property', 'CalculatedProperty', 'PhysicalProperty', 'Structure', 'Quantity']
-#V = ['xsd:string', 'xsd:double']
-#U = ['ID', 'numericalValue', 'PropertyName']
-#P = ['hasInputProperty', 'hasOutputProperty', 'hasInputStructure', 'hasOutputStructure', 'relatesToMaterial', 'relatesToStructure']
-#subsumptions = [['CalculatedProperty', 'Property'], ['PhysicalProperty', 'Property']]
-#assertions = [['Calculation', 'ID', 'xsd:string', '=1'], ['Calculation', 'hasInputStructure','Structure', '>=1']]
 
 types = {'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':'rdf:type', 'http://www.w3.org/2000/01/rdf-schema#comment':'rdf:comment', 'http://www.w3.org/2000/01/rdf-schema#subClassOf': 'rdfs:subClassOf',
          'http://www.w3.org/2000/01/rdf-schema#label': 'rdfs:label', 'http://www.w3.org/2000/01/rdf-schema#domain': 'rdfs:domain', 'http://www.w3.org/2000/01/rdf-schema#range': 'rdfs:range',
@@ -29,12 +20,6 @@ types = {'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':'rdf:type', 'http://w
          'http://www.w3.org/2002/07/owl#versionInfo': 'owl:versionInfo', 'http://www.w3.org/2001/XMLSchema#double': 'xmls:double'
          }
 
-
-def read_TBox(TBox_file = './TBox.yml'):
-    with open(TBox_file) as f:
-        data = load(f, Loader=FullLoader)
-        #print(data)
-    return data['concepts'], data['data_types'], data['data_properties'], data['object_properties'], data['subsumptions'], data['axioms']
 def write_file(schema_file, gq_schema):
     with open(schema_file, 'w+') as output_file:
         output_file.write(gq_schema)
@@ -59,39 +44,7 @@ def remove_prefix(iri):
 
 V2Scalar = {'http://www.w3.org/2001/XMLSchema#integer':'Int', 'xsd:float':'Float', 'xsd:string':'String', 'xsd:boolean':'Boolean',
             'http://www.w3.org/2001/XMLSchema#string': 'String', 'http://www.w3.org/2001/XMLSchema#double': 'Float'}
-#A, V, U, P, subsumptions, assertions = su.read_TBox(TBox_file = './TBox.yml')
-'''
-print('A:', A)
-print('V:', V)
-print('U:', U)
-print('P:', P)
-print('subsumptions:', subsumptions)
-print('assertions:', assertions)
-'''
 
-
-
-class ELQ_1_D(object):
-    def __init__(self):
-        self.A = list()
-        self.V = list()
-        self.U = list()
-        self.P = list()
-        self.concept2subsumptions = defaultdict(list)
-        self.concept2assertions = defaultdict(list)
-    
-    def construct(self, A, V, U, P, subsumptions, assertions):
-        self.A = A
-        self.V = V
-        self.U = U
-        self.P = P
-        for subsumption in subsumptions:
-            self.concept2subsumptions[subsumption[0]].append(subsumption[1])
-        for assertion in assertions:
-            self.concept2assertions[assertion[0]]. append(assertion[1:])
-    
-    def print(self):
-        print(self.concept2assertions)
 
 class GraphQLSchema(object):
     def __init__(self):
@@ -420,47 +373,22 @@ def main(ontology):
     g = parse_owl(ontology)
     o = Ontology()
     o.construct(g)
-    #o.parse_general_axioms()
-    #o.print_subsumption_axiom()
-    #elq1d_test = ELQ_1_D()
     A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
-    #o.print()
-    #print(len(assertions))
-    #print(A, V, U, P, subsumptions, assertions)
-    #elq1d_test.construct(A, V, U, P, subsumptions, assertions)
-    #elq1d.print()
     a = datetime.datetime.now()
     graphql_schema_test = GraphQLSchema()
-    #graphql_schema_test.construct(elq1d_test.A, elq1d_test.V, elq1d_test.U, elq1d_test.P, elq1d_test.concept2subsumptions, elq1d_test.concept2assertions)
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.schema_gen(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.render_interface_types()
     graphql_schema_test.render_object_types()
     graphql_schema_test.render_input_object_types()
-    # graphql_schema_test.write_global_schema()
-    # graphql_schema_test.write_OntologyGraphQLSchemaMapping(A, U, P)
-    #graphql_schema_test.write_local_schema(['OQMD','MP'])
-    #graphql_schema_test.write_local_schema(databases)
     b = datetime.datetime.now()
     print(b-a)
 
 global_ontolopy_name = ''
-databases = list()
+#databases = list()
 
 if __name__ == '__main__':
     print(str(sys.argv[1]))
     global_ontolopy_name = str(sys.argv[1]).split('/')[2].split('.')[0]
-    databases = [str(k) for k in sys.argv[2:]]
+    #databases = [str(k) for k in sys.argv[2:]]
     main(str(sys.argv[1]))
-'''
-elq1d = ELQ_1_D()
-elq1d.construct(A, V, U, P, subsumptions, assertions)
-#elq1d.print()
-
-graphql_schema = GraphQLSchema()
-graphql_schema.construct(elq1d.A, elq1d.V, elq1d.U, elq1d.P,elq1d.concept2subsumptions, elq1d.concept2assertions)
-graphql_schema.write_schema()
-
-'''
-#g = parse_owl('testcoreQ.ttl')
-#print(str(sys.argv[1]))
