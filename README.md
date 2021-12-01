@@ -10,8 +10,8 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [schema_generator/graphql_schema_gen.py](/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
-* [mapping_parser/mapping_parser.py](/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
+* [schema_generator/graphql_schema_gen.py](./schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
+* [mapping_parser/mapping_parser.py](./mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
 * [app.py](./app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
@@ -67,4 +67,4 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 
 ## Evaluation
 
-You can find more details regarding the evaluation of the framework in [this folder](/evaluation/README.md).
+You can find more details regarding the evaluation of the framework in [this folder](./evaluation/README.md).
