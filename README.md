@@ -67,4 +67,4 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 
 ## Evaluation
 
-You can find more details regarding the evaluation of the framework in [this folder](n/evaluation/README.md).
+You can find more details regarding the evaluation of the framework in [this folder](/evaluation/README.md).
