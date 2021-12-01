@@ -1,11 +1,8 @@
-[//]: <img alt="OBG-gen Logo" align="left" src="https://LiUSemWeb.github.io/figures/OBG-gen/OBG-gen-icon.svg" width="15%" />
-
-##
 # OBG-gen: Ontology-Based GraphQL Server Generation for Data Access and Integration
 A framework for using GraphQL in which a global domain ontology drives the generation of a GraphQL server that answers requests by querying the integrated data sources. The core of this framework is an algorithm to generate a GraphQL scheam based on an ontology.
 
 ## The Framework of OBG-gen for Data Access and Integration
-![entities](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/OBG-gen-framework.png "The framework of OBG-gen")
+![entities](https://anonymous.4open.science/r/OBG-gen/figures/OBG-gen-framework.png "The framework of OBG-gen")
 
 * (c): Ontology-based GraphQL schema generation
 * (d): Semantic mappings-based GraphQL resolvers generation
@@ -13,9 +10,9 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 ## Getting Started
 
-* [schema_generator/graphql_schema_gen.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
-* [mapping_parser/mapping_parser.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
-* [app.py](https://github.com/LiUSemWeb/OBG-gen/blob/main/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
+* [schema_generator/graphql_schema_gen.py](https://anonymous.4open.science/r/OBG-gen/schema_generator/graphql_schema_gen.py) takes an ontology as the input and then outputs a GraphQL schema.
+* [mapping_parser/mapping_parser.py](https://anonymous.4open.science/r/OBG-gen/mapping_parser/mapping_parser.py) takes a RML mappings file (in turtle format) as the input and then outputs mappings and logical sources into a json file.
+* [app.py](https://anonymous.4open.science/r/OBG-gen/app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
 ## Installation (TO UPDATE)
@@ -64,10 +61,10 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as shown below.
 
-![first_query](https://github.com/LiUSemWeb/OBG-gen/blob/main/figures/first_query.png "GraphQL query example")
+![first_query](https://anonymous.4open.science/r/OBG-gen/figures/first_query.png "GraphQL query example")
 
 *You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
 
 ## Evaluation
 
-You can find more details regarding the evaluation of the framework in [this folder](https://github.com/LiUSemWeb/OBG-gen/blob/main/evaluation/).
+You can find more details regarding the evaluation of the framework in [this folder](https://anonymous.4open.science/r/OBG-gen/evaluation/README.md).
