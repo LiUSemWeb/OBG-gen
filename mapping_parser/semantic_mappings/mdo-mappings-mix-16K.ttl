@@ -20,62 +20,71 @@
 @prefix d2rq: <http://www.wiwiss.fu-berlin.de/suhl/bizer/D2RQ/0.1#>.
 @base <http://example.com/ns#>.
 
-<Calculation_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-calculation-4K.json";
+<MP_DB>
+  d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_MP";
+  d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
+  d2rq:username "root";
+  d2rq:password "123456".
+
+<OQMD_DB>
+  d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_OQMD";
+  d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
+  d2rq:username "root";
+  d2rq:password "123456".
+
+
+<Calculation_Source_1>
+    rml:source <MP_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "Calculation16K".
+
+<Structure_Source_1>
+    rml:source <MP_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "Structure16K".
+
+<Composition_Source_1>
+    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
-<Structure_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-structure-4K.json";
+<BandGap_Source_1>
+    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-16K.csv";
+    rml:referenceFormulation ql:CSV.
+
+<FormationEnergy_Source_1>
+    rml:source <MP_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "FormationEnergy16K".
+
+
+
+<Calculation_Source_2>
+    rml:source <OQMD_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "Calculation16K".
+
+<Structure_Source_2>
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
-<Composition_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-4K.json";
+<Composition_Source_2>
+    rml:source <OQMD_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "Composition16K".
+
+<BandGap_Source_2>
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-16K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
-<BandGap_Property_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-<FormationEnergy_Property_JSONSource_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-formationenergy-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-<Calculation_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-calculation-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-<Structure_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-<BandGap_Property_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-
-<FormationEnergy_Property_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-
-
-<Composition_JSONSource_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-composition-4K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-
+<FormationEnergy_Source_2>
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-16K.csv";
+    rml:referenceFormulation ql:CSV.
 
 <Calculation_Mapping_1>
-  rml:logicalSource <Calculation_JSONSource_1>;
+  rml:logicalSource <Calculation_Source_1>;
   rr:subjectMap [
     rr:template "http://example.com/calculation/{material_id}";
     rr:class core:Calculation
@@ -120,7 +129,7 @@
 
 
 <Structure_Mapping_1>
-    rml:logicalSource <Structure_JSONSource_1>;
+    rml:logicalSource <Structure_Source_1>;
     rr:subjectMap [
         rr:template "http://example.com/structure/{material_id}";
         rr:class core:Structure
@@ -145,7 +154,7 @@
 
 
 <Composition_Mapping_1>
-    rml:logicalSource <Composition_JSONSource_1>;
+    rml:logicalSource <Composition_Source_1>;
     rr:subjectMap [
         rr:template "http://example.com/composition/{material_id}";
         rr:class structure:Composition
@@ -159,7 +168,7 @@
     ].
 
 <BandGap_Mapping_1>
-  rml:logicalSource <BandGap_Property_JSONSource_1>;
+  rml:logicalSource <BandGap_Source_1>;
   rr:subjectMap [
         rr:template "http://example.com/property/bandgap/{material_id}";
         rr:class core:CalculatedProperty
@@ -180,7 +189,7 @@
     ].
 
 <FormationEnergy_Mapping_1>
-  rml:logicalSource <FormationEnergy_Property_JSONSource_1>;
+  rml:logicalSource <FormationEnergy_Source_1>;
   rr:subjectMap [
         rr:template "http://example.com/property/formationenergy/{material_id}";
         rr:class core:CalculatedProperty
@@ -201,7 +210,7 @@
     ].
 
 <Calculation_Mapping_2>
-  rml:logicalSource <Calculation_JSONSource_2>;
+  rml:logicalSource <Calculation_Source_2>;
   rr:subjectMap [
     rr:template "http://example.com/calculation/{entry_id}";
     rr:class core:Calculation
@@ -246,7 +255,7 @@
 
 
 <Structure_Mapping_2>
-    rml:logicalSource <Structure_JSONSource_2>;
+    rml:logicalSource <Structure_Source_2>;
     rr:subjectMap [
         rr:template "http://example.com/structure/{entry_id}";
         rr:class core:Structure
@@ -271,7 +280,7 @@
 
 
 <Composition_Mapping_2>
-    rml:logicalSource <Composition_JSONSource_2>;
+    rml:logicalSource <Composition_Source_2>;
     rr:subjectMap [
         rr:template "http://example.com/composition/{entry_id}";
         rr:class structure:Composition
@@ -285,7 +294,7 @@
     ].
 
 <BandGap_Mapping_2>
-  rml:logicalSource <BandGap_Property_JSONSource_2>;
+  rml:logicalSource <BandGap_Source_2>;
   rr:subjectMap [
         rr:template "http://example.com/property/bandgap/{entry_id}";
         rr:class core:CalculatedProperty
@@ -306,7 +315,7 @@
     ].
 
 <FormationEnergy_Mapping_2>
-  rml:logicalSource <FormationEnergy_Property_JSONSource_2>;
+  rml:logicalSource <FormationEnergy_Source_2>;
   rr:subjectMap [
         rr:template "http://example.com/property/formationenergy/{entry_id}";
         rr:class core:CalculatedProperty

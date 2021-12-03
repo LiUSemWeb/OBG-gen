@@ -6,14 +6,9 @@ from generic_resolver.mapping_utils import RML_Mapping
 import json
 from collections import defaultdict
 import pandas as pd
-#import ray
-#ray.init()
-#import modin.pandas as pd
 import ast
 import copy
-import datetime
 from sqlalchemy import create_engine, text
-import os
 import multiprocessing as mp
 
 
@@ -31,9 +26,6 @@ class Resolver_Utils(object):
         self.sql_flag = False
         self.interfaces = []
         self.interface_query_entries = []
-        self.mysql_without_filter = datetime.timedelta()
-        self.join_time = datetime.timedelta()
-        self.access_time = datetime.timedelta()
         with open(o2graphql_file) as f:
             # Update may needs here for translate
             self.ontology2GraphQL_schema = json.load(f)
@@ -58,7 +50,6 @@ class Resolver_Utils(object):
             r = requests.get(url=source_request)
             data = r.json()
         else:
-            #file_name = source_request.split('/')[-1]
             with open(source_request) as f:
                 data = json.load(f)
         if iterator is not None:
@@ -69,9 +60,7 @@ class Resolver_Utils(object):
             if ref is not None:
                 ref_field_name = ref[1]
                 ref_field_values = ref[0]
-                # print('before referencing', len(temp_data))
                 temp_data = [x for x in temp_data if x[ref_field_name] in ref_field_values]
-                # print('after referencing', len(temp_data))
             return temp_data
         else:
             return data
@@ -122,12 +111,8 @@ class Resolver_Utils(object):
                 result = result.assign(**kwargs)
         if filter_dict is not None:
             if filter_lst_obj_tag is False:
-                # print('filter')
-                # print('shape', result.shape[0])
                 # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
-                # print(result)
-                # print('shape', result.shape[0])
                 return result
             else:
                 temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
@@ -201,13 +186,10 @@ class Resolver_Utils(object):
                                                                                             server=hostname,
                                                                                             port=port,
                                                                                             db=schema_name)
-        #db_connection_str = 'mysql+pymysql://{user}:{password}@{server}/{db}?unix_socket=/proj/theophys/users/x_huali/benchmarks/mysql/mysqld.sock'.format(user=db_username,password=db_password, server='localhost', db=schema_name)
-        print(db_connection_str)
         sql_query_str = ''
         if len(query) == 0:
             if len(table_name) > 0:
                 filtered_object_columns = self.filtered_object_columns
-                # filtered_object_columns = list(set(filtered_object_columns))
                 if key_columns is not None:
                     select_cols = self.convert_lst_strings(key_columns, ',')
                     if mapping_name in filtered_object_columns.keys():
@@ -220,8 +202,6 @@ class Resolver_Utils(object):
                         else:
                             ref_statement = ''
                         if len(ref_statement) > 0:
-                            # print('ref_statement', ref_statement)
-                            # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                             sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {where_statement}}'.format(select_cols=select_cols, table=table_name, where_statement=ref_statement)
                         else:
                             sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
@@ -236,11 +216,9 @@ class Resolver_Utils(object):
                         else:
                             ref_statement = ''
                         if len(ref_statement) > 0:
-                            # print('ref_statement', ref_statement)
                             sql_query_str = 'SELECT * FROM `{table}` WHERE {where_statement}'.format(table=table_name, where_statement=ref_statement)
                         else:
                             sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
-                        # print(sql_query_str)
         else:
             # for future update
             filtered_object_columns = self.filtered_object_columns
@@ -258,8 +236,6 @@ class Resolver_Utils(object):
                     else:
                         ref_statement = ''
                     if len(ref_statement) > 0:
-                        # print('ref_statement', ref_statement)
-                        # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
 
                         sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {where_statement}}'.format(
                             select_cols=select_cols, select_statement=select_statement, where_statement=ref_statement)
@@ -278,22 +254,12 @@ class Resolver_Utils(object):
                     else:
                         ref_statement = ''
                     if len(ref_statement) > 0:
-                        # print('ref_statement', ref_statement)
                         sql_query_str = 'SELECT * FROM {select_statement} WHERE {where_statement}'.format(select_statement=select_statement,
                                                                                                  where_statement=ref_statement)
                     else:
                         sql_query_str = 'SELECT * FROM {select_statement}'.format(select_statement=select_statement)
-        # print(sql_query_str)
-        # db_engine = create_engine(db_connection_str, pool_recycle=3600)
-        # df = pd.read_sql(text(sql_query_str), con=db_engine)
-        start_access_time = datetime.datetime.now()
-        print('SQL:', sql_query_str)
         df = pd.read_sql_query(text(sql_query_str), db_connection_str)
-        end_access_time = datetime.datetime.now()
-        self.access_time += (end_access_time - start_access_time)
         result = df.to_dict(orient='records')
-        #db_engine.close()
-        # db_engine.dispose()
         return result
 
     '''
@@ -356,7 +322,6 @@ class Resolver_Utils(object):
                     select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
                     sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter}'.format(select_cols=select_cols, select_statement=select_statement, filter=filter_str)
             else:
-                # filter_str = ''
                 having_str = ''
                 sql_filter_columns_num = len(sql_pred_filter)
                 i = 0
@@ -366,48 +331,28 @@ class Resolver_Utils(object):
                     atom_filter_num = len(filter_dict_value['filter'])
                     j = 0
                     for atom_filter in filter_dict_value['filter']:
-                        # filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'], atom_filter['value'], atom_filter['negation'], attr_type)
                         having_str += self.generate_mysql_having_statement(local_name, atom_filter['operator'],
                                                                            atom_filter['value'], atom_filter['negation'],
                                                                            attr_type)
                         j += 1
                         if j < atom_filter_num:
-                            #filter_str += ' AND '
                             having_str += ' AND '
                     i += 1
                     if i < sql_filter_columns_num:
-                        #filter_str += ' AND '
                         having_str += ' AND '
                 group_by_cols = self.convert_lst_strings(key_columns, ',')
-                #print('GROUP BY', group_by_cols)
-                #print('HAVING ', having_str)
 
                 if len(table_name) > 0:
-                    # sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, table=table_name, filter=filter_str, group_cols=group_by_cols)
                     sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols} HAVING {having_statement}'.format(select_cols=group_by_cols, table=table_name, group_cols=group_by_cols, having_statement=having_str)
-                    # print(sql_query_str)
                 if len(query) > 0:
                     select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
-                    # sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter} GROUP BY {group_cols}'.format(select_cols=group_by_cols, select_statement=select_statement, filter=filter_str, group_cols=group_by_cols)
                     sql_query_str = 'SELECT {select_cols} FROM {select_statement} GROUP BY {group_cols}  HAVING {having_statement}'.format(select_cols=group_by_cols, select_statement=select_statement, group_cols=group_by_cols, having_statement = having_str)
-                    # print(sql_query_str)
-                # print(sql_query_str)
         else:
-            # select_cols = self.convert_lst_strings(key_columns, ',')
             if filter_lst_obj_tag is False:
-                # sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                 sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
             else:
-                # sql_query_str = 'SELECT {select_cols} FROM `{table}` GROUP BY {group_cols}'.format(select_cols=select_cols, table=table_name, group_cols=select_cols)
                 sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
-                # print(sql_query_str)
-        # db_engine = create_engine(db_connection_str)
-        # df = pd.read_sql(text(sql_query_str), con=db_engine)
-        start_access_time = datetime.datetime.now()
-        print('SQL:', sql_query_str)
         df = pd.read_sql_query(text(sql_query_str), db_connection_str)
-        end_access_time = datetime.datetime.now()
-        self.access_time += (end_access_time - start_access_time)
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
                 kwargs = {constant_pred: data}
@@ -440,13 +385,9 @@ class Resolver_Utils(object):
             r = requests.get(url=url)
             data = r.json()
         else:
-            #file_name = source_request.split('/')[-1]
             with open(url) as f:
                 data = json.load(f)
 
-        #r = requests.get(url=url)
-        #json_data = r.json()
-        #temp_data = json_data
         temp_data = data
         if iterator is not None:
             keys = self.parse_iterator(iterator)
@@ -466,12 +407,8 @@ class Resolver_Utils(object):
                 result = result.assign(**kwargs)
         if filter_dict is not None:
             if filter_lst_obj_tag is False:
-                # print('filter')
-                # print('shape', result.shape[0])
                 # no need group by here
                 result = self.filter_data_frame(result, filter_dict)
-                # print(result)
-                # print('shape', result.shape[0])
                 return result
             else:
                 temp_result = self.filter_data_frame_group_by(result, filter_dict, group_by_attrs)
@@ -655,7 +592,6 @@ class Resolver_Utils(object):
                         df = df.astype({local_name: float})
                 else:
                     pass
-                # print('GROUP BY', key_attrs)
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
         return df
 
@@ -801,7 +737,6 @@ class Resolver_Utils(object):
         new_operator = self.transform_operator_mysql(operator_str, negation_flag)
         if operator_str in ['_in', '_nin']:
             values = value_str[1:-1]
-            # new_value = ast.literal_eval(value_str)
             filter_str = '`{column}` {operator} ({values})'.format(column=column_name, operator=new_operator, values=values)
         else:
             if attr_type == 'String' or attr_type == 'ID':
@@ -908,7 +843,6 @@ class Resolver_Utils(object):
                 interface_type_query_entries.append(query_name_key)
             else:
                 object_type_query_entries.append(query_name_key)
-        # query_entries = list(schema_ast['Query'].keys())
         self.interface_query_entries = interface_type_query_entries
         return object_type_query_entries, interface_type_query_entries
 
@@ -978,7 +912,6 @@ class Resolver_Utils(object):
         key, template = self.parse_template(template)
         i = 0
         while i < len(temp_result):
-            # temp_result[i] ={k: v for k, v in temp_result[i].items() if k in key_attributes}
             if len(constant) > 0:
                 for (constant_pred, constant_data, data_type) in constant:
                     temp_result[i][constant_pred] = constant_data
@@ -1073,7 +1006,6 @@ class Resolver_Utils(object):
         if source_type == 'ql:CSV':
             if 'table' in logical_source.keys() or 'query' in logical_source.keys():
                 db_source, table_name, query = self.mu.get_db_source(logical_source)
-                # group_by_mysql_attrs = copy.copy(key_attrs)
                 if filter_flag is True:
                     result = self.get_mysql_data_with_filter(key_attrs, filter_dict,
                                                              constant_data, filter_lst_obj_tag, db_source, table_name, query)
@@ -1439,7 +1371,6 @@ class Resolver_Utils(object):
                 else:
                     print('Unknown object map type')
             if root_type_flag is True:
-                # print('ROOT REF', ref)
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
             else:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, '')
@@ -1463,12 +1394,7 @@ class Resolver_Utils(object):
                 new_ref = None
                 result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
             if len(result_join) > 0:
-                start_join_time = datetime.datetime.now()
-                #temp_result = self.incremental_optimized_join(temp_result, result_join)
-                #print('multi: ', self.incremental_multi_join(temp_result, result_join))
-                temp_result = self.incremental_multi_join(temp_result, result_join)
-                end_join_time = datetime.datetime.now()
-                self.join_time += (end_join_time - start_join_time)
+                temp_result = self.incremental_optimized_join(temp_result, result_join)
             result += temp_result
         return result
 
@@ -1503,18 +1429,18 @@ class Resolver_Utils(object):
                 if new_record not in result:
                     result.append(new_record)
         return result
+
     def incremental_multi_join(self, temp_result, result_join):
         result = []
         pool = mp.Pool(processes=4)
-        print(len(result_join.items()))
         mp_join_results = [pool.apply(self.join_base, args=(temp_result, pred_key, data_join_lst)) for pred_key, data_join_lst in result_join.items()]
-        print('length', len(mp_join_results))
         for mjr in mp_join_results:
             for e in mjr:
                 if e not in result:
                     result.append(e)
         pool.close()
         return result
+
     @staticmethod
     def incremental_optimized_join(temp_result, result_join):
         result = []
@@ -1557,22 +1483,15 @@ class Resolver_Utils(object):
     def generic_resolver_func(self, info, filter_condition):
         from generic_resolver.filter_utils import Filter_Utils
         result = []
-        start_time = datetime.datetime.now()
-        # print('info', info)
-        # filter_condition = kwargs
         if len(filter_condition) > 0:
             fu = Filter_Utils()
             fu.parse_cond(filter_condition)
             dnf_lst = fu.simplify()
             self.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
-            # print('DNF', dnf_lst)
-            # print('ru_filter_fields_map', self.filter_fields_map)
             query_entry = info.field_nodes[0].name.value
             filter_asts, common_prefix, repeated_single_exp = self.generate_filter_asts(self.filter_fields_map,
                                                                                         self.symbol_field_exp, dnf_lst,
                                                                                         query_entry)
-            # print('CP:', common_prefix)
-            # print('RSP:', repeated_single_exp)
             for filter_ast in filter_asts:
                 filter_df = self.filter_evaluator(filter_ast.children[0], common_prefix, repeated_single_exp)
                 for key, value in filter_df.items():
@@ -1587,34 +1506,17 @@ class Resolver_Utils(object):
                         if key in column:
                             attribute = column.split('-')[1]
                             column_value = value[column].tolist()
-                            # self.filtered_object_columns[key] = {attribute: column_value}
                             if attribute in self.filtered_object_columns[key].keys():
                                 self.filtered_object_columns[key][attribute] += column_value
                                 break
                             else:
                                 self.filtered_object_columns[key] = {attribute: column_value}
                                 break
-            # filter_end_time = datetime.datetime.now()
-            # print('Filter Time:', (filter_end_time - start_time).total_seconds())
-            # for key, value in self.filtered_object_iri.items():
-                # print('Filtered', key, len(value))
-            # print('After Filtering')
+
             if len(self.filtered_object_iri.keys()) > 0:
                 self.filtered_object_iri['filter'] = True
                 query_ast = self.generate_query_ast(info)
-                # result = self.DataFetcher(query_ast['fields'][0])
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True, self.filtered_object_iri.keys())
-                end_time = datetime.datetime.now()
-                with open('output.json', 'w') as f:
-                    json.dump({'data': result}, f)
-                query_name = json.loads(info.context.data)['operationName']
-                output_json_file_size = os.stat('./output.json').st_size
-                result_length = len(result)
-                response_time = (end_time - start_time).total_seconds()
-                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
-                # print('Result Size:', len(result))
-                # print('Query Response Time:', (end_time - filter_end_time).total_seconds())
-                print('Whole Filter/Query Response Time:', (end_time - start_time).total_seconds())
         else:
             self.filtered_object_iri['filter'] = False
             field_type = info.field_nodes[0].selection_set.selections[0].kind
@@ -1627,49 +1529,13 @@ class Resolver_Utils(object):
                 for inline_query_ast in inline_query_asts:
                     temp_result = self.query_evaluator(inline_query_ast, None, None, True)
                     result += temp_result
-                end_time = datetime.datetime.now()
-                with open('output.json', 'w') as f:
-                    json.dump({'data': result}, f)
-                query_name = json.loads(info.context.data)['operationName']
-                output_json_file_size = os.stat('./output.json').st_size
-                result_length = len(result)
-                response_time = (end_time - start_time).total_seconds()
-                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
-                print('Result Size:', len(result))
-                print('(No filter)-Query Response Time:', (end_time - start_time).total_seconds())
             else:
                 query_ast = self.generate_query_ast(info)
-                # result = self.DataFetcher(query_ast['fields'][0])
-                query_eval_start_time = datetime.datetime.now()
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True)
-                query_eval_end_time = datetime.datetime.now()
-                print('Query evaluator time:', (query_eval_end_time-query_eval_start_time).total_seconds())
-                end_time = datetime.datetime.now()
-                with open('output.json', 'w') as f:
-                    json.dump({'data': result}, f)
-                query_name = '1'
-                # query_name = json.loads(info.context.data)['operationName']
-                output_json_file_size = os.stat('./output.json').st_size
-                result_length = len(result)
-                response_time = (end_time - start_time).total_seconds()
-                self.write_evaluation_result(query_name, response_time, output_json_file_size, result_length)
-                print('context: ', query_name)
-                print('Result json file size: ', output_json_file_size)
-                print('Result Size: ', result_length)
-                print('(No filter)-Query Response Time:', response_time)
-        print('join_time', self.join_time)
-        print('access_time', self.access_time)
         self.reinitialize_ru_object()
         return result
 
-    def write_evaluation_result(self, query_name, response_time, json_file_size, result_length):
-        header = ['Query', 'Response_Time', 'JSON_File_Size', 'Result_Num']
-        data = [query_name, response_time, json_file_size, result_length]
-        print('Result number of objects:', result_length)
-        with open('experiments_result.csv', 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow(data)
-        return
+
 
     def reinitialize_ru_object(self):
         self.filtered_object_iri = dict()
@@ -1678,5 +1544,3 @@ class Resolver_Utils(object):
         self.single_cache = dict()
         self.field_exp_symbol = dict()
         self.symbol_field_exp = dict()
-        self.join_time = datetime.timedelta()
-        self.access_time = datetime.timedelta()

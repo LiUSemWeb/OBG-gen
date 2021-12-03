@@ -24,63 +24,63 @@
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_MP";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 <OQMD_DB>
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_OQMD";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 
 <Calculation_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Calculation16K".
+    rr:tableName  "Calculation1K".
 
 <Structure_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Structure16K".
+    rr:tableName  "Structure1K".
 
 <Composition_Source_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-16K.json";
+    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-1K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <BandGap_Source_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-16K.csv";
+    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-1K.csv";
     rml:referenceFormulation ql:CSV.
 
 <FormationEnergy_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "FormationEnergy16K".
+    rr:tableName  "FormationEnergy1K".
 
 
 
 <Calculation_Source_2>
     rml:source <OQMD_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Calculation16K".
+    rr:tableName  "Calculation1K".
 
 <Structure_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-16K.json";
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-1K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <Composition_Source_2>
     rml:source <OQMD_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Composition16K".
+    rr:tableName  "Composition1K".
 
 <BandGap_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-16K.json";
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-1K.json";
     rml:referenceFormulation ql:JSONPath;
     rml:iterator "$.data[*]".
 
 <FormationEnergy_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-16K.csv";
+    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-1K.csv";
     rml:referenceFormulation ql:CSV.
 
 <Calculation_Mapping_1>

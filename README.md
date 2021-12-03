@@ -40,11 +40,11 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 **Pre-Step (c)**: Generate GraphQL schema from an ontology and output _**schema.graphql**_ and _**o2graphql.json**_ files in current folder.
 
 
-	python ./schema_generator/graphql_schema_gen.py ./schema_generator/domain_ontologies/mdofull.ttl
+	python ./schema_generator/graphql_schema_gen.py ./schema_generator/mdo.ttl
 
 **Pre-Step (d)**: Parse a RML mappings file and output the _**mappings-temp.json**_ file in current folder.
 
-	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/1K-mapping.ttl
+	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl
 
 **Step 1**: Run GraphQL server.
 

@@ -1,9 +1,8 @@
 import sys
-import datetime
 from ariadne import QueryType, make_executable_schema, graphql_sync, load_schema_from_path, InterfaceType, ObjectType
 from ariadne.constants import PLAYGROUND_HTML
 from flask import Flask, request, jsonify
-from generic_resolver.odgsg_graphql_utils import Resolver_Utils
+from generic_resolver.obg_gen_graphql_utils import Resolver_Utils
 from sqlalchemy import create_engine
 
 global ru
@@ -16,7 +15,6 @@ thing = InterfaceType("Thing")
 
 @thing.type_resolver
 def resolve_search_result_type(obj, *_):
-    # print(obj)
     if 'calculation' in obj['iri']:
         return 'Calculation'
     if 'structure' in obj['iri']:
@@ -65,13 +63,6 @@ def graphql_server():
     status_code = 200 if success else 400
     return jsonify(result), status_code
 
-
-moesif_settings = {
-    'APPLICATION_ID': 'eyJhcHAiOiIxOTg6MTM2NyIsInZlciI6IjIuMCIsIm9yZyI6Ijg4OjE4NjgiLCJpYXQiOjE2MTcyMzUyMDB9.-5RPUC5FFb4QTUCWSoII35La-cQWp7VYZ-y27ewVh4Q',
-    'CAPTURE_OUTGOING_REQUESTS': False,  # Set to True to also capture outgoing calls to 3rd parties.
-}
-
-
 def register_object_type_queries(query_entries):
     for query_entry in query_entries:
         query.set_field(query_entry, resolver)
@@ -84,22 +75,16 @@ def register_interface_type_queries(query_entries):
 
 # main function
 if __name__ == "__main__":
-    # app.wsgi_app = MoesifMiddleware(app.wsgi_app, moesif_settings)
-    start_time = datetime.datetime.now()
     query = QueryType()
     schema_file = (str(sys.argv[1]))
     mapping_file = (str(sys.argv[2]))
     o2g_file = (str(sys.argv[3]))
     type_defs = load_schema_from_path(schema_file)
     ru = Resolver_Utils(mapping_file, o2g_file)
-    end_time = datetime.datetime.now()
-    print('Prepare time', end_time - start_time)
     object_type_query_entries, interface_type_query_entries = ru.get_query_entries(type_defs)
     register_object_type_queries(object_type_query_entries)
     register_interface_type_queries(interface_type_query_entries)
     # schema = make_executable_schema(type_defs, [query, thing])
     schema = make_executable_schema(type_defs, [query])
-    db_connection_str = 'mysql+pymysql://root:123456@127.0.0.1:3306/'
-    db_connection = create_engine(db_connection_str)
     # schema = make_executable_schema(type_defs, [query])
     app.run(debug=True)

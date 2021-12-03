@@ -1,0 +1,704 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#>.
+@prefix rml: <http://semweb.mmlab.be/ns/rml#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ex: <http://www.example.com/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix ql: <http://semweb.mmlab.be/ns/ql#>.
+@prefix fno: <http://w3id.org/function/ontology>.
+@prefix schema: <http://schema.org/>.
+@prefix d2rq: <http://www.wiwiss.fu-berlin.de/suhl/bizer/D2RQ/0.1#>.
+@base <http://example.com/ns#>.
+
+
+<LinBenchmark20_DB>
+  d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/LinBenchmark20";
+  d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
+  d2rq:username "root";
+  d2rq:password "123456".
+
+<UniversitySource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "university";
+    rml:referenceFormulation ql:CSV.
+    
+
+<DepartmentSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "department";
+    rml:referenceFormulation ql:CSV.
+    
+<ResearchGroupSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "researchGroup";
+    rml:referenceFormulation ql:CSV.
+    
+<FacultySource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "faculty";
+    rml:referenceFormulation ql:CSV.
+    
+<ProfessorSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "professor";
+    rml:referenceFormulation ql:CSV.
+    
+<LecturerSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "lecturer";
+    rml:referenceFormulation ql:CSV.
+    
+<GraduateStudentSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "graduateStudent";
+    rml:referenceFormulation ql:CSV.
+    
+<UndergraduateCourseSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "undergraduateCourse";
+    rml:referenceFormulation ql:CSV.
+    
+<PublicationSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "publication";
+    rml:referenceFormulation ql:CSV.
+    
+<GraduateCourseSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "graduateCourse";
+    rml:referenceFormulation ql:CSV.
+    
+<CoAuthorOfPublicationSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "coAuthorOfPublication";
+    rml:referenceFormulation ql:CSV.
+    
+<UndergraduateStudentSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "undergraduateStudent";
+    rml:referenceFormulation ql:CSV.
+    
+<GraduateStudentTakeCourseSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "graduateStudentTakeCourse";
+    rml:referenceFormulation ql:CSV.
+    
+<UndergraduateStudentTakeCourseSource>
+	rml:source <LinBenchmark20_DB>;
+	rr:tableName "undergraduateStudentTakeCourse";
+    rml:referenceFormulation ql:CSV.
+    
+
+<TMUniversity>
+	rml:logicalSource <UniversitySource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/university/{nr}";
+		rr:class schema:University
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:name;
+		rr:objectMap    [ rr:column "name" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeObtainedByFaculty;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "undergraduateDegreeFrom" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:mastergraduateDegreeObtainers;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "masterDegreeFrom" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:doctoralDegreeObtainers;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "doctoralDegreeFrom" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeObtainedBystudent;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMGraduateStudent>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "undergraduateDegreeFrom" ; ];
+		];
+	];
+.
+
+<TMDepartment>
+	rml:logicalSource <DepartmentSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/department/{nr}";
+		rr:class schema:Department
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:name;
+		rr:objectMap    [ rr:column "name" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:subOrganizationOf;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "subOrganizationOf" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:head;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMProfessor>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "headOf" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:faculties;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "worksFor" ; ];
+		];
+	];
+.
+
+<TMResearchGroup>
+	rml:logicalSource <ResearchGroupSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/research_group/{nr}";
+		rr:class schema:ResearchGroup
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:subOrganizationOf;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "subOrganizationOf" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMFaculty>
+	rml:logicalSource <FacultySource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/faculty/{nr}";
+		rr:class schema:Faculty
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:name;
+		rr:objectMap    [ rr:column "name" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:telephone;
+		rr:objectMap    [ rr:column "telephone" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:emailAddress;
+		rr:objectMap    [ rr:column "emailAddress" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "undergraduateDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:masterDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "masterDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:doctoralDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "doctoralDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:worksFor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "worksFor" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:publications;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMPublication>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "mainAuthor" ; ];
+		];
+	];
+.
+
+<TMProfessor>
+	rml:logicalSource <ProfessorSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/professor/{nr}";
+		rr:class schema:Professor
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:nr;
+		rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:professorType;
+	  rr:objectMap    [ rr:column  "professorType" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:researchInterest;
+	  rr:objectMap    [ rr:column  "researchInterest" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:headOf;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "headOf" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:name;
+		rr:objectMap    [ rr:column "name" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:telephone;
+		rr:objectMap    [ rr:column "telephone" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:emailAddress;
+		rr:objectMap    [ rr:column "emailAddress" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "undergraduateDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:masterDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "masterDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:doctoralDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "doctoralDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:worksFor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "worksFor" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:publications;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMPublication>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "mainAuthor" ; ];
+		];
+	];
+.
+
+<TMLecturer>
+	rml:logicalSource <LecturerSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/lecturer/{nr}";
+		rr:class schema:Lecturer
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:nr;
+		rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:name;
+		rr:objectMap    [ rr:column "name" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:telephone;
+		rr:objectMap    [ rr:column "telephone" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:emailAddress;
+		rr:objectMap    [ rr:column "emailAddress" ];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "undergraduateDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:masterDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "masterDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:doctoralDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "doctoralDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:worksFor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "worksFor" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:publications;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMPublication>;
+			rr:joinCondition [ rr:child "nr" ; rr:parent "mainAuthor" ; ];
+		];
+	];
+.
+
+<TMGraduateStudent>
+	rml:logicalSource <GraduateStudentSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/graduate_student/{nr}";
+		rr:class schema:GraduateStudent
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+    rr:predicateObjectMap [
+	  rr:predicate ex:name;
+	  rr:objectMap    [ rr:column  "name" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:telephone;
+	  rr:objectMap    [ rr:column  "telephone" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:emailAddress;
+	  rr:objectMap    [ rr:column  "emailAddress" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:age;
+	  rr:objectMap    [ rr:column  "age" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateDegreeFrom;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUniversity>;
+			rr:joinCondition [ rr:child "undergraduateDegreeFrom" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:advisor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMProfessor>;
+			rr:joinCondition [ rr:child "advisor" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:memberOf;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "memberOf" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMUndergraduateCourse>
+
+	rml:logicalSource <UndergraduateCourseSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/undergraduate_course/{nr}";
+		rr:class schema:UndergraduateCourse
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:teacher;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "teacher" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:teachingAssistant;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMGraduateStudent>;
+			rr:joinCondition [ rr:child "teachingAssistant" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMPublication>
+
+	rml:logicalSource <PublicationSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/publication/{nr}";
+		rr:class schema:Publication
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:name;
+	  rr:objectMap    [ rr:column  "name" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:title;
+	  rr:objectMap    [ rr:column  "title" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:abstract;
+	  rr:objectMap    [ rr:column  "abstract" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:mainAuthor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "mainAuthor" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMGraduateCourse>
+	rml:logicalSource <GraduateCourseSource>;
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/graduate_course/{nr}";
+		rr:class schema:GraduateCourse
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:name;
+	  rr:objectMap    [ rr:column  "name" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:teacher;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMFaculty>;
+			rr:joinCondition [ rr:child "teacher" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMCoAuthorOfPublication>
+
+  	rml:logicalSource <CoAuthorOfPublicationSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/coauthor_of_publication/{graduateStudentID}/{publicationID}";
+		rr:class schema:CoAuthorOfPublication
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:publicationID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMPublication>;
+			rr:joinCondition [ rr:child "publicationID" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:graduateStudentID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMGraduateStudent>;
+			rr:joinCondition [ rr:child "graduateStudentID" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMUndergraduateStudent>
+
+	rml:logicalSource <UndergraduateStudentSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/undergraduate_student/{nr}";
+		rr:class schema:UndergraduateStudent
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:nr;
+	  rr:objectMap    [ rr:column  "nr" ]
+	];
+
+    rr:predicateObjectMap [
+	  rr:predicate ex:name;
+	  rr:objectMap    [ rr:column  "name" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:telephone;
+	  rr:objectMap    [ rr:column  "telephone" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:emailAddress;
+	  rr:objectMap    [ rr:column  "emailAddress" ]
+	];
+
+	rr:predicateObjectMap [
+	  rr:predicate ex:age;
+	  rr:objectMap    [ rr:column  "age" ]
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:advisor;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMProfessor>;
+			rr:joinCondition [ rr:child "advisor" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:memberOf;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMDepartment>;
+			rr:joinCondition [ rr:child "memberOf" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMGraduateStudentTakeCourse>
+	rml:logicalSource <GraduateStudentTakeCourseSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/graduate_student_take_course/{graduateStudentID}/{graduateCourseID}";
+		rr:class schema:GraduateStudentTakeCourse
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:graduateStudentID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMGraduateStudent>;
+			rr:joinCondition [ rr:child "graduateStudentID" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:graduateCourseID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMGraduateCourse>;
+			rr:joinCondition [ rr:child "graduateCourseID" ; rr:parent "nr" ; ];
+		];
+	];
+.
+
+<TMUndergraduateStudentTakeCourse>
+	rml:logicalSource <UndergraduateStudentTakeCourseSource>;
+
+	rr:subjectMap [
+		rr:template "http://lingbm.linkeddata.es/undergraduate_student_take_course/{undergraduateStudentID}/{undergraduateCourseID}";
+		rr:class schema:UndergraduateStudentTakeCourse
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateStudentID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUndergraduateStudent>;
+			rr:joinCondition [ rr:child "undergraduateStudentID" ; rr:parent "nr" ; ];
+		];
+	];
+
+	rr:predicateObjectMap [
+		rr:predicate ex:undergraduateCourseID;
+		rr:objectMap    [
+			rr:parentTriplesMap <TMUndergraduateCourse>;
+			rr:joinCondition [ rr:child "undergraduateCourseID" ; rr:parent "nr" ; ];
+		];
+	];
+.

@@ -24,67 +24,69 @@
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_MP";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 <OQMD_DB>
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_OQMD";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 
-<Calculation_Source_1>
+<Calculation_MySQL_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Calculation8K".
+    rr:tableName  "Calculation16K".
 
-<Structure_Source_1>
+<Structure_MySQL_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Structure8K".
+    rr:tableName  "Structure16K".
 
-<Composition_Source_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-composition-8K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-<BandGap_Source_1>
-    rml:source "https://huanyu-li.github.io/data/mp/mp-bandgap-8K.csv";
-    rml:referenceFormulation ql:CSV.
-
-<FormationEnergy_Source_1>
+<Composition_MySQL_Source_1>
     rml:source <MP_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "FormationEnergy8K".
+    rr:tableName  "Composition16K".
+
+<BandGap_MySQL_Source_1>
+    rml:source <MP_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "BandGap16K".
+
+<FormationEnergy_MySQL_Source_1>
+    rml:source <MP_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "FormationEnergy16K".
 
 
 
-<Calculation_Source_2>
+<Calculation_MySQL_Source_2>
     rml:source <OQMD_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Calculation8K".
+    rr:tableName  "Calculation16K".
 
-<Structure_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-structure-8K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
-
-<Composition_Source_2>
+<Structure_MySQL_Source_2>
     rml:source <OQMD_DB>;
     rml:referenceFormulation ql:CSV;
-    rr:tableName  "Composition8K".
+    rr:tableName  "Structure16K".
 
-<BandGap_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-bandgap-8K.json";
-    rml:referenceFormulation ql:JSONPath;
-    rml:iterator "$.data[*]".
+<Composition_MySQL_Source_2>
+    rml:source <OQMD_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "Composition16K".
 
-<FormationEnergy_Source_2>
-    rml:source "https://huanyu-li.github.io/data/oqmd/oqmd-formationenergy-8K.csv";
-    rml:referenceFormulation ql:CSV.
+<BandGap_MySQL_Source_2>
+    rml:source <OQMD_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "BandGap16K".
+
+<FormationEnergy_MySQL_Source_2>
+    rml:source <OQMD_DB>;
+    rml:referenceFormulation ql:CSV;
+    rr:tableName  "FormationEnergy16K".
 
 <Calculation_Mapping_1>
-  rml:logicalSource <Calculation_Source_1>;
+  rml:logicalSource <Calculation_MySQL_Source_1>;
   rr:subjectMap [
     rr:template "http://example.com/calculation/{material_id}";
     rr:class core:Calculation
@@ -129,7 +131,7 @@
 
 
 <Structure_Mapping_1>
-    rml:logicalSource <Structure_Source_1>;
+    rml:logicalSource <Structure_MySQL_Source_1>;
     rr:subjectMap [
         rr:template "http://example.com/structure/{material_id}";
         rr:class core:Structure
@@ -154,7 +156,7 @@
 
 
 <Composition_Mapping_1>
-    rml:logicalSource <Composition_Source_1>;
+    rml:logicalSource <Composition_MySQL_Source_1>;
     rr:subjectMap [
         rr:template "http://example.com/composition/{material_id}";
         rr:class structure:Composition
@@ -168,7 +170,7 @@
     ].
 
 <BandGap_Mapping_1>
-  rml:logicalSource <BandGap_Source_1>;
+  rml:logicalSource <BandGap_MySQL_Source_1>;
   rr:subjectMap [
         rr:template "http://example.com/property/bandgap/{material_id}";
         rr:class core:CalculatedProperty
@@ -189,7 +191,7 @@
     ].
 
 <FormationEnergy_Mapping_1>
-  rml:logicalSource <FormationEnergy_Source_1>;
+  rml:logicalSource <FormationEnergy_MySQL_Source_1>;
   rr:subjectMap [
         rr:template "http://example.com/property/formationenergy/{material_id}";
         rr:class core:CalculatedProperty
@@ -210,7 +212,7 @@
     ].
 
 <Calculation_Mapping_2>
-  rml:logicalSource <Calculation_Source_2>;
+  rml:logicalSource <Calculation_MySQL_Source_2>;
   rr:subjectMap [
     rr:template "http://example.com/calculation/{entry_id}";
     rr:class core:Calculation
@@ -255,7 +257,7 @@
 
 
 <Structure_Mapping_2>
-    rml:logicalSource <Structure_Source_2>;
+    rml:logicalSource <Structure_MySQL_Source_2>;
     rr:subjectMap [
         rr:template "http://example.com/structure/{entry_id}";
         rr:class core:Structure
@@ -280,7 +282,7 @@
 
 
 <Composition_Mapping_2>
-    rml:logicalSource <Composition_Source_2>;
+    rml:logicalSource <Composition_MySQL_Source_2>;
     rr:subjectMap [
         rr:template "http://example.com/composition/{entry_id}";
         rr:class structure:Composition
@@ -294,7 +296,7 @@
     ].
 
 <BandGap_Mapping_2>
-  rml:logicalSource <BandGap_Source_2>;
+  rml:logicalSource <BandGap_MySQL_Source_2>;
   rr:subjectMap [
         rr:template "http://example.com/property/bandgap/{entry_id}";
         rr:class core:CalculatedProperty
@@ -315,7 +317,7 @@
     ].
 
 <FormationEnergy_Mapping_2>
-  rml:logicalSource <FormationEnergy_Source_2>;
+  rml:logicalSource <FormationEnergy_MySQL_Source_2>;
   rr:subjectMap [
         rr:template "http://example.com/property/formationenergy/{entry_id}";
         rr:class core:CalculatedProperty

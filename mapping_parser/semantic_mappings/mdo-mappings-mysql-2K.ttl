@@ -24,13 +24,13 @@
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_MP";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 <OQMD_DB>
   d2rq:jdbcDSN "jdbc:mysql://127.0.0.1:3306/ODGSG_OQMD";
   d2rq:jdbcDriver "com.mysql.cj.jdbc.Driver";
   d2rq:username "root";
-  d2rq:password "6973278lhy".
+  d2rq:password "123456".
 
 
 <Calculation_MySQL_Source_1>
