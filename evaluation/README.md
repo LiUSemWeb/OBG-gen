@@ -28,8 +28,26 @@
     }
 ```
 
-* You can find all the 12 queries at [this folder](./materials_design_domain/OBG-gen).
+* You can find all the 12 GraphQL queries at [this folder](./materials_design_domain/OBG-gen).
     * [Q1](./materials_design_domain/OBG-gen/query1.graphql)
+    * [Q2](./materials_design_domain/OBG-gen/query2.graphql)
+    * [Q3](./materials_design_domain/OBG-gen/query3.graphql)
+    * [Q4](./materials_design_domain/OBG-gen/query4.graphql)
+    * [Q5](./materials_design_domain/OBG-gen/query5.graphql)
+    * [Q6](./materials_design_domain/OBG-gen/query6.graphql)
+    * [Q7](./materials_design_domain/OBG-gen/query7.graphql)
+    * [Q8](./materials_design_domain/OBG-gen/query8.graphql)
+    * [Q9](./materials_design_domain/OBG-gen/query9.graphql)
+    * [Q10](./materials_design_domain/OBG-gen/query10.graphql)
+    * [Q11](./materials_design_domain/OBG-gen/query11.graphql)
+    * [Q12](./materials_design_domain/OBG-gen/query12.graphql)
+
+* Experimental settings for systems.
+    * [OBG-gen-rdb](./materials_design_domain/OBG-gen/OBG-gen-rdb)
+    * [OBG-gen-mix](./materials_design_domain/OBG-gen/OBG-gen-mix)
+    * [morph-rdb](./materials_design_domain/morph-rdb)
+    * [HyperGraphQL](./materials_design_domain/HyperGraphQL)
+    * [UltraGraphQL](./materials_design_domain/UltraGraphQL)
 
 * Query Execution Time (QET) per data size on materials dataset.
 ![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
@@ -50,4 +68,13 @@
       } 
     } 
 ```
-* You can find all the 8 query sets at [this folder](./university_domain_LinGBM).
+* You can find all the 8 query sets and data at [this folder](./university_domain_LinGBM).
+    * [QT1](./university_domain_LinGBM/QT1)
+    * [QT2](./university_domain_LinGBM/QT2)
+    * [QT3](./university_domain_LinGBM/QT3)
+    * [QT4](./university_domain_LinGBM/QT4)
+    * [QT5](./university_domain_LinGBM/QT5)
+    * [QT6](./university_domain_LinGBM/QT6)
+    * [QT10](./university_domain_LinGBM/QT10)
+    * [QT11](./university_domain_LinGBM/QT11)
+
