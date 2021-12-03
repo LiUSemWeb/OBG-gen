@@ -2,6 +2,7 @@ import sys
 import json
 from collections import defaultdict
 from rdflib import Graph
+import os
 
 triples = defaultdict(lambda: defaultdict(list))
 
@@ -51,14 +52,14 @@ def remove_prefix(s):
 
 def parse_mapping(mapping_file='venue-mapper.ttl', mapping_format='n3'):
 	mapping_graph = Graph()
-	file = open('all_triples.txt', 'w')
+	#file = open('all_triples.txt', 'w')
 	mapping_graph.parse(mapping_file, format=mapping_format)
 	for subj, pred, obj in mapping_graph:
 		subj = remove_prefix(subj.toPython())
 		pred = remove_prefix(pred.toPython())
 		# obj = remove_prefix(obj.toPython())
 		triples[pred][subj].append(obj)
-		file.writelines('{} {} {}\n'.format(subj, pred, obj))
+		#file.writelines('{} {} {}\n'.format(subj, pred, obj))
 		if pred == 'class':
 			obj = remove_prefix(obj.toPython())
 			class_dict[subj] = obj
@@ -198,6 +199,7 @@ def generateMappingList():
 		mappings_lst.append(mapping_dict)
 	return mappings_lst
 
+
 def write_json(mapping, output_file_name = 'mappings.json'):
 	file_name = './' + output_file_name
 	with open(file_name, 'w') as fp:
@@ -206,7 +208,12 @@ def write_json(mapping, output_file_name = 'mappings.json'):
 
 if __name__ == '__main__':
 	g = parse_mapping(str(sys.argv[1]))
-	output_file_name = str(sys.argv[2])
+	mapping_file_name = global_ontolopy_name = str(sys.argv[1]).split('/')[-1].split('.')[0]
+	folder_name = os.path.basename(os.getcwd())
+	if folder_name == 'mapping_parser':
+		output_file_name = '{file_name}.json'.format(file_name=mapping_file_name)
+	else:
+		output_file_name = './mapping_parser/{file_name}.json'.format(file_name=mapping_file_name)
 	logicalSource_lst = generateLogicalSourceList()
 	mappings = generateMappingList()
 	db_source = getDBSourceList()

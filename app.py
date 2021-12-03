@@ -77,8 +77,8 @@ def register_interface_type_queries(query_entries):
 if __name__ == "__main__":
     query = QueryType()
     schema_file = (str(sys.argv[1]))
-    mapping_file = (str(sys.argv[2]))
-    o2g_file = (str(sys.argv[3]))
+    o2g_file = (str(sys.argv[2]))
+    mapping_file = (str(sys.argv[3]))
     type_defs = load_schema_from_path(schema_file)
     ru = Resolver_Utils(mapping_file, o2g_file)
     object_type_query_entries, interface_type_query_entries = ru.get_query_entries(type_defs)
