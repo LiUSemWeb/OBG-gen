@@ -37,7 +37,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
     Successfully installed pymongo-3.11.4
 
 ## Usage
-**Pre-Step (c)**: Generate GraphQL schema from an ontology and output _**schema.graphql**_ and _**o2graphql.json**_ files in current folder.
+**Pre-Step (c)**: Generate GraphQL schema from an ontology and output _** ***-schema.graphql**_ and _** ***2graphql.json**_ files in current folder.
 
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/mdo.ttl
