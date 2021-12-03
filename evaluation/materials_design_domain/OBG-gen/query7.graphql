@@ -1,6 +1,15 @@
 {
   CalculationList(
-    filter: { ID: { _in: ["6332", "8088", "21331", "mp-561628", "mp-614918"] } }
+    filter: {
+      _and: [
+        { ID: { _in: ["6332", "8088", "21331", "mp-561628", "mp-614918"] } }
+        {
+          hasOutputStructure: {
+            hasComposition: { ReducedFormula: { _in: ["MnCl2", "YClO"] } }
+          }
+        }
+      ]
+    }
   ) {
     ID
     hasOutputCalculatedProperty {
@@ -9,4 +18,5 @@
     }
   }
 }
+
 

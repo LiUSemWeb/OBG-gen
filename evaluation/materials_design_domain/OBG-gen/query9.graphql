@@ -1,31 +1,19 @@
 {
   CalculationList(
     filter: {
-      _and: [
-        { ID: { _in: ["6332", "8088", "21331", "mp-561628", "mp-614918"] } }
-        {
-          _or: [
-            {
-              hasOutputStructure: {
-                hasComposition: { ReducedFormula: { _in: ["MnCl2", "YClO"] } }
-              }
-            }
-            {
-              hasOutputStructure: {
-                hasComposition: {
-                  ReducedFormula: { _in: ["CeCrS2O", "SiO2", "O"] }
-                }
-              }
-            }
-          ]
-        }
-      ]
+      hasOutputCalculatedProperty: {
+        _and: [
+          { PropertyName: { _eq: "Band Gap" } }
+          { numericalValue: { _gt: 5 } }
+        ]
+      }
     }
   ) {
     ID
-    hasOutputCalculatedProperty {
-      PropertyName
-      numericalValue
+    hasOutputStructure {
+      hasComposition {
+        ReducedFormula
+      }
     }
   }
 }

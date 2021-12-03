@@ -1,12 +1,21 @@
 {
   CalculationList(
     filter: {
-      hasOutputCalculatedProperty: {
-        _and: [
-          { PropertyName: { _eq: "Band Gap" } }
-          { numericalValue: { _gt: 5 } }
-        ]
-      }
+      _and: [
+        {
+          hasOutputStructure: {
+            hasComposition: { ReducedFormula: { _in: ["MnCl2", "YClO"] } }
+          }
+        }
+        {
+          hasOutputCalculatedProperty: {
+            _and: [
+              { PropertyName: { _eq: "Band Gap" } }
+              { numericalValue: { _gt: 5 } }
+            ]
+          }
+        }
+      ]
     }
   ) {
     ID
@@ -14,6 +23,10 @@
       hasComposition {
         ReducedFormula
       }
+    }
+    hasOutputCalculatedProperty {
+      PropertyName
+      numericalValue
     }
   }
 }
