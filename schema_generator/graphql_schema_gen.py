@@ -1,9 +1,9 @@
 from collections import defaultdict
 from ontology import Ontology
 import json
-import datetime
 import sys
 from rdflib import Graph
+import os
 
 types = {'http://www.w3.org/1999/02/22-rdf-syntax-ns#type':'rdf:type', 'http://www.w3.org/2000/01/rdf-schema#comment':'rdf:comment', 'http://www.w3.org/2000/01/rdf-schema#subClassOf': 'rdfs:subClassOf',
          'http://www.w3.org/2000/01/rdf-schema#label': 'rdfs:label', 'http://www.w3.org/2000/01/rdf-schema#domain': 'rdfs:domain', 'http://www.w3.org/2000/01/rdf-schema#range': 'rdfs:range',
@@ -133,7 +133,7 @@ class GraphQLSchema(object):
         # print(self.impl)
         return
 
-    def render_object_types(self):
+    def render_object_types(self, schema_file_name):
         object_type_str_dict = defaultdict()
         object_impl_str_dict = defaultdict()
         for object_type, field_definition_dict in self.type_S_F.items():
@@ -158,7 +158,7 @@ class GraphQLSchema(object):
                     line_str_lst.append(field_return_str)
                 line_str_lst.append('}\n')
                 object_type_str_dict[object_type] = line_str_lst
-        with open('test-schema.graphql', 'a') as output_file:
+        with open(schema_file_name, 'a') as output_file:
             for object_type, object_field_lst in object_type_str_dict.items():
                 if object_type in object_impl_str_dict.keys():
                     # print('type ' + object_type + object_impl_str_dict[object_type])
@@ -169,7 +169,7 @@ class GraphQLSchema(object):
                 # print(''.join(object_field_lst))
                 output_file.write(''.join(object_field_lst))
 
-    def render_interface_types(self):
+    def render_interface_types(self, schema_file_name):
         interface_type_str_dict = defaultdict()
         for interface_name in self.impl.keys():
             object_type_name = interface_name.split('_IF')[0]
@@ -187,14 +187,14 @@ class GraphQLSchema(object):
                 line_str_lst.append(field_return_str)
             line_str_lst.append('}\n')
             interface_type_str_dict[interface_name] = line_str_lst
-        with open('test-schema.graphql', 'a') as output_file:
+        with open(schema_file_name, 'a') as output_file:
             for object_type, object_field_lst in interface_type_str_dict.items():
                 # print('interface ' + object_type)
                 # print(''.join(object_field_lst))
                 output_file.write('interface ' + object_type)
                 output_file.write(''.join(object_field_lst))
 
-    def render_input_object_types(self):
+    def render_input_object_types(self, schema_file_name):
         input_object_type_str_dict = defaultdict()
         for object_type, field_definition_dict in self.type_S_I_F.items():
             line_str_lst = ['{\n']
@@ -208,7 +208,7 @@ class GraphQLSchema(object):
                 line_str_lst.append(field_return_str)
             line_str_lst.append('}\n')
             input_object_type_str_dict[object_type] = line_str_lst
-        with open('test-schema.graphql', 'a') as output_file:
+        with open(schema_file_name, 'a') as output_file:
             for object_type, object_field_lst in input_object_type_str_dict.items():
                 # print('input ' + object_type)
                 # print(''.join(object_field_lst))
@@ -254,7 +254,7 @@ class GraphQLSchema(object):
                     field_type = V2Scalar[assertion[1]]
                 self.fields[concept][(assertion[0],field_type)] = (min_card, max_card)
     
-    def write_OntologyGraphQLSchemaMapping(self, A, U, P):
+    def write_OntologyGraphQLSchemaMapping(self, A, U, P, mapping_file):
         temp_data = dict()
         for concept in A:
             temp_data[remove_prefix(concept)] = remove_prefix(concept)
@@ -262,133 +262,35 @@ class GraphQLSchema(object):
             temp_data[remove_prefix(data_property)] = remove_prefix(data_property)
         for object_property in P:
             temp_data[remove_prefix(object_property)] = remove_prefix(object_property)
-        with open('o2graphql.json', 'w') as fp:
+        if os.path.exists(mapping_file):
+            os.remove(mapping_file)
+        with open(mapping_file, 'w') as fp:
             json.dump(temp_data, fp)
-
-
-    def write_global_schema(self):
-        interfacetype_schema = ''
-        objecttype_schema = ''
-        querytype_schema = 'type Query {\n\t'
-
-        self.I.sort(key = remove_prefix)
-        for interface in self.I:
-            interfacetype_schema += 'interface {interface}'.format(interface = remove_prefix(interface))
-            objecttype_schema += 'type {interface}_obj implements {interface}'.format(interface = remove_prefix(interface))
-
-            querytype_schema += '{interface}List('.format(interface = remove_prefix(interface))
-            if len(self.implementation[interface]) >0:
-                interfacetype_schema += ' implements '
-                #objecttype_schema += ' implements {interface} & '.format(interface = remove_prefix(interface))
-                for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                    interfacetype_schema += '{implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
-                    objecttype_schema += ' & {implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
-                    if i < len(self.implementation[interface]) -1:
-                        interfacetype_schema += ' & '
-                        #objecttype_schema += ' & '
-            interfacetype_schema += '\n{\n'
-            objecttype_schema += '\n{\n'
-
-            for (key, item) in self.fields[interface].items():
-                range = ''
-                if item[0] == 0:
-                    if item[1] == float('inf'):
-                        range = '[{type}!]'.format(type = remove_prefix(key[1]))
-                    if item[1] == 1:
-                        range = '{type}'.format(type = remove_prefix(key[1]))
-                if item[0] == 1:
-                    if item[1] == float('inf'):
-                        range = '[{type}!]!'.format(type = remove_prefix(key[1]))
-                    if item[1] == 1:
-                        range = '{type}!'.format(type = remove_prefix(key[1]))
-                interfacetype_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
-                objecttype_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
-                if(key[1] in V2Scalar.values()):
-                    querytype_schema += '{field}:[{type}],'.format(field = remove_prefix(key[0]), type = range)
-            querytype_schema = querytype_schema[0:-1]
-            querytype_schema += '): [{interface}]\n\t'.format(interface = remove_prefix(interface))
-            interfacetype_schema += '}\n'
-            objecttype_schema += '}\n'
-        querytype_schema += '}\n'
-            #schema += interfacetype_schema
-        print(interfacetype_schema)
-        print(objecttype_schema)
-        print(querytype_schema)
-        # write_file('./schema_generator/schema-input_type-' + global_ontolopy_name +'.graphql',interfacetype_schema)
-        # write_file('./schema_generator/schema-object_type-' + global_ontolopy_name +'.graphql',objecttype_schema+'\n'+querytype_schema)
-        write_file('schema-input_type-' + global_ontolopy_name + '.graphql', interfacetype_schema)
-        write_file('schema-object_type-' + global_ontolopy_name + '.graphql',
-                   objecttype_schema + '\n' + querytype_schema)
-
-    def write_local_schema(self, local_prefixes):
-        for local_prefix in local_prefixes:
-            schema = ''
-            self.I.sort(key = remove_prefix)
-            for interface in self.I:
-                type_schema = 'type {local_prefix}_{interface}'.format(local_prefix = local_prefix, interface = remove_prefix(interface))
-                
-                if len(self.implementation[interface]) >0:
-                    type_schema += ' implements '
-                    for (i, implemented_interface) in enumerate(self.implementation[interface], 0):
-                        type_schema += '{implemented_interface}'.format(implemented_interface = remove_prefix(implemented_interface))
-                        if i < len(self.implementation[interface]) -1:
-                            type_schema += ' & '
-                type_schema += '\n{\n'
-
-                for (key, item) in self.fields[interface].items():
-                    range = ''
-                    field_type = remove_prefix(key[1])
-                    if item[0] == 0:
-                        if item[1] == float('inf'):
-                            if key[1] in self.I:
-                                range = '[{local_prefix}_{type}]'.format(local_prefix = local_prefix, type = field_type)
-                            else:
-                                range = '[{type}]'.format(type = field_type)
-                        if item[1] == 1:
-                            if key[1] in self.I:
-                                range = '[{local_prefix}_{type}]'.format(local_prefix = local_prefix, type = field_type)
-                            else:
-                                range = '{type}'.format(type = field_type)
-                    if item[0] == 1:
-                        if item[1] == float('inf'):
-                            if key[1] in self.I:
-                                range = '[{local_prefix}_{type}]'.format(local_prefix = local_prefix, type = field_type)
-                            else:
-                                range = '[{type}!]!'.format(type = field_type)
-                        if item[1] == 1:
-                            if key[1] in self.I:
-                                range = '[{local_prefix}_{type}]'.format(local_prefix = local_prefix, type = field_type)
-                            else:
-                                range = '{type}!'.format(type = field_type)
-                    type_schema += '\t{field}:{type}\n'.format(field = remove_prefix(key[0]), type = range)
-                type_schema += '}\n'
-                schema += type_schema
-            print(schema)
-            print(local_prefix)
-            write_file('{local_prefix}_schema.graphql'.format(local_prefix = local_prefix),schema)
-        
             
 def main(ontology):
-    print('main function')
     g = parse_owl(ontology)
     o = Ontology()
     o.construct(g)
     A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
-    a = datetime.datetime.now()
     graphql_schema_test = GraphQLSchema()
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.schema_gen(A, V, U, P, concepts2superconcepts, concepts2axioms)
-    graphql_schema_test.render_interface_types()
-    graphql_schema_test.render_object_types()
-    graphql_schema_test.render_input_object_types()
-    b = datetime.datetime.now()
-    print(b-a)
+    folder_name = os.path.basename(os.getcwd())
+    if folder_name == 'schema_generator':
+        schema_file_name = '{onto_name}-schema.graphql'.format(onto_name=global_ontolopy_name)
+        mapping_file_name = '{onto_name}2graphql.json'.format(onto_name=global_ontolopy_name)
+    else:
+        schema_file_name = './schema_generator/{onto_name}-schema.graphql'.format(onto_name=global_ontolopy_name)
+        mapping_file_name = './schema_generator/{onto_name}2graphql.json'.format(onto_name=global_ontolopy_name)
+    if os.path.exists(schema_file_name):
+        os.remove(schema_file_name)
+    graphql_schema_test.render_interface_types(schema_file_name)
+    graphql_schema_test.render_object_types(schema_file_name)
+    graphql_schema_test.render_input_object_types(schema_file_name)
+    graphql_schema_test.write_OntologyGraphQLSchemaMapping(A, U, P, mapping_file_name)
 
 global_ontolopy_name = ''
-#databases = list()
 
 if __name__ == '__main__':
-    print(str(sys.argv[1]))
-    global_ontolopy_name = str(sys.argv[1]).split('/')[2].split('.')[0]
-    #databases = [str(k) for k in sys.argv[2:]]
+    global_ontolopy_name = str(sys.argv[1]).split('/')[-1].split('.')[0]
     main(str(sys.argv[1]))
