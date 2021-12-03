@@ -1,0 +1,17 @@
+{
+    "name": "mdo-sparql-hgql-demo",
+    "schema": "schema/schema-mdo.graphql",
+    "server": {
+        "port": 8084,
+        "graphql": "/graphql",
+        "graphiql": "/graphiql"
+    },
+    "services": [
+        {
+            "id": "mdo-sparql",
+            "type": "LocalModelSPARQLService",
+            "filepath": "hgql/config/data/output2K-2K.ttl",
+            "filetype": "TTL"
+        }
+    ]
+}

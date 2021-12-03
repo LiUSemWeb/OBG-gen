@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX mpv: <http://mappingpedia.linkeddata.es/vocabulary#>
+PREFIX core: <http://w3id.org/mdo/core#>
+PREFIX structure: <http://w3id.org/mdo/structure#>
+
+SELECT ?calculation ?id ?name ?value WHERE {
+  ?calculation rdf:type core:Calculation;
+               core:ID ?id;
+               core:hasOutputCalculatedProperty ?calculatedproperty;
+               core:hasOutputStructure ?structure.
+  ?structure structure:hasComposition ?composition.
+  ?composition structure:ReducedFormula ?formula.
+  ?calculatedproperty core:PropertyName ?name;
+              core:numericalValue ?value.
+  FILTER(?id IN ("6332", "8088", "21331","mp-561628", "mp-614918") && ?formula IN ("MnCl2", "YClO"))
+}

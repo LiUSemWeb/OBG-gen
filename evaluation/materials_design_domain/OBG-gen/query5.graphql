@@ -1,0 +1,8 @@
+{
+    ThingList{
+    ... on Calculation{iri}
+    ... on Structure{iri}
+  }
+}
+ 
+

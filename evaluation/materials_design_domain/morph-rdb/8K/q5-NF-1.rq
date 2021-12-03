@@ -1,0 +1,10 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX mpv: <http://mappingpedia.linkeddata.es/vocabulary#>
+PREFIX core: <http://w3id.org/mdo/core#>
+PREFIX structure: <http://w3id.org/mdo/structure#>
+
+SELECT ?calculation  WHERE {
+  ?calculation rdf:type core:Calculation.
+
+}

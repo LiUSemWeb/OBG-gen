@@ -28,7 +28,12 @@
     }
 ```
 
-* You can find all the 12 queries at [this folder](./materials_design_domain).
+* You can find all the 12 queries at [this folder](./materials_design_domain/OBG-gen).
+* OBG-gen-rdb
+* OBG-gen-mix
+* morph-rdb
+* HyperGraphQL
+* UltraGraphQL
 
 * Query Execution Time (QET) per data size on materials dataset.
 ![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
@@ -50,3 +55,4 @@
     } 
 ```
 * You can find all the 8 query sets at [this folder](./university_domain_LinGBM).
+* OBG-gen-rdb

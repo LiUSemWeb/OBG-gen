@@ -1,0 +1,45 @@
+type __Context {
+    rdf_type:	_@href(iri:"http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+    Calculation:                    _@href(iri: "http://w3id.org/mdo/core#Calculation")
+    ID:                             _@href(iri: "http://w3id.org/mdo/core#ID")
+    hasOutputStructure:             _@href(iri: "http://w3id.org/mdo/core#hasOutputStructure")
+    hasOutputCalculatedProperty:    _@href(iri: "http://w3id.org/mdo/core#hasOutputCalculatedProperty")
+    Structure:                      _@href(iri: "http://w3id.org/mdo/core#Structure")
+    hasComposition:                 _@href(iri: "http://w3id.org/mdo/structure#hasComposition")
+    hasSpaceGroup:                  _@href(iri: "http://w3id.org/mdo/structure#hasSpaceGroup")
+    CalculatedProperty:             _@href(iri: "http://w3id.org/mdo/core#CalculatedProperty")
+    PropertyName:                   _@href(iri: "http://w3id.org/mdo/core#PropertyName")
+    numericalValue:		    _@href(iri: "http://qudt.org/schema/qudt#numericalValue")
+    Composition:                    _@href(iri: "http://w3id.org/mdo/structure#Composition")
+    ReducedFormula:                 _@href(iri: "http://w3id.org/mdo/structure#ReducedFormula")
+    AnonymousFormula:               _@href(iri: "http://w3id.org/mdo/structure#AnonymousFormula")
+    SpaceGroup:                     _@href(iri: "http://w3id.org/mdo/structure#SpaceGroup")
+    SpaceGroupID:                   _@href(iri: "http://w3id.org/mdo/structure#SpaceGroupID")
+    SpaceGroupSymbol:               _@href(iri: "http://w3id.org/mdo/structure#SpaceGroupSymbol")
+}
+interface Thing {
+    rdf_type: [String] @service(id:"mdo-sparql")
+}
+type Calculation implements Thing @service(id:"mdo-sparql") {
+    rdf_type: [String] @service(id:"mdo-sparql")
+    hasOutputStructure: [Structure!]! @service(id:"mdo-sparql")
+    hasOutputCalculatedProperty: [CalculatedProperty!]! @service(id:"mdo-sparql")
+    ID: String! @service(id:"mdo-sparql")
+}
+type Structure implements Thing @service(id:"mdo-sparql") {
+    rdf_type: [String] @service(id:"mdo-sparql")
+    hasComposition: [Composition] @service(id:"mdo-sparql")
+    hasSpaceGroup: SpaceGroup @service(id:"mdo-sparql")
+}
+type CalculatedProperty @service(id:"mdo-sparql") {
+    PropertyName: String! @service(id:"mdo-sparql")
+    numericalValue: String! @service(id:"mdo-sparql")
+}
+type Composition @service(id:"mdo-sparql") {
+    ReducedFormula: String @service(id:"mdo-sparql")
+    AnonymousFormula: String @service(id:"mdo-sparql")
+}
+type SpaceGroup @service(id:"mdo-sparql") {
+    SpaceGroupID: String @service(id:"mdo-sparql")
+    SpaceGroupSymbol: String @service(id:"mdo-sparql")
+}

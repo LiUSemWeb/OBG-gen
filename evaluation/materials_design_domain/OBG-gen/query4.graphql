@@ -1,0 +1,15 @@
+{
+    CalculationList{
+        hasOutputStructure{
+            hasComposition{
+                ReducedFormula
+            }
+        }
+        hasOutputCalculatedProperty{
+            PropertyName
+            numericalValue
+        }
+    }
+}
+ 
+
