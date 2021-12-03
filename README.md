@@ -49,7 +49,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 **Step 1**: Run GraphQL server.
 
 	export FLASK_ENV=development
-	python app.py ./schema.graphql ./mappings-temp.json
+	python app.py ./schema_generator/mdo-schema.graphql ./mapping_parser/mdo-mappings-mysql-1K.json ./schema_generator/mdo2graphql.json
 
 	* Serving Flask app "app" (lazy loading)
 	* Environment: development
