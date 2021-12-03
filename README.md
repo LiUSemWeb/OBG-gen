@@ -27,14 +27,12 @@ A framework for using GraphQL in which a global domain ontology drives the gener
     pip install graphql-core 
     pip install ariadne
     pip install Flask
-    pip install pymongo
     --------------------------
     Successfully installed PyYAML-5.4.1
     Successfully installed isodate-0.6.0 rdflib-5.0.0
     Successfully installed graphql-core-3.1.5
     Successfully installed ariadne-0.13.0 starlette-0.14.2 typing-extensions-3.10.0.0
     Successfully installed Flask-2.0.1 Jinja2-3.0.1 MarkupSafe-2.0.1 Werkzeug-2.0.1 click-8.0.1 itsdangerous-2.0.1
-    Successfully installed pymongo-3.11.4
 
 ## Usage
 **Pre-Step (c)**: Generate GraphQL schema from an ontology and output _**(*)-schema.graphql**_ and _**(*)2graphql.json**_ files in current folder.
