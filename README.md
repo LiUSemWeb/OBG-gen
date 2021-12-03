@@ -15,24 +15,31 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 * [app.py](./app.py) is used to set up the GraphQL server using [Ariadne](https://ariadnegraphql.org).
 
 
-## Installation (TO UPDATE)
+## Installation (tested with python version 3.9)
 
 * Following packages are needed and successfully installed messages are shown:
 
 [//]: # "python -m pip install \"graphql-core>=3\""
 [//]: # "GraphQL-core 3 can be installed from PyPI using the built-in pip command:"
 	
-	pip install PyYAML
-	pip install rdflib
-    pip install graphql-core 
+	
     pip install ariadne
     pip install Flask
-    --------------------------
-    Successfully installed PyYAML-5.4.1
-    Successfully installed isodate-0.6.0 rdflib-5.0.0
-    Successfully installed graphql-core-3.1.5
-    Successfully installed ariadne-0.13.0 starlette-0.14.2 typing-extensions-3.10.0.0
-    Successfully installed Flask-2.0.1 Jinja2-3.0.1 MarkupSafe-2.0.1 Werkzeug-2.0.1 click-8.0.1 itsdangerous-2.0.1
+    pip install requests
+    pip install pandas
+    pip install sqlalchemy
+    pip install sympy
+    pip install PyMySQL
+    pip install rdflib
+    
+    Successfully installed anyio-3.4.0 ariadne-0.14.0 graphql-core-3.1.6 idna-3.3 sniffio-1.2.0 starlette-0.17.1 typing-extensions-4.0.1
+    Successfully installed Flask-2.0.2 Jinja2-3.0.3 MarkupSafe-2.0.1 Werkzeug-2.0.2 click-8.0.3 itsdangerous-2.0.1
+    Successfully installed charset-normalizer-2.0.8 requests-2.26.0 urllib3-1.26.7
+    Successfully installed numpy-1.21.4 pandas-1.3.4 python-dateutil-2.8.2 pytz-2021.3 six-1.16.0
+    Successfully installed greenlet-1.1.2 sqlalchemy-1.4.27
+    Successfully installed mpmath-1.2.1 sympy-1.9
+    Successfully installed PyMySQL-1.0.2
+    Successfully installed isodate-0.6.0 pyparsing-3.0.6 rdflib-6.0.2
 
 ## Usage
 **Pre-Step (c)**: Generate GraphQL schema from an ontology and output _**(*)-schema.graphql**_ and _**(*)2graphql.json**_ files in current folder.
@@ -46,8 +53,9 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 **Step 1**: Run GraphQL server.
 
-	export FLASK_ENV=development
-	python app.py ./schema_generator/mdo-schema.graphql ./mapping_parser/mdo-mappings-mysql-1K.json ./schema_generator/mdo2graphql.json
+[//]: # "export FLASK_ENV=development"
+
+    python app.py ./schema_generator/mdo-schema.graphql ./mapping_parser/mdo-mappings-mysql-1K.json ./schema_generator/mdo2graphql.json
 
 	* Serving Flask app "app" (lazy loading)
 	* Environment: development
