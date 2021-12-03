@@ -29,6 +29,7 @@
 ```
 
 * You can find all the 12 queries at [this folder](./materials_design_domain/OBG-gen).
+    * [Q1](./materials_design_domain/OBG-gen/query1.graphql)
 
 * Query Execution Time (QET) per data size on materials dataset.
 ![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
