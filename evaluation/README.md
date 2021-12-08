@@ -33,7 +33,7 @@
     * [Q2](./materials_design_domain/OBG-gen/query2.graphql) (List all the calculations containing the reduced formula of each output structure's composition.)
     * [Q3](./materials_design_domain/OBG-gen/query3.graphql) (List all the calculations containing the name and value of each output calculated property.)
     * [Q4](./materials_design_domain/OBG-gen/query4.graphql) List all the calculations containing the name and value of each output calculated property, the reduced formula of each output structure's composition.)
-    * [Q5](./materials_design_domain/OBG-gen/query5.graphql) List all the calculations and structures)
+    * [Q5](./materials_design_domain/OBG-gen/query5.graphql) (List all the calculations and structures)
     * [Q6](./materials_design_domain/OBG-gen/query6.graphql) (List all the calculations where the ID is in an given list of values.)
     * [Q7](./materials_design_domain/OBG-gen/query7.graphql) (List all the calculations where the ID is in an given list of values, and the reduced formula is in an given list of values.)
     * [Q8](./materials_design_domain/OBG-gen/query8.graphql) (List all the calculations where the ID is in an given list of values, and the reduced formula is in an given list A or B.)
