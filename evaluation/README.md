@@ -29,17 +29,18 @@
 ```
 
 * You can find all the 12 GraphQL queries at [this folder](./materials_design_domain/OBG-gen).
-    * [Q1](./materials_design_domain/OBG-gen/query1.graphql) (List all the structures containing the formula of each structure's composition.)
-    * [Q2](./materials_design_domain/OBG-gen/query2.graphql) (List all the calculations containing the formula of each output structure's composition.)
+    * [Q1](./materials_design_domain/OBG-gen/query1.graphql) (List all the structures containing the reduced formula of each structure's composition.)
+    * [Q2](./materials_design_domain/OBG-gen/query2.graphql) (List all the calculations containing the reduced formula of each output structure's composition.)
     * [Q3](./materials_design_domain/OBG-gen/query3.graphql) (List all the calculations containing the name and value of each output calculated property.)
-    * [Q5](./materials_design_domain/OBG-gen/query5.graphql) List all the calculations containing the name and value of each output calculated property, the formula of each output structure's composition.)
-    * [Q6](./materials_design_domain/OBG-gen/query6.graphql)
-    * [Q7](./materials_design_domain/OBG-gen/query7.graphql)
-    * [Q8](./materials_design_domain/OBG-gen/query8.graphql)
-    * [Q9](./materials_design_domain/OBG-gen/query9.graphql)
-    * [Q10](./materials_design_domain/OBG-gen/query10.graphql)
-    * [Q11](./materials_design_domain/OBG-gen/query11.graphql)
-    * [Q12](./materials_design_domain/OBG-gen/query12.graphql)
+    * [Q4](./materials_design_domain/OBG-gen/query4.graphql) List all the calculations containing the name and value of each output calculated property, the reduced formula of each output structure's composition.)
+    * [Q5](./materials_design_domain/OBG-gen/query5.graphql) List all the calculations and structures)
+    * [Q6](./materials_design_domain/OBG-gen/query6.graphql) (List all the calculations where the ID is in an given list of values.)
+    * [Q7](./materials_design_domain/OBG-gen/query7.graphql) (List all the calculations where the ID is in an given list of values, and the reduced formula is in an given list of values.)
+    * [Q8](./materials_design_domain/OBG-gen/query8.graphql) (List all the calculations where the ID is in an given list of values, and the reduced formula is in an given list A or B.)
+    * [Q9](./materials_design_domain/OBG-gen/query9.graphql) (List all the calculations where the value of band gap property is higher than 5.)
+    * [Q10](./materials_design_domain/OBG-gen/query10.graphql) (List all the calculations where the value of band gap property is higher than 5, and the reduced formula in an given list of values.)
+    * [Q11](./materials_design_domain/OBG-gen/query11.graphql) (List all the calculations where the filter condition is complex that needs to be simplified.)
+    * [Q12](./materials_design_domain/OBG-gen/query12.graphql) (List all the structures that contain Si element.)
 
 * Experimental settings for systems.
     * [OBG-gen-rdb](./materials_design_domain/OBG-gen/OBG-gen-rdb)
