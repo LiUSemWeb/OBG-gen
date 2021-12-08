@@ -29,11 +29,10 @@
 ```
 
 * You can find all the 12 GraphQL queries at [this folder](./materials_design_domain/OBG-gen).
-    * [Q1](./materials_design_domain/OBG-gen/query1.graphql)
-    * [Q2](./materials_design_domain/OBG-gen/query2.graphql)
-    * [Q3](./materials_design_domain/OBG-gen/query3.graphql)
-    * [Q4](./materials_design_domain/OBG-gen/query4.graphql)
-    * [Q5](./materials_design_domain/OBG-gen/query5.graphql)
+    * [Q1](./materials_design_domain/OBG-gen/query1.graphql) (List all the structures containing the formula of each structure's composition.)
+    * [Q2](./materials_design_domain/OBG-gen/query2.graphql) (List all the calculations containing the formula of each output structure's composition.)
+    * [Q3](./materials_design_domain/OBG-gen/query3.graphql) (List all the calculations containing the name and value of each output calculated property.)
+    * [Q5](./materials_design_domain/OBG-gen/query5.graphql) List all the calculations containing the name and value of each output calculated property, the formula of each output structure's composition.)
     * [Q6](./materials_design_domain/OBG-gen/query6.graphql)
     * [Q7](./materials_design_domain/OBG-gen/query7.graphql)
     * [Q8](./materials_design_domain/OBG-gen/query8.graphql)
@@ -68,7 +67,7 @@
       } 
     } 
 ```
-* You can find all the 8 query sets and data at [this folder](./university_domain_LinGBM).
+* You can find all the 8 query sets and data at [this folder](./university_domain_LinGBM). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
     * [QT1](./university_domain_LinGBM/QT1)
     * [QT2](./university_domain_LinGBM/QT2)
     * [QT3](./university_domain_LinGBM/QT3)
