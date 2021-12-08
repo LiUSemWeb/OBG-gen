@@ -4,8 +4,8 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 ## The Framework of OBG-gen for Data Access and Integration
 ![entities](figures/OBG-gen-framework.png "The framework of OBG-gen")
 
-* (c): Ontology-based GraphQL schema generation
-* (d): Semantic mappings-based GraphQL resolvers generation
+* (i): Ontology-based GraphQL schema generation
+* (ii): Semantic mappings-based GraphQL resolvers generation
 
 
 ## Getting Started
@@ -42,12 +42,12 @@ A framework for using GraphQL in which a global domain ontology drives the gener
     Successfully installed isodate-0.6.0 pyparsing-3.0.6 rdflib-6.0.2
 
 ## Usage
-**Pre-Step (c)**: Generate GraphQL schema from an ontology and output _**(*)-schema.graphql**_ and _**(*)2graphql.json**_ files in current folder.
+**Pre-Step (i)**: Generate GraphQL schema from an ontology and output _**(*)-schema.graphql**_ and _**(*)2graphql.json**_ files in current folder.
 
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/mdo.ttl
 
-**Pre-Step (d)**: Parse a RML mappings file and output the _**(*).json**_ file in current folder.
+**Pre-Step (ii)**: Parse a RML mappings file and output the _**(*).json**_ file in current folder.
 
 	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl
 
@@ -69,7 +69,7 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 
 ![first_query](figures/first_query.png "GraphQL query example")
 
-*You don't have to re-run **Pre-Step (c)** and/or **Pre-Step (d)** if you have not changed your ontology and/or RML mappings.*
+*You don't have to re-run **Pre-Step (i)** and/or **Pre-Step (ii)** if you have not changed your ontology and/or RML mappings.*
 
 ## Evaluation
 
