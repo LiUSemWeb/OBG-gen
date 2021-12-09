@@ -10,16 +10,10 @@
 
 <https://w3id.org/mdo/full/> rdf:type owl:Ontology ;
                               owl:versionIRI <https://w3id.org/mdo/full/1.0/> ;
-                              terms:contributor "Patrick Lambrix"^^xsd:string ,
-                                                "Rickard Armiento"^^xsd:string ;
                               terms:created "2019-11-07" ;
-                              terms:creator "Huanyu Li"^^xsd:string ;
-                              terms:license "https://github.com/huanyu-li/Materials-Design-Ontology/blob/master/LICENSE" ;
                               terms:title "Materials Design Ontology - Full"@en ;
                               vann:preferredNamespacePrefix "mdo" ;
-                              vann:preferredNamespaceUri "https://w3id.org/mdo/full/1.0/" ;
                               rdfs:comment "This is the Materials Design Ontology."@en ;
-                              rdfs:seeAlso "https://github.com/huanyu-li/Materials-Design-Ontology" ;
                               owl:versionInfo "1.0"^^xsd:string .
 
 #################################################################
