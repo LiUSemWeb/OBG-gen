@@ -6,6 +6,27 @@
 *  [filter_ast.py](./filter_ast.py) is used to define the abstract syntax tree to represent filtering conditions entailed with a GraphQL query.
 
 ## Technical Components
-![entities](../figures/generic-resolver.png "Generic resolver function")
+![entities](../figures/OBG-gen-generic-resolver.png "Generic resolver function")
+
+## Example for Answering the query
+
+![entities](../figures/OBG-gen-generic-resolver-example.png "Example")
+
+* Example query (Get the university including the head of each department where the UniversityID is `u1').
+```
+    { 
+        UniversityList(
+          filter:{
+            UniversityID:{
+            _eq:"u1"}
+          }){ 
+          departments{
+            head
+          }
+        } 
+    } 
+```
+
+
   
 
