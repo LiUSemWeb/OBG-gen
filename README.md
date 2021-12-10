@@ -6,7 +6,7 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 ![entities](figures/OBG-gen-framework.png "The framework of OBG-gen")
 
 * (i): Ontology-based GraphQL schema generation
-* (ii): Semantic mappings-based GraphQL resolvers generation
+* (ii): Generic resolver function implementation based on semantic mappings
 
 
 ## Getting Started
@@ -48,11 +48,11 @@ A framework for using GraphQL in which a global domain ontology drives the gener
 
 	python ./schema_generator/graphql_schema_gen.py ./schema_generator/mdo.ttl
 
-**Pre-Step (ii)**: Parse a RML mappings file and output the _**(*).json**_ file in current folder.
+**Pre-Step (ii)**: Parse a RML mappings file and output the _**(*).json**_ file in current folder, which will be an input of the generic resolver function.
 
 	python ./mapping_parser/mapping_parser.py ./mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl
 
-**Step 1**: Run GraphQL server.
+**Step 1**: Set up the GraphQL server.
 
 [//]: # "export FLASK_ENV=development"
 
