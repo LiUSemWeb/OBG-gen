@@ -69,12 +69,12 @@
     } 
 ```
 * You can find all the 8 query sets and data at [this folder](./university_domain_LinGBM). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
-    * [QT1](./university_domain_LinGBM/QT1)
-    * [QT2](./university_domain_LinGBM/QT2)
-    * [QT3](./university_domain_LinGBM/QT3)
-    * [QT4](./university_domain_LinGBM/QT4)
-    * [QT5](./university_domain_LinGBM/QT5)
-    * [QT6](./university_domain_LinGBM/QT6)
-    * [QT10](./university_domain_LinGBM/QT10)
-    * [QT11](./university_domain_LinGBM/QT11)
+    * [QS1](./university_domain_LinGBM/QT1) (QT1)
+    * [QS2](./university_domain_LinGBM/QT2) (QT2)
+    * [QS3](./university_domain_LinGBM/QT3) (QT3)
+    * [QS4](./university_domain_LinGBM/QT4) (QT4)
+    * [QS5](./university_domain_LinGBM/QT5) (QT5)
+    * [QS6](./university_domain_LinGBM/QT6) (QT6)
+    * [QS7](./university_domain_LinGBM/QT10) (QT10)
+    * [QS8](./university_domain_LinGBM/QT11) (QT11)
 
