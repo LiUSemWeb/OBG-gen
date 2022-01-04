@@ -1,4 +1,3 @@
-<img alt="OBG-gen Logo" align="right" src="figures/OBG-gen-logo.svg" width="15%" />
 
 
 # OBG-gen: Ontology-Based GraphQL Server Generation for Data Access and Integration
