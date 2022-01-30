@@ -120,7 +120,7 @@
 
     rr:predicateObjectMap [
       rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
-      rr:objectMap    [ rr:constant "Band Gap"; ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:constant "Band Gap"; ];
     ];
 
     rr:predicateObjectMap [
@@ -142,7 +142,7 @@
 
     rr:predicateObjectMap [
       rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
-      rr:objectMap    [ rr:constant "Formation Energy"; ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:constant "Formation Energy"; ];
     ];
 
     rr:predicateObjectMap [
