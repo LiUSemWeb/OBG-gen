@@ -1,34 +1,34 @@
 interface Thing {
-    iri: String!
+    iri: String
 }
 interface test{
-    iri:String!
+    iri:String
 }
 
 type Query {
-    ThingList: [Thing!]
-    CalculationList(filter: CalculationFilter): [Calculation!]
-    StructureList(filter: StructureFilter): [Structure!]
-    CompositionList(filter: CompositionFilter): [Composition!]
-    CalculatedPropertyList(filter: CalculatedPropertyFilter): [CalculatedProperty!]
-    SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup!]
+    ThingList: [Thing]
+    CalculationList(filter: CalculationFilter): [Calculation]
+    StructureList(filter: StructureFilter): [Structure]
+    CompositionList(filter: CompositionFilter): [Composition]
+    CalculatedPropertyList(filter: CalculatedPropertyFilter): [CalculatedProperty]
+    SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup]
 }
-
 type Calculation implements Thing {
-    iri: String!
-    hasOutputStructure(filter: StructureFilter): [Structure!]!
-    hasOutputCalculatedProperty(filter:CalculatedPropertyFilter): [CalculatedProperty!]!
-    ID(filter: StringFilter): String!
+    iri: String
+    hasOutputStructure(filter: StructureFilter): [Structure]
+    hasOutputCalculatedProperty(filter:CalculatedPropertyFilter): [CalculatedProperty]
+    ID: String
+    testfields: testUnion
 }
 type Structure implements Thing {
-    iri: String!
-    StructureID: String!
+    iri: String
+    StructureID: String
     hasComposition: Composition
     hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup
 }
 type CalculatedProperty {
-    PropertyName: String!
-    numericalValue: Float!
+    PropertyName: String
+    numericalValue: Float
 }
 type Composition {
     ReducedFormula: String
