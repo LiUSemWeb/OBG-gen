@@ -44,7 +44,7 @@
 
 * Experimental settings for systems.
     * [OBG-gen-rdb](./materials_design_domain/OBG-gen/OBG-gen-rdb)
-    * [OBG-gen-mix](./materials_design_domain/OBG-gen/OBG-gen-mix)
+    * OBG-gen-mix
     * [morph-rdb](./materials_design_domain/morph-rdb)
     * [HyperGraphQL](./materials_design_domain/HyperGraphQL)
     * [UltraGraphQL](./materials_design_domain/UltraGraphQL)
