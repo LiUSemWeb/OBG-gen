@@ -925,8 +925,8 @@ class Resolver_Utils(object):
                             if '.' in attr_pred_tuple[0]:
                                 keys = self.parse_iterator(attr_pred_tuple[0])
                                 temp_data = temp_result[i]
-                                for i in range(len(keys)):
-                                    temp_data = temp_data[keys[i]]
+                                for j in range(len(keys)):
+                                    temp_data = temp_data[keys[j]]
                                     temp_result[i][attr_pred_tuple[1]] = temp_data
                             else:
                                 if attr_pred_tuple[0] in temp_result[i].keys():
@@ -941,8 +941,8 @@ class Resolver_Utils(object):
                         if '.' in attr_pred_tuple[0]:
                             keys = self.parse_iterator(attr_pred_tuple[0])
                             temp_data = temp_result[i]
-                            for i in range(len(keys)):
-                                temp_data = temp_data[keys[i]]
+                            for j in range(len(keys)):
+                                temp_data = temp_data[keys[j]]
                                 temp_result[i][attr_pred_tuple[1]] = temp_data
                         else:
                             if attr_pred_tuple[0] in temp_result[i].keys():
