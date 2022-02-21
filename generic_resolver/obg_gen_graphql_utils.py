@@ -380,6 +380,10 @@ class Resolver_Utils(object):
             for key, value in filter_dict.items():
                 if value['local_name'] not in key_attrs:
                     key_attrs.append(value['local_name'])
+                    if '.' in value['local_name']:
+                        prefix_attr = value['local_name'].split('.')[0]
+                        if prefix_attr not in key_attrs:
+                            key_attrs.append(prefix_attr)
 
         if url[0:4] == 'http':
             r = requests.get(url=url)
@@ -416,6 +420,93 @@ class Resolver_Utils(object):
         else:
             return result
 
+    '''
+           This function gets the data from OPTIMADE endpoint,
+           which can be further extended to any API requests with filter expressions. 
+               url: supposed to be the url to the json data;
+               iterator: the iterating pattern to the json data;
+               key_attrs: 
+               filter_dict: filter expression dictionary;
+               constant data: constant data based on semantic mappings;
+               filter_lst_obj_tag: True means objects in a list.
+           return data in json
+       '''
+    def get_optimade_data_with_filter(self, url, iterator, key_attrs, filter_dict=None, constant_data=None, filter_lst_obj_tag=False):
+        constant_preds = []
+        if constant_data is not None:
+            for (constant_pred, data, data_type) in constant_data:
+                constant_preds.append(constant_pred)
+        constant_pred_filter = dict()
+        sql_pred_filter = dict()
+        if filter_dict is not None:
+            for pred, filter_dict_value in filter_dict.items():
+                if filter_dict_value['local_name'] not in key_attrs and pred not in constant_preds:
+                    # key_columns.append(filter_dict_value['local_name'])
+                    pass
+                if pred in constant_preds:
+                    constant_pred_filter[pred] = filter_dict_value
+                else:
+                    sql_pred_filter[pred] = filter_dict_value
+            if filter_lst_obj_tag is False:
+                filter_str = ''
+                sql_filter_columns_num = len(sql_pred_filter)
+                i = 0
+                for pred, filter_dict_value in sql_pred_filter.items():
+                    if '.' in filter_dict_value['local_name']:
+                        local_name = filter_dict_value['local_name'].split('.')[-1]
+                    else:
+                        local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    j = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        filter_str += self.generate_optimade_filter_str(local_name, atom_filter['operator'],
+                                                                     atom_filter['value'], atom_filter['negation'],
+                                                                     attr_type)
+                        j += 1
+                        if j < atom_filter_num:
+                            filter_str += '+AND+'
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter_str += '+AND+'
+                if url[0:4] == 'http':
+                    filter_url = url +'?'+ filter_str
+                    r = requests.get(url=filter_url)
+                    data = r.json()
+            else:
+                if url[0:4] == 'http':
+                    r = requests.get(url=url)
+                    data = r.json()
+        else:
+            if url[0:4] == 'http':
+                r = requests.get(url=url)
+                data = r.json()
+
+        temp_data = data
+        if iterator is not None:
+            keys = self.parse_iterator(iterator)
+            for i in range(len(keys)):
+                temp_data = temp_data[keys[i]]
+        result = []
+        for data_record in temp_data:
+            temp_dict = dict()
+            for k, v in data_record.items():
+                if k in key_attrs:
+                    temp_dict[k] = v
+            result.append(temp_dict)
+        result = pd.json_normalize(result)
+        if len(constant_data) > 0:
+            for (constant_pred, data, data_type) in constant_data:
+                kwargs = {constant_pred: data}
+                result = result.assign(**kwargs)
+            if filter_lst_obj_tag is False:
+                result = self.filter_data_frame(result, constant_pred_filter)
+            else:
+                key_attrs += constant_preds
+                result = self.filter_data_frame_group_by(result, constant_pred_filter, key_attrs)
+        return result
+
+
     @staticmethod
     def transform_operator_mysql(operator, negation_flag=False):
         if operator == '_eq':
@@ -434,6 +525,28 @@ class Resolver_Utils(object):
             return 'ilike'
         else:
             return operator
+
+    @staticmethod
+    def transform_operator_optimade(operator, negation_flag=False):
+        if operator == '_eq':
+            return '=' if not negation_flag else '!='
+        elif operator == '_gt':
+            return '>' if not negation_flag else '<='
+        elif operator == '_lt':
+            return '<' if not negation_flag else '>='
+        else:
+            return operator
+        '''
+         elif operator == '_in':
+            return 'in' if not negation_flag else 'not in'
+        elif operator == '_nin':
+            return 'not in' if not negation_flag else 'in'
+        elif operator == '_like':
+            return 'like'
+        elif operator == '_ilike':
+            return 'ilike'
+        '''
+
 
     @staticmethod
     def direct_transform_operator(operator):
@@ -648,15 +761,16 @@ class Resolver_Utils(object):
     '''
     def generate_df_filter_str(self, attribute_name, column_type, operator_str, value_str, negation_flag, attr_type):
         filter_str = ''
+        column_name = '`{column}`'.format(column=attribute_name)
         new_operator = self.transform_operator_df(operator_str, negation_flag)
         if operator_str in ['_in', '_nin']:
             if column_type == 'int64':
                 new_value = ast.literal_eval(value_str)
                 new_value = [int(x) for x in new_value if x.isnumeric() is True]
-                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                filter_str = "{column} {operator} {value} ".format(column=column_name, operator=new_operator,
                                                                    value=new_value)
             else:
-                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                filter_str = "{column} {operator} {value} ".format(column=column_name, operator=new_operator,
                                                                    value=value_str)
         elif operator_str in ['_like', '_nlike']:
             filter_str = self.generate_regex_str(value_str)
@@ -664,19 +778,19 @@ class Resolver_Utils(object):
             if attr_type == 'String' or 'ID':
                 if column_type == 'int64':
                     new_value = int(value_str)
-                    filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                    filter_str = "{column} {operator} {value} ".format(column=column_name, operator=new_operator,
                                                                        value=new_value)
                 else:
                     new_value = str(value_str)
-                    filter_str = "{column} {operator} \"{value}\" ".format(column=attribute_name, operator=new_operator,
+                    filter_str = "{column} {operator} \"{value}\" ".format(column=column_name, operator=new_operator,
                                                                            value=new_value)
             elif attr_type == 'Int':
                 new_value = int(value_str)
-                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                filter_str = "{column} {operator} {value} ".format(column=column_name, operator=new_operator,
                                                                    value=new_value)
             elif attr_type == 'Float':
                 new_value = float(value_str)
-                filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
+                filter_str = "{column} {operator} {value} ".format(column=column_name, operator=new_operator,
                                                                    value=new_value)
             else:
                 pass
@@ -755,6 +869,34 @@ class Resolver_Utils(object):
                 pass
         return filter_str
 
+
+        '''
+            Generate the filter string for OPTIMADE, given the atomic filter representation
+        '''
+
+    def generate_optimade_filter_str(self, column_name, operator_str, value_str, negation_flag, attr_type):
+        filter_str = ''
+        new_operator = self.transform_operator_optimade(operator_str, negation_flag)
+        if operator_str in ['_in', '_nin']:
+            values = value_str[1:-1]
+            filter_str = '{column}{operator}({values})'.format(column=column_name, operator=new_operator,
+                                                                   values=values)
+        else:
+            if attr_type == 'String' or attr_type == 'ID':
+                new_value = str(value_str)
+                filter_str = '{column}{operator}\"{value}\"'.format(column=column_name, operator=new_operator,
+                                                                        value=new_value)
+            elif attr_type == 'Int':
+                new_value = int(value_str)
+                filter_str = '{column}{operator}{value}'.format(column=column_name, operator=new_operator,
+                                                                    value=new_value)
+            elif attr_type == 'Float':
+                new_value = float(value_str)
+                filter_str = '{column}{operator}{value}'.format(column=column_name, operator=new_operator,
+                                                                    value=new_value)
+            else:
+                pass
+        return filter_str
     '''
         Get the sub-AST of a query AST
     '''
@@ -925,8 +1067,8 @@ class Resolver_Utils(object):
                             if '.' in attr_pred_tuple[0]:
                                 keys = self.parse_iterator(attr_pred_tuple[0])
                                 temp_data = temp_result[i]
-                                for i in range(len(keys)):
-                                    temp_data = temp_data[keys[i]]
+                                for j in range(len(keys)):
+                                    temp_data = temp_data[keys[j]]
                                     temp_result[i][attr_pred_tuple[1]] = temp_data
                             else:
                                 if attr_pred_tuple[0] in temp_result[i].keys():
@@ -941,8 +1083,8 @@ class Resolver_Utils(object):
                         if '.' in attr_pred_tuple[0]:
                             keys = self.parse_iterator(attr_pred_tuple[0])
                             temp_data = temp_result[i]
-                            for i in range(len(keys)):
-                                temp_data = temp_data[keys[i]]
+                            for j in range(len(keys)):
+                                temp_data = temp_data[keys[j]]
                                 temp_result[i][attr_pred_tuple[1]] = temp_data
                         else:
                             if attr_pred_tuple[0] in temp_result[i].keys():
@@ -1025,7 +1167,10 @@ class Resolver_Utils(object):
             if filter_flag is True:
                 # data frame here
                 # group_by_mysql_attrs = copy.copy(key_attrs)
-                result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                #result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                result = self.get_optimade_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data,
+                                                        filter_lst_obj_tag)
+
             else:
                 result = self.get_json_data_without_filter(source_request, iterator, ref)
         else:
