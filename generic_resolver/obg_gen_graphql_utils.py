@@ -10,7 +10,7 @@ import ast
 import copy
 from sqlalchemy import create_engine, text
 import multiprocessing as mp
-
+import re
 
 class Resolver_Utils(object):
     def __init__(self, mapping_file, o2graphql_file):
@@ -1033,6 +1033,14 @@ class Resolver_Utils(object):
         iterator_elements = list(filter(None, iterator_elements))
         return iterator_elements
 
+    @staticmethod
+    def parse_json_key_for_list(key):
+        pattern = r"\[(.*?)\]" # this pattern is to find indexes of matrix represented in a string
+        indexes = re.findall(pattern, key)
+        if len(indexes) >=1:
+            indexes.append(key[0:key.index('[')])
+        return indexes
+
     def phi(self, ontology_term):
         return self.ontology2GraphQL_schema[ontology_term]
 
@@ -1068,11 +1076,29 @@ class Resolver_Utils(object):
                                 keys = self.parse_iterator(attr_pred_tuple[0])
                                 temp_data = temp_result[i]
                                 for j in range(len(keys)):
-                                    temp_data = temp_data[keys[j]]
-                                    temp_result[i][attr_pred_tuple[1]] = temp_data
+                                    key_index_lst = self.parse_json_key_for_list(keys[j])
+                                    if len(key_index_lst) == 0:
+                                        temp_data = temp_data[keys[j]]
+                                        temp_result[i][attr_pred_tuple[1]] = temp_data
+                                    else:
+                                        new_key = key_index_lst[-1]
+                                        temp_data = temp_data[new_key]
+                                        for index in key_index_lst[0:-1]:
+                                            temp_data = temp_data[int(index)]
+                                        temp_result[i][attr_pred_tuple[1]] = temp_data
                             else:
                                 if attr_pred_tuple[0] in temp_result[i].keys():
-                                    temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                    #temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                    #following code need further test
+                                    key_index_lst = self.parse_json_key_for_list(attr_pred_tuple[0])
+                                    if len(key_index_lst) == 0:
+                                        temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                    else:
+                                        new_key = key_index_lst[-1]
+                                        temp_data = temp_result[i][new_key]
+                                        for index in key_index_lst[0:-1]:
+                                            temp_data = temp_data[int(index)]
+                                        temp_result[i][attr_pred_tuple[1]] = temp_data
                     i += 1
                 else:
                     del temp_result[i]
@@ -1084,11 +1110,31 @@ class Resolver_Utils(object):
                             keys = self.parse_iterator(attr_pred_tuple[0])
                             temp_data = temp_result[i]
                             for j in range(len(keys)):
-                                temp_data = temp_data[keys[j]]
-                                temp_result[i][attr_pred_tuple[1]] = temp_data
+                                key_index_lst = self.parse_json_key_for_list(keys[j])
+                                if len(key_index_lst) == 0:
+                                    temp_data = temp_data[keys[j]]
+                                    temp_result[i][attr_pred_tuple[1]] = temp_data
+                                else:
+                                    new_key = key_index_lst[-1]
+                                    temp_data = temp_data[new_key]
+                                    for index in key_index_lst[0:-1]:
+                                        temp_data = temp_data[int(index)]
+                                    temp_result[i][attr_pred_tuple[1]] = temp_data
+                                #temp_data = temp_data[keys[j]]
+                                #temp_result[i][attr_pred_tuple[1]] = temp_data
                         else:
                             if attr_pred_tuple[0] in temp_result[i].keys():
-                                temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                #temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                # following code need further test
+                                key_index_lst = self.parse_json_key_for_list(attr_pred_tuple[0])
+                                if len(key_index_lst) == 0:
+                                    temp_result[i][attr_pred_tuple[1]] = temp_result[i][attr_pred_tuple[0]]
+                                else:
+                                    new_key = key_index_lst[-1]
+                                    temp_data = temp_result[i][new_key]
+                                    for index in key_index_lst[0:-1]:
+                                        temp_data = temp_data[int(index)]
+                                    temp_result[i][attr_pred_tuple[1]] = temp_data
                 i += 1
         return temp_result
 
@@ -1167,9 +1213,8 @@ class Resolver_Utils(object):
             if filter_flag is True:
                 # data frame here
                 # group_by_mysql_attrs = copy.copy(key_attrs)
-                #result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
-                result = self.get_optimade_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data,
-                                                        filter_lst_obj_tag)
+                result = self.get_json_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
+                #result = self.get_optimade_data_with_filter(source_request, iterator, key_attrs, filter_dict, constant_data, filter_lst_obj_tag)
 
             else:
                 result = self.get_json_data_without_filter(source_request, iterator, ref)

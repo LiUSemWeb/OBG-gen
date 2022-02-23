@@ -102,7 +102,7 @@ class GraphQLSchema(object):
         self.IO_T = [self.Theta(c) for c in N_C]
         #self.fields[concept][(assertion[0], field_type)] = (min_card, max_card)
         for c in N_C:
-            self.type_S_F[self.Phi(c)][('IRI', 'String')] = (1, 1)
+            #self.type_S_F[self.Phi(c)][('IRI', 'String')] = (1, 1)
             self.type_S_F['Query'][(self.Psi(c), self.Phi(c))] =(0, float('inf'))
             self.type_S_AF['Query'][(self.Psi(c), 'filter')] = (1, 1)
         self.F = [self.Phi(r) for r in N_R]
@@ -113,7 +113,7 @@ class GraphQLSchema(object):
             self.concept2superconcepts[remove_prefix(sub_concept)] = [remove_prefix(sc) for sc in super_concepts]
             for super_concept in super_concepts:
                 self.I_T.append(self.Upsilon(super_concept))
-                self.type_S_F[self.Upsilon(super_concept)][('IRI', 'String')] = (1, 1)
+                #self.type_S_F[self.Upsilon(super_concept)][('IRI', 'String')] = (1, 1)
                 self.impl[self.Upsilon(super_concept)].append(self.Phi(sub_concept))
                 if self.Phi(super_concept) not in self.impl[self.Upsilon(super_concept)]:
                     self.impl[self.Upsilon(super_concept)].append(self.Phi(super_concept))
@@ -124,6 +124,8 @@ class GraphQLSchema(object):
                 if assertion[2] == '>=0':
                     if self.check_assertion_cardinality(assertions) is True:
                         max_card = 1
+                if assertion[2] == '=1':
+                    max_card = 1
                 field_type = assertion[1]
                 if assertion[1] in V2Scalar.keys():
                     field_type = V2Scalar[assertion[1]]
@@ -194,8 +196,17 @@ class GraphQLSchema(object):
                 output_file.write('interface ' + object_type)
                 output_file.write(''.join(object_field_lst))
 
+    def argument_scalar_input_object_types(self):
+        for scalar_type in ['String', 'Float', 'Int']:
+            for operator_field in ['_eq', '_neq', '_gt', '_egt', '_lt', '_elt', '_like', '_ilike', '_nlike', '_nilike']:
+                self.type_S_I_F[self.Theta(scalar_type)][(operator_field, scalar_type)] = (0, 1)
+            for operator_field in ['_in', '_nin']:
+                self.type_S_I_F[self.Theta(scalar_type)][(operator_field, scalar_type)] = (0, float("inf"))
+
+
     def render_input_object_types(self, schema_file_name):
         input_object_type_str_dict = defaultdict()
+        self.argument_scalar_input_object_types()
         for object_type, field_definition_dict in self.type_S_I_F.items():
             line_str_lst = ['{\n']
             for field_name_type, cards in field_definition_dict.items():
@@ -272,6 +283,7 @@ def main(ontology):
     o = Ontology()
     o.construct(g)
     A, V, U, P, subsumptions, assertions, concepts2superconcepts, concepts2axioms = o.output_ontology()
+    print(concepts2axioms)
     graphql_schema_test = GraphQLSchema()
     graphql_schema_test.construct(A, V, U, P, concepts2superconcepts, concepts2axioms)
     graphql_schema_test.schema_gen(A, V, U, P, concepts2superconcepts, concepts2axioms)

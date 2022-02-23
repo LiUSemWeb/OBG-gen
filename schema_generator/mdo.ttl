@@ -912,6 +912,26 @@ xsd:date rdf:type rdfs:Datatype .
 
 ###  https://w3id.org/mdo/structure/Composition
 <https://w3id.org/mdo/structure/Composition> rdf:type owl:Class ;
+                                             rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                                               owl:onProperty <https://w3id.org/mdo/structure/AnonymousFormula> ;
+                                                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                                               owl:onDataRange xsd:string
+                                                             ] ,
+                                                             [ rdf:type owl:Restriction ;
+                                                               owl:onProperty <https://w3id.org/mdo/structure/DescriptiveFormula> ;
+                                                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                                               owl:onDataRange xsd:string
+                                                             ] ,
+                                                             [ rdf:type owl:Restriction ;
+                                                               owl:onProperty <https://w3id.org/mdo/structure/HillFormula> ;
+                                                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                                               owl:onDataRange xsd:string
+                                                             ] ,
+                                                             [ rdf:type owl:Restriction ;
+                                                               owl:onProperty <https://w3id.org/mdo/structure/ReducedFormula> ;
+                                                               owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                                                               owl:onDataRange xsd:string
+                                                             ] ;
                                              rdfs:comment "A composition is used to represent what chemical elements composing a structure and the ratio of the chemical elements."@en ;
                                              rdfs:label "Composition"@en .
 

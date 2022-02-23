@@ -1,106 +1,447 @@
-interface Thing {
-    iri: String
+interface Quantity_IF{
+	iri: String
 }
-interface test{
-    iri:String
+interface Property_IF{
+	wasAttributedTo: ReferenceAgent
+	iri: String
 }
-
-type Query {
-    ThingList: [Thing]
-    CalculationList(filter: CalculationFilter): [Calculation]
-    StructureList(filter: StructureFilter): [Structure]
-    CompositionList(filter: CompositionFilter): [Composition]
-    CalculatedPropertyList(filter: CalculatedPropertyFilter): [CalculatedProperty]
-    SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup]
+interface ExchangeCorrelationEnergyFunctional_IF{
+	iri: String
 }
-type Calculation implements Thing {
-    iri: String
-    hasOutputStructure(filter: StructureFilter): [Structure]
-    hasOutputCalculatedProperty(filter:CalculatedPropertyFilter): [CalculatedProperty]
-    ID: String
-    testfields: testUnion
+interface HybridFunctional_IF{
+	iri: String
 }
-type Structure implements Thing {
-    iri: String
-    StructureID: String
-    hasComposition: Composition
-    hasSpaceGroup(filter: SpaceGroupFilter): SpaceGroup
+interface ComputationalMethod_IF{
+	hasParameter: ComputationalMethodParameter
+	iri: String
 }
-type CalculatedProperty {
-    PropertyName: String
-    numericalValue: Float
+interface Agent_IF{
+	iri: String
 }
-type Composition {
-    ReducedFormula: String
-    AnonymousFormula: String
+type Query{
+	SpeciesList(filter: SpeciesFilter): [Species]
+	AgentList(filter: AgentFilter): [Agent]
+	StructureList(filter: StructureFilter): [Structure]
+	HybridFunctionalList(filter: HybridFunctionalFilter): [HybridFunctional]
+	ReferenceAgentList(filter: ReferenceAgentFilter): [ReferenceAgent]
+	ComputationalMethodParameterList(filter: ComputationalMethodParameterFilter): [ComputationalMethodParameter]
+	CHEBI_33250List(filter: CHEBI_33250Filter): [CHEBI_33250]
+	DensityFunctionalTheoryMethodList(filter: DensityFunctionalTheoryMethodFilter): [DensityFunctionalTheoryMethod]
+	LengthTripleList(filter: LengthTripleFilter): [LengthTriple]
+	QuantityKindList(filter: QuantityKindFilter): [QuantityKind]
+	HartreeFockMethodList(filter: HartreeFockMethodFilter): [HartreeFockMethod]
+	PointGroupList(filter: PointGroupFilter): [PointGroup]
+	CalculationList(filter: CalculationFilter): [Calculation]
+	ComputationalMethodList(filter: ComputationalMethodFilter): [ComputationalMethod]
+	GeneralizedGradientApproximationList(filter: GeneralizedGradientApproximationFilter): [GeneralizedGradientApproximation]
+	OccupancyList(filter: OccupancyFilter): [Occupancy]
+	LatticeList(filter: LatticeFilter): [Lattice]
+	QuantityList(filter: QuantityFilter): [Quantity]
+	SiteList(filter: SiteFilter): [Site]
+	CoordinateVectorList(filter: CoordinateVectorFilter): [CoordinateVector]
+	metaGeneralizedGradientApproximationList(filter: metaGeneralizedGradientApproximationFilter): [metaGeneralizedGradientApproximation]
+	ExchangeCorrelationEnergyFunctionalList(filter: ExchangeCorrelationEnergyFunctionalFilter): [ExchangeCorrelationEnergyFunctional]
+	AngleTripleList(filter: AngleTripleFilter): [AngleTriple]
+	PropertyList(filter: PropertyFilter): [Property]
+	AxisVectorsList(filter: AxisVectorsFilter): [AxisVectors]
+	UnitList(filter: UnitFilter): [Unit]
+	HybridmetaGeneralizedGradientApproximationList(filter: HybridmetaGeneralizedGradientApproximationFilter): [HybridmetaGeneralizedGradientApproximation]
+	CalculatedPropertyList(filter: CalculatedPropertyFilter): [CalculatedProperty]
+	CompositionList(filter: CompositionFilter): [Composition]
+	PhysicalPropertyList(filter: PhysicalPropertyFilter): [PhysicalProperty]
+	HybridGeneralizedGradientApproximationList(filter: HybridGeneralizedGradientApproximationFilter): [HybridGeneralizedGradientApproximation]
+	QuantityValueList(filter: QuantityValueFilter): [QuantityValue]
+	BasisList(filter: BasisFilter): [Basis]
+	EMMO_4207e895_8b83_4318_996a_72cfb32acd94List(filter: EMMO_4207e895_8b83_4318_996a_72cfb32acd94Filter): [EMMO_4207e895_8b83_4318_996a_72cfb32acd94]
+	LocalDensityApproximationList(filter: LocalDensityApproximationFilter): [LocalDensityApproximation]
+	SpaceGroupList(filter: SpaceGroupFilter): [SpaceGroup]
+	SoftwareAgentList(filter: SoftwareAgentFilter): [SoftwareAgent]
 }
-type SpaceGroup {
-    SpaceGroupID: String
-    SpaceGroupSymbol: String
+type Structure{
+	hasLattice: Lattice
+	hasComposition: Composition
+	relatesToMaterial: [EMMO_4207e895_8b83_4318_996a_72cfb32acd94]
+	hasSpaceGroup: SpaceGroup
+	hasOccupancy: Occupancy
+	wasAttributedTo: ReferenceAgent
+	hasBasis: [Basis]
+	iri: String
 }
-input CalculationFilter {
-    hasOutputStructure: StructureFilter
-    hasOutputCalculatedProperty: CalculatedPropertyFilter
-    ID: StringFilter
-    _and: [CalculationFilter]
-    _or: [CalculationFilter]
-    _not: CalculationFilter
+type ComputationalMethod{
+	hasParameter: ComputationalMethodParameter
+	iri: String
 }
-input StructureFilter {
-    hasSpaceGroup:SpaceGroupFilter
-    hasComposition:CompositionFilter
-    _and:[StructureFilter]
-    _or:[StructureFilter]
-    _not:StructureFilter
-  }
-input CalculatedPropertyFilter {
-    PropertyName: StringFilter
-    numericalValue: FloatFilter
-    _and: [CalculatedPropertyFilter]
-    _or: [CalculatedPropertyFilter]
-    _not: CalculatedPropertyFilter
+type HartreeFockMethod implements ComputationalMethod_IF{
+	hasParameter: ComputationalMethodParameter
+	iri: String
 }
-input CompositionFilter {
-    ReducedFormula:StringFilter
-    AnonymousFormula:StringFilter
-    _and:[CompositionFilter]
-    _or:[CompositionFilter]
-    _not:CompositionFilter
-  }
-input SpaceGroupFilter {
-    SpaceGroupID: StringFilter
-    SpaceGroupSymbol:StringFilter
-    _and:[SpaceGroupFilter]
-    _or:[SpaceGroupFilter]
-    _not:SpaceGroupFilter
-  }
-
-  input StringFilter {
-    _eq: String
-    _neq: String
-    _gt: String
-    _egt: String
-    _lt: String
-    _elt: String
-    _in: [String]
-    _nin: [String]
-    _like: String  # string matching along the lines of LIKE in SQL
-    _ilike: String # case-insensitive string matching
-    _nlike: String
-    _nilike: String
-  }
-  input FloatFilter {
-    _eq: Float
-    _neq: Float
-    _gt: Float
-    _egt: Float
-    _lt: Float
-    _elt: Float
-    _in: [Float]
-    _nin: [Float]
-    _like: Float  # string matching along the lines of LIKE in SQL
-    _ilike: Float # case-insensitive string matching
-    _nlike: Float
-    _nilike: Float
-  }
-  
+type DensityFunctionalTheoryMethod implements ComputationalMethod_IF{
+	hasParameter: ComputationalMethodParameter
+	hasXCFunctional: [ExchangeCorrelationEnergyFunctional]
+	iri: String
+}
+type LengthTriple{
+	Length_a: Float
+	Length_c: Float
+	Length_b: Float
+	iri: String
+}
+type Species{
+	hasElement: CHEBI_33250
+	iri: String
+}
+type Calculation{
+	hasOutputStructure: Structure
+	hasInputStructure: Structure
+	hasComputationalMethod: ComputationalMethod
+	hasInputProperty: Property
+	hasOutputCalculatedProperty: CalculatedProperty
+	wasAssociatedWith: [SoftwareAgent]
+	iri: String
+}
+type Site{
+	hasFractionalCoordinates: CoordinateVector
+	hasCartesianCoordinates: [CoordinateVector]
+	iri: String
+}
+type SpaceGroup{
+	SpaceGroupSymbol: String
+	SpaceGroupID: Int
+	hasPointGroup: PointGroup
+	iri: String
+}
+type Composition{
+	HillFormula: String
+	DescriptiveFormula: String
+	ReducedFormula: String
+	AnonymousFormula: String
+	iri: String
+}
+type Property implements Quantity_IF{
+	wasAttributedTo: ReferenceAgent
+	iri: String
+}
+type CalculatedProperty implements Quantity_IF & Property_IF{
+	wasAttributedTo: ReferenceAgent
+	iri: String
+}
+type PhysicalProperty implements Quantity_IF & Property_IF{
+	wasAttributedTo: ReferenceAgent
+	iri: String
+}
+type Basis{
+	hasAxisVectors: [AxisVectors]
+	hasLengthVector: [LengthTriple]
+	hasAngleVector: [AngleTriple]
+	iri: String
+}
+type SoftwareAgent implements Agent_IF{
+	SoftwareName: String
+	iri: String
+}
+type AxisVectors{
+	has_a_axisVector: CoordinateVector
+	has_c_axisVector: CoordinateVector
+	has_b_axisVector: CoordinateVector
+	iri: String
+}
+type CoordinateVector{
+	Y_axisCoordinate: Float
+	X_axisCoordinate: Float
+	Z_axisCoordinate: Float
+	iri: String
+}
+type Occupancy{
+	hasSite: [Site]
+	hasSpecies: Species
+	iri: String
+}
+type Lattice{
+	hasAxisVectors: AxisVectors
+	hasLengthVector: LengthTriple
+	hasAngleVector: AngleTriple
+	iri: String
+}
+type PointGroup{
+	PointGroupHMName: String
+	iri: String
+}
+type AngleTriple{
+	Angle_gamma: Float
+	Angle_beta: Float
+	Angle_alpha: Float
+	iri: String
+}
+type CHEBI_33250{
+	formula: String
+	iri: String
+}
+type Agent{
+	iri: String
+}
+type HybridFunctional implements ExchangeCorrelationEnergyFunctional_IF{
+	iri: String
+}
+type ub1bL185C61{
+	iri: String
+}
+type ReferenceAgent implements Agent_IF{
+	iri: String
+}
+type ComputationalMethodParameter{
+	iri: String
+}
+type QuantityKind{
+	iri: String
+}
+type ub1bL245C62{
+	iri: String
+}
+type GeneralizedGradientApproximation implements ExchangeCorrelationEnergyFunctional_IF{
+	iri: String
+}
+type Quantity{
+	iri: String
+}
+type metaGeneralizedGradientApproximation implements ExchangeCorrelationEnergyFunctional_IF{
+	iri: String
+}
+type ExchangeCorrelationEnergyFunctional{
+	iri: String
+}
+type Unit{
+	iri: String
+}
+type HybridmetaGeneralizedGradientApproximation implements ExchangeCorrelationEnergyFunctional_IF & HybridFunctional_IF{
+	iri: String
+}
+type HybridGeneralizedGradientApproximation implements ExchangeCorrelationEnergyFunctional_IF & HybridFunctional_IF{
+	iri: String
+}
+type QuantityValue{
+	iri: String
+}
+type ub1bL173C61{
+	iri: String
+}
+type EMMO_4207e895_8b83_4318_996a_72cfb32acd94{
+	iri: String
+}
+type LocalDensityApproximation implements ExchangeCorrelationEnergyFunctional_IF{
+	iri: String
+}
+input StructureFilter{
+	hasLattice: LatticeFilter
+	hasComposition: CompositionFilter
+	relatesToMaterial: EMMO_4207e895_8b83_4318_996a_72cfb32acd94Filter
+	hasSpaceGroup: SpaceGroupFilter
+	hasOccupancy: OccupancyFilter
+	wasAttributedTo: ReferenceAgentFilter
+	hasBasis: BasisFilter
+	iri: StringFilter
+}
+input ComputationalMethodFilter{
+	hasParameter: ComputationalMethodParameterFilter
+	iri: StringFilter
+}
+input HartreeFockMethodFilter{
+	hasParameter: ComputationalMethodParameterFilter
+	iri: StringFilter
+}
+input DensityFunctionalTheoryMethodFilter{
+	hasParameter: ComputationalMethodParameterFilter
+	hasXCFunctional: ExchangeCorrelationEnergyFunctionalFilter
+	iri: StringFilter
+}
+input LengthTripleFilter{
+	Length_a: FloatFilter
+	Length_c: FloatFilter
+	Length_b: FloatFilter
+	iri: StringFilter
+}
+input SpeciesFilter{
+	hasElement: CHEBI_33250Filter
+	iri: StringFilter
+}
+input CalculationFilter{
+	hasOutputStructure: StructureFilter
+	hasInputStructure: StructureFilter
+	hasComputationalMethod: ComputationalMethodFilter
+	hasInputProperty: PropertyFilter
+	hasOutputCalculatedProperty: CalculatedPropertyFilter
+	wasAssociatedWith: SoftwareAgentFilter
+	iri: StringFilter
+}
+input SiteFilter{
+	hasFractionalCoordinates: CoordinateVectorFilter
+	hasCartesianCoordinates: CoordinateVectorFilter
+	iri: StringFilter
+}
+input SpaceGroupFilter{
+	SpaceGroupSymbol: StringFilter
+	SpaceGroupID: IntFilter
+	hasPointGroup: PointGroupFilter
+	iri: StringFilter
+}
+input CompositionFilter{
+	HillFormula: StringFilter
+	DescriptiveFormula: StringFilter
+	ReducedFormula: StringFilter
+	AnonymousFormula: StringFilter
+	iri: StringFilter
+}
+input PropertyFilter{
+	wasAttributedTo: ReferenceAgentFilter
+	iri: StringFilter
+}
+input CalculatedPropertyFilter{
+	wasAttributedTo: ReferenceAgentFilter
+	iri: StringFilter
+}
+input PhysicalPropertyFilter{
+	wasAttributedTo: ReferenceAgentFilter
+	iri: StringFilter
+}
+input BasisFilter{
+	hasAxisVectors: AxisVectorsFilter
+	hasLengthVector: LengthTripleFilter
+	hasAngleVector: AngleTripleFilter
+	iri: StringFilter
+}
+input SoftwareAgentFilter{
+	SoftwareName: StringFilter
+	iri: StringFilter
+}
+input AxisVectorsFilter{
+	has_a_axisVector: CoordinateVectorFilter
+	has_c_axisVector: CoordinateVectorFilter
+	has_b_axisVector: CoordinateVectorFilter
+	iri: StringFilter
+}
+input CoordinateVectorFilter{
+	Y_axisCoordinate: FloatFilter
+	X_axisCoordinate: FloatFilter
+	Z_axisCoordinate: FloatFilter
+	iri: StringFilter
+}
+input OccupancyFilter{
+	hasSite: SiteFilter
+	hasSpecies: SpeciesFilter
+	iri: StringFilter
+}
+input LatticeFilter{
+	hasAxisVectors: AxisVectorsFilter
+	hasLengthVector: LengthTripleFilter
+	hasAngleVector: AngleTripleFilter
+	iri: StringFilter
+}
+input PointGroupFilter{
+	PointGroupHMName: StringFilter
+	iri: StringFilter
+}
+input AngleTripleFilter{
+	Angle_gamma: FloatFilter
+	Angle_beta: FloatFilter
+	Angle_alpha: FloatFilter
+	iri: StringFilter
+}
+input CHEBI_33250Filter{
+	formula: StringFilter
+	iri: StringFilter
+}
+input AgentFilter{
+	iri: StringFilter
+}
+input HybridFunctionalFilter{
+	iri: StringFilter
+}
+input ub1bL185C61Filter{
+	iri: StringFilter
+}
+input ReferenceAgentFilter{
+	iri: StringFilter
+}
+input ComputationalMethodParameterFilter{
+	iri: StringFilter
+}
+input QuantityKindFilter{
+	iri: StringFilter
+}
+input ub1bL245C62Filter{
+	iri: StringFilter
+}
+input GeneralizedGradientApproximationFilter{
+	iri: StringFilter
+}
+input QuantityFilter{
+	iri: StringFilter
+}
+input metaGeneralizedGradientApproximationFilter{
+	iri: StringFilter
+}
+input ExchangeCorrelationEnergyFunctionalFilter{
+	iri: StringFilter
+}
+input UnitFilter{
+	iri: StringFilter
+}
+input HybridmetaGeneralizedGradientApproximationFilter{
+	iri: StringFilter
+}
+input HybridGeneralizedGradientApproximationFilter{
+	iri: StringFilter
+}
+input QuantityValueFilter{
+	iri: StringFilter
+}
+input ub1bL173C61Filter{
+	iri: StringFilter
+}
+input EMMO_4207e895_8b83_4318_996a_72cfb32acd94Filter{
+	iri: StringFilter
+}
+input LocalDensityApproximationFilter{
+	iri: StringFilter
+}
+input StringFilter{
+	_eq: String
+	_neq: String
+	_gt: String
+	_egt: String
+	_lt: String
+	_elt: String
+	_like: String
+	_ilike: String
+	_nlike: String
+	_nilike: String
+	_in: [String]
+	_nin: [String]
+}
+input FloatFilter{
+	_eq: Float
+	_neq: Float
+	_gt: Float
+	_egt: Float
+	_lt: Float
+	_elt: Float
+	_like: Float
+	_ilike: Float
+	_nlike: Float
+	_nilike: Float
+	_in: [Float]
+	_nin: [Float]
+}
+input IntFilter{
+	_eq: Int
+	_neq: Int
+	_gt: Int
+	_egt: Int
+	_lt: Int
+	_elt: Int
+	_like: Int
+	_ilike: Int
+	_nlike: Int
+	_nilike: Int
+	_in: [Int]
+	_nin: [Int]
+}
