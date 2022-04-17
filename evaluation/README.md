@@ -50,9 +50,9 @@
     * [UltraGraphQL](./materials_design_domain/UltraGraphQL)
 
 * Query Execution Time (QET) per data size on materials dataset.
-![entities](../figures/evaluation-md-QETs-per-dataset.pdf "per-dataset")
+![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
 * Query Execution Time (QET) per query on materials dataset.
-![entities](../figures/evaluation-md-QETs-per-query.pdf "The framework of OBG-gen")
+![entities](../figures/evaluation-md-QETs-per-query.png "The framework of OBG-gen")
 
 ### Synthetic Evaluation
 
