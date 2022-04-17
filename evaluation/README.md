@@ -1,4 +1,6 @@
 
+### Evaluation Workflow
+![entities](../figures/evaluation-wordflow.png "workflow")
 
 ### Real Case Evaluation
 
