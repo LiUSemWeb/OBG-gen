@@ -1,6 +1,6 @@
 
 ### Evaluation Workflow
-![entities](../figures/evaluation-wordflow.png "workflow")
+![entities](../figures/evaluation-workflow.png "workflow")
 
 ### Real Case Evaluation
 
