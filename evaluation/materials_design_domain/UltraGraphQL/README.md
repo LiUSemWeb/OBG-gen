@@ -1,7 +1,5 @@
 ### Running UltraGraphQL
 
-#### To set up the relational data sources
-
 Detailed instrodutions can be found [here](https://git.rwth-aachen.de/i5/ultragraphql). Instead, using the configuration files provided under this folder.
 
 * [config-mdo-1K-1K.json](./config-mdo-1K-1K.json)

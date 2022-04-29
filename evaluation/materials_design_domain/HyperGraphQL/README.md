@@ -1,7 +1,5 @@
 ### Running HyperGraphQL
 
-#### To set up the relational data sources
-
 Detailed instrodutions can be found [here](https://www.hypergraphql.org/documentation/). Instead, using the configuration files provided under this folder.
 
 * [config-mdo-1K-1K.json](./config-mdo-1K-1K.json)
