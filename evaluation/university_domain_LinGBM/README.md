@@ -23,3 +23,5 @@
 [//]: # "export FLASK_ENV=development"
 
     python app-uni.py ./schema_generator/university-schema.graphql ./schema_generator/mdo2graphql.json ./mapping_parser/university-mapping-mysql-sf4.json 
+
+**Experiments and Results**: More details of experiments and results are presented in this [file](./lingbm-evaluation.pdf).
