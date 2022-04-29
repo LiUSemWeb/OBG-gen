@@ -15,6 +15,17 @@ Simply change the mapping files, then you can either run OBG-gen-rdb or OBG-mix 
 
 * Mappings for OBG-gen-rdb
 	* [mdo-mappings-mysql-1K.json](../../../mapping_parser/mdo-mappings-mysql-1K.json)
+	* [mdo-mappings-mysql-2K.json](../../../mapping_parser/mdo-mappings-mysql-2K.json)
+	* [mdo-mappings-mysql-4K.json](../../../mapping_parser/mdo-mappings-mysql-4K.json)
+	* [mdo-mappings-mysql-8K.json](../../../mapping_parser/mdo-mappings-mysql-8K.json)
+	* [mdo-mappings-mysql-16K.json](../../../mapping_parser/mdo-mappings-mysql-16K.json)
+	* [mdo-mappings-mysql-32K.json](../../../mapping_parser/mdo-mappings-mysql-32K.json)
+	
 
 * Mappings for OBG-gen-mix
 	* [mdo-mappings-mix-1K.json](../../../mapping_parser/mdo-mappings-mix-1K.json)
+	* [mdo-mappings-mix-2K.json](../../../mapping_parser/mdo-mappings-mix-2K.json)
+	* [mdo-mappings-mix-4K.json](../../../mapping_parser/mdo-mappings-mix-4K.json)
+	* [mdo-mappings-mix-8K.json](../../../mapping_parser/mdo-mappings-mix-8K.json)
+	* [mdo-mappings-mix-16K.json](../../../mapping_parser/mdo-mappings-mix-16K.json)
+	* [mdo-mappings-mix-32K.json](../../../mapping_parser/mdo-mappings-mix-32K.json)
