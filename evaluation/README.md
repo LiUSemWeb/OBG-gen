@@ -44,12 +44,6 @@
     * [Q11](./materials_design_domain/OBG-gen/query11.graphql) (List all the calculations where the filter condition is complex that needs to be simplified.)
     * [Q12](./materials_design_domain/OBG-gen/query12.graphql) (List all the structures that contain Si element.)
 
-* Experimental settings for systems.
-    * [OBG-gen-rdb](./materials_design_domain/OBG-gen/OBG-gen-rdb)
-    * OBG-gen-mix
-    * [morph-rdb](./materials_design_domain/morph-rdb)
-    * [HyperGraphQL](./materials_design_domain/HyperGraphQL)
-    * [UltraGraphQL](./materials_design_domain/UltraGraphQL)
 
 * Query Execution Time (QET) per data size on materials dataset.
 ![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
@@ -80,3 +74,6 @@
     * [QS7](./university_domain_LinGBM/QT10) (QT10)
     * [QS8](./university_domain_LinGBM/QT11) (QT11)
 
+* Experimental examples for the real case evaluation and the evaluation based on LinGBM.
+    * [real case evaluation](./materials_design_domain/)
+    * [evaluation based on LinGBM](./university_domain_LinGBM)
