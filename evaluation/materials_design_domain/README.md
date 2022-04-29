@@ -10,7 +10,7 @@
 
 	sourcec ./db/md_data.sql 
 
-**hint**: We assume that the account and password of the database are configured in the RML semantic mappings [file](../../mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl#L26-L27).
+**Note**: We assume that the account and password of the database are configured in the RML semantic mappings [file](../../mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl#L26-L27).
 
 
 **Step 3**: After setting up the mysql databases, you can direct to the home folder of the project and running the following commands.
