@@ -29,3 +29,8 @@ Simply change the mapping files, then you can either run OBG-gen-rdb or OBG-mix 
 	* [mdo-mappings-mix-8K.json](../../../mapping_parser/mdo-mappings-mix-8K.json)
 	* [mdo-mappings-mix-16K.json](../../../mapping_parser/mdo-mappings-mix-16K.json)
 	* [mdo-mappings-mix-32K.json](../../../mapping_parser/mdo-mappings-mix-32K.json)
+
+
+Data for OBG-gen-mix
+
+Conceptually, OBG-gen-mix is also provided with two database instances. However, each instance contains different formats of data such as data in a MySQL database, or in CSV or JSON files. More detailed, the instance for Materials Project has Composition data in JSON format and Band Gap data in CSV format. The instance for OQMD has Structure and Band Gap data in JSON format and Formation Energy data in CSV format. The data representing other entities for each instance is stored in MySQL database instances.

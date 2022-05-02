@@ -64,16 +64,16 @@
       } 
     } 
 ```
-* You can find all the 8 query sets and data at [this folder](./university_domain_LinGBM). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
-    * [QS1](./university_domain_LinGBM/QT1) (QT1)
-    * [QS2](./university_domain_LinGBM/QT2) (QT2)
-    * [QS3](./university_domain_LinGBM/QT3) (QT3)
-    * [QS4](./university_domain_LinGBM/QT4) (QT4)
-    * [QS5](./university_domain_LinGBM/QT5) (QT5)
-    * [QS6](./university_domain_LinGBM/QT6) (QT6)
-    * [QS7](./university_domain_LinGBM/QT10) (QT10)
-    * [QS8](./university_domain_LinGBM/QT11) (QT11)
+* You can find all the 8 query sets and data at [this folder](./university_domain). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
+    * [QS1](./university_domain/QT1) (QT1)
+    * [QS2](./university_domain/QT2) (QT2)
+    * [QS3](./university_domain/QT3) (QT3)
+    * [QS4](./university_domain/QT4) (QT4)
+    * [QS5](./university_domain/QT5) (QT5)
+    * [QS6](./university_domain/QT6) (QT6)
+    * [QS7](./university_domain/QT10) (QT10)
+    * [QS8](./university_domain/QT11) (QT11)
 
 * Experimental examples for the real case evaluation and the evaluation based on LinGBM.
     * [real case evaluation](./materials_design_domain/)
-    * [evaluation based on LinGBM](./university_domain_LinGBM)
+    * [evaluation based on LinGBM](./university_domain)
