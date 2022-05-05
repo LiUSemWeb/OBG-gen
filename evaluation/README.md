@@ -2,6 +2,9 @@
 ### Evaluation Workflow
 ![entities](../figures/evaluation-workflow.png "workflow")
 
+<p align="center">
+  <img src="../figures/evaluation-workflow.png" alt="workflow"/>
+</p>
 ### Real Case Evaluation
 
 * An example query without filter expression is shown below. (List all structures including reduced formula.)
