@@ -1,10 +1,12 @@
 
 ### Evaluation Workflow
-![entities](../figures/evaluation-workflow.png "workflow")
 
 <p align="center">
   <img src="../figures/evaluation-workflow.png" alt="workflow"/>
 </p>
+
+* We compare our tool, OBG-gen (Ontology-Based GraphQL Server Generation) in two versions (OBG-gen-rdb and OBG-gen-mix) wih three systems: morph-rdb, HyperGraphQL and UltraGraphQL.
+
 ### Real Case Evaluation
 
 * An example query without filter expression is shown below. (List all structures including reduced formula.)
