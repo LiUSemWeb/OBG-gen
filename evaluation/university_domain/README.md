@@ -4,11 +4,11 @@
 
 **Step 1**: To create the tables of the database.
 
-	sourcec ./db/uni_schema.sql 
+	source ./db/uni_schema.sql 
 
 **Step 2**: To populate the tables with data.
 
-	sourcec ./db/uni_data.sql 
+	source ./db/uni_data.sql 
 
 **Note**: We assume that the account and password of the database are configured in the RML semantic mappings [file](../../mapping_parser/semantic_mappings/university-mapping-mysql-sf4.ttl#L26-L27).
 

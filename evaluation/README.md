@@ -30,7 +30,7 @@
     }
 ```
 
-* You can find all the 12 GraphQL queries at [this folder](./materials_design_domain/OBG-gen).
+* You can find all the 12 GraphQL queries at [this folder](./materials_design_domain/OBG-gen/README.md).
     * [Q1](./materials_design_domain/OBG-gen/query1.graphql) (List all the structures containing the reduced formula of each structure's composition.)
     * [Q2](./materials_design_domain/OBG-gen/query2.graphql) (List all the calculations containing the reduced formula of each output structure's composition.)
     * [Q3](./materials_design_domain/OBG-gen/query3.graphql) (List all the calculations containing the name and value of each output calculated property.)
@@ -64,7 +64,7 @@
       } 
     } 
 ```
-* You can find all the 8 query sets and data at [this folder](./university_domain). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
+* You can find all the 8 query sets and data at [this folder](./university_domain/README.md). More details regarding these query templates can be found at [LinGBM repo](https://github.com/LiUGraphQL/LinGBM/wiki/Query-Templates-of-the-Benchmark).
     * [QS1](./university_domain/QT1) (QT1)
     * [QS2](./university_domain/QT2) (QT2)
     * [QS3](./university_domain/QT3) (QT3)
@@ -75,5 +75,5 @@
     * [QS8](./university_domain/QT11) (QT11)
 
 * Experimental examples for the real case evaluation and the evaluation based on LinGBM.
-    * [real case evaluation](./materials_design_domain/)
-    * [evaluation based on LinGBM](./university_domain)
+    * [real case evaluation](./materials_design_domain/README.md)
+    * [evaluation based on LinGBM](./university_domain/README.md)

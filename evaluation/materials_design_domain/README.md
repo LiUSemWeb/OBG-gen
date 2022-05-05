@@ -4,11 +4,11 @@
 
 **Step 1**: To create the tables of the database.
 
-	sourcec ./db/md_schema.sql 
+	source ./db/md_schema.sql 
 
 **Step 2**: To populate the tables with data.
 
-	sourcec ./db/md_data.sql 
+	source ./db/md_data.sql 
 
 **Note**: We assume that the account and password of the database are configured in the RML semantic mappings [file](../../mapping_parser/semantic_mappings/mdo-mappings-mysql-1K.ttl#L26-L27).
 
