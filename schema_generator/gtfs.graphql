@@ -1,0 +1,301 @@
+type Query {
+  ShapeList(filter: ShapeFilter): [Shape]
+  ShapePointList(filter: ShapePointFilter): [ShapePoint]
+  StopList(filter: StopFilter): [Stop]
+  RouteList(filter: RouteFilter): [Route]
+  AgencyList(filter: AgencyFilter): [Agency]
+  ServiceList(filter: ServiceFilter): [Service]
+  TripList(filter: TripFilter): [Trip]
+  StopTimeList(filter: StopTimeFilter): [StopTime]
+  CalendarRuleList(filter: CalendarRuleFilter): [CalendarRule]
+  FrequencyList(filter: FrequencyFilter): [Frequency]
+  FeedList(filter: FeedFilter): [Feed]
+  CalendarDateRuleList(filter: CalendarDateRuleFilter): [CalendarDateRule]
+
+}
+type Shape {
+  shapePoint: ShapePoint
+}
+input ShapeFilter{
+	_and: [ShapeFilter]
+	_or: [ShapeFilter]
+	_not: ShapeFilter
+	shapePoint: ShapePointFilter
+}
+type ShapePoint {
+  lat: Float
+  long: Float
+  pointSequence: Int
+  distanceTraveled: String
+  shape_pt_lat: Float
+}
+input ShapePointFilter{
+	_and: [ShapePointFilter]
+	_or: [ShapePointFilter]
+	_not: ShapePointFilter
+	lat: FloatFilter
+  long: FloatFilter
+  pointSequence: IntFilter
+  distanceTraveled: StringFilter
+  shape_pt_lat: FloatFilter
+}
+type Stop {
+  name: String
+  description: String
+  wheelchairAccessible: String
+  lat: Float
+  long: Float
+  locationType: String
+  parentStation: Stop
+  timeZone: String
+  zone: String
+  code: String
+  identifier: String
+  page: String
+}
+input StopFilter{
+	_and: [StopFilter]
+	_or: [StopFilter]
+	_not: StopFilter
+	name: StringFilter
+  description: StringFilter
+  wheelchairAccessible: StringFilter
+  lat: FloatFilter
+  long: FloatFilter
+  locationType: StringFilter
+  parentStation: StopFilter
+  timeZone: StringFilter
+  zone: StringFilter
+  code: StringFilter
+  identifier: StringFilter
+  page: StringFilter
+}
+type Route {
+  shortName: String
+  longName: String
+  description: String
+  agency: Agency
+  timeZone: String
+  fareUrl: String
+  name: String
+  language: String
+  routeType: String
+  color: String
+  routeUrl: String
+}
+input RouteFilter{
+	_and: [RouteFilter]
+	_or: [RouteFilter]
+	_not: RouteFilter
+	shortName: StringFilter
+  longName: StringFilter
+  description: StringFilter
+  agency: AgencyFilter
+  timeZone: StringFilter
+  fareUrl: StringFilter
+  name: StringFilter
+  language: StringFilter
+  routeType: StringFilter
+  color: StringFilter
+  routeUrl: StringFilter
+}
+type Agency {
+  page: String
+  name: String
+  phone: String
+}
+input AgencyFilter{
+	_and: [AgencyFilter]
+	_or: [AgencyFilter]
+	_not: AgencyFilter
+	page: StringFilter
+  name: StringFilter
+  phone: StringFilter
+}
+type Service {
+  serviceRule: CalendarDateRule
+  date: String
+  dateAddition: Boolean
+}
+input ServiceFilter{
+	_and: [ServiceFilter]
+	_or: [ServiceFilter]
+	_not: ServiceFilter
+	serviceRule: CalendarDateRuleFilter
+  date: StringFilter
+  dateAddition: BooleanFilter
+}
+type Trip {
+  shortName: String
+  service: Service
+  route: Route
+}
+input TripFilter{
+	_and: [TripFilter]
+	_or: [TripFilter]
+	_not: TripFilter
+	shortName: StringFilter
+  service: ServiceFilter
+  route: RouteFilter
+}
+type StopTime {
+  trip: Trip
+  stop: Stop
+  departureTime: String
+  stopSequence: Int
+  arrivalTime: String
+  headsign: String
+  distanceTraveled: String
+}
+input StopTimeFilter{
+	_and: [StopTimeFilter]
+	_or: [StopTimeFilter]
+	_not: StopTimeFilter
+	trip: TripFilter
+  stop: StopFilter
+  departureTime: StringFilter
+  stopSequence: IntFilter
+  arrivalTime: StringFilter
+  headsign: StringFilter
+  distanceTraveled: StringFilter
+}
+type CalendarRule {
+  startDate: String
+  endDate: String
+  monday: Boolean
+  tuesday: Boolean
+  wednesday: Boolean
+  saturday: Boolean
+  sunday: Boolean
+  thursday: Boolean
+  friday: Boolean
+}
+input CalendarRuleFilter{
+	_and: [CalendarRuleFilter]
+	_or: [CalendarRuleFilter]
+	_not: CalendarRuleFilter
+	startDate: StringFilter
+  endDate: StringFilter
+  monday: BooleanFilter
+  tuesday: BooleanFilter
+  wednesday: BooleanFilter
+  saturday: BooleanFilter
+  sunday: BooleanFilter
+  thursday: BooleanFilter
+  friday: BooleanFilter
+}
+type Frequency {
+  startTime: String
+  endTime: String
+  trip: Trip
+  exactTimes: Boolean
+  headwaySeconds: Int
+}
+input FrequencyFilter{
+	_and: [FrequencyFilter]
+	_or: [FrequencyFilter]
+	_not: FrequencyFilter
+  startTime: StringFilter
+  endTime: StringFilter
+  trip: TripFilter
+  exactTimes: BooleanFilter
+  headwaySeconds: IntFilter
+}
+type Feed {
+  feed_lang: String
+  feed_version: String
+  feed_publisher_name: String
+  feed_end_date: String
+  feed_publisher_url: String
+  feed_start_date: String
+}
+input FeedFilter{
+	_and: [FeedFilter]
+	_or: [FeedFilter]
+	_not: FeedFilter
+	feed_lang: StringFilter
+  feed_version: StringFilter
+  feed_publisher_name: StringFilter
+  feed_end_date: StringFilter
+  feed_publisher_url: StringFilter
+  feed_start_date: StringFilter
+}
+type CalendarDateRule {
+  date: String
+  dateAddition: Boolean
+}
+input CalendarDateRuleFilter{
+	_and: [CalendarDateRuleFilter]
+	_or: [CalendarDateRuleFilter]
+	_not: CalendarDateRuleFilter
+	date: StringFilter
+  dateAddition: BooleanFilter
+}
+input StringFilter{
+	_and: [StringFilter]
+	_or: [StringFilter]
+	_not: StringFilter
+	_eq: String
+	_neq: String
+	_gt: String
+	_egt: String
+	_lt: String
+	_elt: String
+	_like: String
+	_ilike: String
+	_nlike: String
+	_nilike: String
+	_in: [String]
+	_nin: [String]
+}
+input FloatFilter{
+	_and: [FloatFilter]
+	_or: [FloatFilter]
+	_not: FloatFilter
+	_eq: Float
+	_neq: Float
+	_gt: Float
+	_egt: Float
+	_lt: Float
+	_elt: Float
+	_like: Float
+	_ilike: Float
+	_nlike: Float
+	_nilike: Float
+	_in: [Float]
+	_nin: [Float]
+}
+input IntFilter{
+	_and: [IntFilter]
+	_or: [IntFilter]
+	_not: IntFilter
+	_eq: Int
+	_neq: Int
+	_gt: Int
+	_egt: Int
+	_lt: Int
+	_elt: Int
+	_like: Int
+	_ilike: Int
+	_nlike: Int
+	_nilike: Int
+	_in: [Int]
+	_nin: [Int]
+}
+input BooleanFilter{
+	_and: [BooleanFilter]
+	_or: [BooleanFilter]
+	_not: BooleanFilter
+	_eq: Boolean
+	_neq: Boolean
+	_gt: Boolean
+	_egt: Boolean
+	_lt: Boolean
+	_elt: Boolean
+	_like: Boolean
+	_ilike: Boolean
+	_nlike: Boolean
+	_nilike: Boolean
+	_in: [Boolean]
+	_nin: [Boolean]
+}

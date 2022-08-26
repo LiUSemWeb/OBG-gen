@@ -10,7 +10,7 @@ import ast
 import copy
 from sqlalchemy import create_engine, text
 import multiprocessing as mp
-
+import re
 
 class Resolver_Utils(object):
     def __init__(self, mapping_file, o2graphql_file):
@@ -153,6 +153,7 @@ class Resolver_Utils(object):
             column_value = filtered_object_columns.get(mapping_name)
             key, value = list(column_value.items())[0]
             value = list(set(value))
+            value = list(filter(lambda item: item is not None, value))
             in_statement = '`{column}` in ({value})'.format(column=key, value=str(value)[1:-1])
         return in_statement
 
@@ -160,7 +161,8 @@ class Resolver_Utils(object):
     def generate_ref_sql_statement(ref):
         sql_statement = ''
         if ref is not None:
-            values = str(ref[0])[1:-1]
+            not_none_ref = list(filter(lambda item: item is not None, ref[0]))
+            values = str(not_none_ref)[1:-1]
             column_name = ref[1]
             if len(values) > 0:
                 sql_statement = '`{column}` in ({values})'.format(column=column_name, values=values)
@@ -317,10 +319,16 @@ class Resolver_Utils(object):
                         filter_str += ' AND '
                 select_cols = self.convert_lst_strings(key_columns, ',')
                 if len(table_name) > 0:
-                    sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+                    if len(filter_str) > 0:
+                        sql_query_str = 'SELECT {select_cols} FROM `{table}` WHERE {filter}'.format(select_cols=select_cols, table=table_name, filter=filter_str)
+                    else:
+                        sql_query_str = 'SELECT {select_cols} FROM `{table}`'.format(select_cols=select_cols, table=table_name)
                 if len(query) > 0:
                     select_statement = '({query_statement}) AS NEW_TABLE'.format(query_statement=query)
-                    sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter}'.format(select_cols=select_cols, select_statement=select_statement, filter=filter_str)
+                    if len(filter_str) > 0:
+                        sql_query_str = 'SELECT {select_cols} FROM {select_statement} WHERE {filter}'.format(select_cols=select_cols, select_statement=select_statement, filter=filter_str)
+                    else:
+                        sql_query_str = 'SELECT {select_cols} FROM {select_statement}'.format(select_cols=select_cols, select_statement=select_statement)
             else:
                 having_str = ''
                 sql_filter_columns_num = len(sql_pred_filter)
@@ -905,17 +913,35 @@ class Resolver_Utils(object):
         new_template = template.replace(key, '')
         return key, new_template
 
+    @staticmethod
+    def generate_iri(template_str, data_record):
+        to_replace = re.findall(r"{.*?}", template_str)
+        for to_replace_str in to_replace:
+            key_word = to_replace_str[1:-1]
+            template_str = template_str.replace(to_replace_str, str(data_record[key_word]))
+        return template_str
+
+    @staticmethod
+    def check_constant_as_template(constant_data):
+        if len(re.findall(r"{.*?}", constant_data)) > 0:
+            return 1
+        else:
+            return 0
     '''
         Refine json data with field names according to the ontology and add iri column
     '''
     def refine_json(self, temp_result, attr_pred_lst, constant, template, root_type_flag=False, mapping_name='', key_attributes=[], filtered_object_iri=None):
-        key, template = self.parse_template(template)
+        #key, template = self.parse_template(template)
         i = 0
         while i < len(temp_result):
             if len(constant) > 0:
                 for (constant_pred, constant_data, data_type) in constant:
-                    temp_result[i][constant_pred] = constant_data
-            iri = template.format(temp_result[i][key])
+                    if self.check_constant_as_template(constant_data) == 1:
+                        temp_result[i][constant_pred] = self.generate_iri(constant_data, temp_result[i])
+                    else:
+                        temp_result[i][constant_pred] = constant_data
+            #iri = template.format(temp_result[i][key])
+            iri = self.generate_iri(template, temp_result[i])
             if root_type_flag is True:
                 if mapping_name in filtered_object_iri.keys() and iri in filtered_object_iri[mapping_name] or \
                         filtered_object_iri['filter'] is False:
@@ -1189,6 +1215,10 @@ class Resolver_Utils(object):
                     constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
                     filter_constant.append(phi_predicate)
+                elif object_map_type == 4:
+                    constant_template, constant_datatype = self.mu.get_constant_template(object_map)
+                    constant_data.append((phi_predicate, constant_template, constant_datatype))
+                    filter_constant.append(phi_predicate)
                 else:
                     pass
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant)
@@ -1368,6 +1398,9 @@ class Resolver_Utils(object):
                 elif object_map_type == 2:
                     constant_value, constant_datatype = self.mu.get_constant_value_type(object_map)
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
+                elif object_map_type == 4:
+                    constant_template, constant_datatype = self.mu.get_constant_template(object_map)
+                    constant_data.append((phi_predicate, constant_template, constant_datatype))
                 else:
                     print('Unknown object map type')
             if root_type_flag is True:

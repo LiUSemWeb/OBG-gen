@@ -172,6 +172,7 @@ def generateMappingList():
 		poms_lst = []
 		for pom_anonymous_name in predicateObjectMap_dict[key]:
 			pom_dict = dict()
+			print(key, pom_anonymous_name)
 			pom_dict['predicate'] = predicate_dict[pom_anonymous_name]
 			om_anonymous_name = objectMap_dict[pom_anonymous_name]
 			if om_anonymous_name in reference_dict.keys():
@@ -215,6 +216,9 @@ if __name__ == '__main__':
 	else:
 		output_file_name = './mapping_parser/{file_name}.json'.format(file_name=mapping_file_name)
 	logicalSource_lst = generateLogicalSourceList()
+	#print(logicalSource_dict)
+	print(predicateObjectMap_dict)
+	print(predicate_dict)
 	mappings = generateMappingList()
 	db_source = getDBSourceList()
 	rml_mapping = {'DBSources': db_source, 'LogicalSources': logicalSource_lst, 'Mappings': mappings}

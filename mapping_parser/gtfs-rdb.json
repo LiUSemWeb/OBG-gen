@@ -1,0 +1,767 @@
+{
+  "DBSources": [
+    {
+      "name": "database_0",
+      "server": "jdbc:mysql://127.0.0.1:3306/gtfs-sql-1",
+      "username": "root",
+      "password": "6973278lhy"
+    }
+  ],
+  "LogicalSources": [
+    {
+      "name": "source_7",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM CALENDAR_DATES",
+      "iterator": ""
+    },
+    {
+      "name": "source_0",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM STOP_TIMES",
+      "iterator": ""
+    },
+    {
+      "name": "source_4",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM STOPS",
+      "iterator": ""
+    },
+    {
+      "name": "source_8",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM CALENDAR",
+      "iterator": ""
+    },
+    {
+      "name": "source_2",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM ROUTES",
+      "iterator": ""
+    },
+    {
+      "name": "source_12",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM FREQUENCIES",
+      "iterator": ""
+    },
+    {
+      "name": "source_5",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM CALENDAR",
+      "iterator": ""
+    },
+    {
+      "name": "source_3",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM AGENCY",
+      "iterator": ""
+    },
+    {
+      "name": "source_10",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM SHAPES",
+      "iterator": ""
+    },
+    {
+      "name": "source_6",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM CALENDAR_DATES",
+      "iterator": ""
+    },
+    {
+      "name": "source_11",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM SHAPES",
+      "iterator": ""
+    },
+    {
+      "name": "source_1",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM TRIPS",
+      "iterator": ""
+    },
+    {
+      "name": "source_9",
+      "source": "database_0",
+      "referenceFormulation": "ql:CSV",
+      "table": "",
+      "query": "SELECT * FROM FEED_INFO",
+      "iterator": ""
+    }
+  ],
+  "Mappings": [
+    {
+      "name": "map_feed_0",
+      "logicalSource": "source_9",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/feed/{feed_publisher_name}",
+        "class": "Feed"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "language",
+          "objectMap": {
+            "reference": "feed_lang",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "version",
+          "objectMap": {
+            "reference": "feed_version",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "publisher",
+          "objectMap": {
+            "reference": "feed_publisher_name",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "endDate",
+          "objectMap": {
+            "reference": "feed_end_date",
+            "datatype": "date"
+          }
+        },
+        {
+          "predicate": "page",
+          "objectMap": {
+            "reference": "feed_publisher_url",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "startDate",
+          "objectMap": {
+            "reference": "feed_start_date",
+            "datatype": "date"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_calendar_date_rules_0",
+      "logicalSource": "source_7",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/calendar_date_rule/{service_id}-{date}",
+        "class": "CalendarDateRule"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "date",
+          "objectMap": {
+            "reference": "date",
+            "datatype": "date"
+          }
+        },
+        {
+          "predicate": "dateAddition",
+          "objectMap": {
+            "reference": "exception_type",
+            "datatype": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_stops_0",
+      "logicalSource": "source_4",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/stops/{stop_id}",
+        "class": "Stop"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "timeZone",
+          "objectMap": {
+            "reference": "stop_timezone",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "parentStation",
+          "objectMap": {
+            "parentTriplesMap": "map_stops_0",
+            "joinCondition": {
+              "child": "parent_station",
+              "parent": "stop_id"
+            }
+          }
+        },
+        {
+          "predicate": "zone",
+          "objectMap": {
+            "reference": "zone_id",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "lat",
+          "objectMap": {
+            "reference": "stop_lat",
+            "datatype": "double"
+          }
+        },
+        {
+          "predicate": "code",
+          "objectMap": {
+            "reference": "stop_code",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "long",
+          "objectMap": {
+            "reference": "stop_lon",
+            "datatype": "double"
+          }
+        },
+        {
+          "predicate": "description",
+          "objectMap": {
+            "reference": "stop_desc",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "identifier",
+          "objectMap": {
+            "reference": "stop_id",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "name",
+          "objectMap": {
+            "reference": "stop_name",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "locationType",
+          "objectMap": {
+            "template": "http://transport.linkeddata.es/resource/LocationType/{location_type}"
+          }
+        },
+        {
+          "predicate": "wheelchairAccessible",
+          "objectMap": {
+            "template": "http://transport.linkeddata.es/resource/WheelchairBoardingStatus/{wheelchair_boarding}"
+          }
+        },
+        {
+          "predicate": "page",
+          "objectMap": {
+            "reference": "stop_url",
+            "datatype": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_trips_0",
+      "logicalSource": "source_1",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/trips/{trip_id}",
+        "class": "Trip"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "block",
+          "objectMap": {
+            "reference": "block_id",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "direction",
+          "objectMap": {
+            "reference": "direction_id",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "service",
+          "objectMap": {
+            "parentTriplesMap": "map_services2_0",
+            "joinCondition": {
+              "child": "service_id",
+              "parent": "service_id"
+            }
+          }
+        },
+        {
+          "predicate": "headsign",
+          "objectMap": {
+            "reference": "trip_headsign",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "shape",
+          "objectMap": {
+            "parentTriplesMap": "map_shapes_0",
+            "joinCondition": {
+              "child": "shape_id",
+              "parent": "shape_id"
+            }
+          }
+        },
+        {
+          "predicate": "wheelchairAccessible"
+        },
+        {
+          "predicate": "shortName",
+          "objectMap": {
+            "reference": "trip_short_name",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "route",
+          "objectMap": {
+            "parentTriplesMap": "map_routes_0",
+            "joinCondition": {
+              "child": "route_id",
+              "parent": "route_id"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_services2_0",
+      "logicalSource": "source_6",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/services/{service_id}",
+        "class": "Service"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "serviceRule",
+          "objectMap": {
+            "parentTriplesMap": "map_calendar_date_rules_0",
+            "joinCondition": {
+              "child": "service_id",
+              "parent": "service_id"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_services1_0",
+      "logicalSource": "source_5",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/services/{service_id}",
+        "class": "Service"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "serviceRule",
+          "objectMap": {
+            "parentTriplesMap": "map_calendar_rules_0",
+            "joinCondition": {
+              "child": "service_id",
+              "parent": "service_id"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_stoptimes_0",
+      "logicalSource": "source_0",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/stoptimes/{trip_id}-{stop_id}-{arrival_time}",
+        "class": "StopTime"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "trip",
+          "objectMap": {
+            "parentTriplesMap": "map_trips_0",
+            "joinCondition": {
+              "child": "trip_id",
+              "parent": "trip_id"
+            }
+          }
+        },
+        {
+          "predicate": "arrivalTime",
+          "objectMap": {
+            "reference": "arrival_time",
+            "datatype": "duration"
+          }
+        },
+        {
+          "predicate": "headsign",
+          "objectMap": {
+            "reference": "stop_headsign",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "stopSequence",
+          "objectMap": {
+            "reference": "stop_sequence",
+            "datatype": "integer"
+          }
+        },
+        {
+          "predicate": "distanceTraveled",
+          "objectMap": {
+            "reference": "shape_dist_traveled",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "dropOffType"
+        },
+        {
+          "predicate": "pickupType"
+        },
+        {
+          "predicate": "departureTime",
+          "objectMap": {
+            "reference": "departure_time",
+            "datatype": "duration"
+          }
+        },
+        {
+          "predicate": "stop",
+          "objectMap": {
+            "parentTriplesMap": "map_stops_0",
+            "joinCondition": {
+              "child": "stop_id",
+              "parent": "stop_id"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_frequencies_0",
+      "logicalSource": "source_12",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/frequency/{trip_id}-{start_time}",
+        "class": "Frequency"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "endTime",
+          "objectMap": {
+            "reference": "end_time",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "exactTimes",
+          "objectMap": {
+            "reference": "exact_times",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "trip",
+          "objectMap": {
+            "parentTriplesMap": "map_trips_0",
+            "joinCondition": {
+              "child": "trip_id",
+              "parent": "trip_id"
+            }
+          }
+        },
+        {
+          "predicate": "startTime",
+          "objectMap": {
+            "reference": "start_time",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "headwaySeconds",
+          "objectMap": {
+            "reference": "headway_secs",
+            "datatype": "integer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_calendar_rules_0",
+      "logicalSource": "source_8",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/calendar_rules/{service_id}",
+        "class": "CalendarRule"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "sunday",
+          "objectMap": {
+            "reference": "sunday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "startDate",
+          "objectMap": {
+            "reference": "start_date",
+            "datatype": "date"
+          }
+        },
+        {
+          "predicate": "thursday",
+          "objectMap": {
+            "reference": "thursday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "friday",
+          "objectMap": {
+            "reference": "friday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "endDate",
+          "objectMap": {
+            "reference": "end_date",
+            "datatype": "date"
+          }
+        },
+        {
+          "predicate": "saturday",
+          "objectMap": {
+            "reference": "saturday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "wednesday",
+          "objectMap": {
+            "reference": "wednesday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "monday",
+          "objectMap": {
+            "reference": "monday",
+            "datatype": "boolean"
+          }
+        },
+        {
+          "predicate": "tuesday",
+          "objectMap": {
+            "reference": "tuesday",
+            "datatype": "boolean"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_routes_0",
+      "logicalSource": "source_2",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/routes/{route_id}",
+        "class": "Route"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "color",
+          "objectMap": {
+            "reference": "route_color",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "routeUrl",
+          "objectMap": {
+            "reference": "route_url",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "shortName",
+          "objectMap": {
+            "reference": "route_short_name",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "routeType"
+        },
+        {
+          "predicate": "textColor",
+          "objectMap": {
+            "reference": "route_text_color",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "agency",
+          "objectMap": {
+            "parentTriplesMap": "map_agency_0",
+            "joinCondition": {
+              "child": "agency_id",
+              "parent": "agency_id"
+            }
+          }
+        },
+        {
+          "predicate": "description",
+          "objectMap": {
+            "reference": "route_desc",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "longName",
+          "objectMap": {
+            "reference": "route_long_name",
+            "datatype": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_shapePoints_0",
+      "logicalSource": "source_11",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/shape_point/{shape_id}-{shape_pt_sequence}",
+        "class": "ShapePoint"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "distanceTraveled",
+          "objectMap": {
+            "reference": "shape_dist_traveled",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "lat",
+          "objectMap": {
+            "reference": "shape_pt_lat",
+            "datatype": "double"
+          }
+        },
+        {
+          "predicate": "long",
+          "objectMap": {
+            "reference": "shape_pt_lon",
+            "datatype": "double"
+          }
+        },
+        {
+          "predicate": "pointSequence",
+          "objectMap": {
+            "reference": "shape_pt_sequence",
+            "datatype": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_shapes_0",
+      "logicalSource": "source_10",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/metro/shape/{shape_id}",
+        "class": "Shape"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "shapePoint",
+          "objectMap": {
+            "parentTriplesMap": "map_shapePoints_0",
+            "joinCondition": {
+              "child": "shape_id",
+              "parent": "shape_id"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "map_agency_0",
+      "logicalSource": "source_3",
+      "subjectMap": {
+        "template": "http://transport.linkeddata.es/madrid/agency/{agency_id}",
+        "class": "Agency"
+      },
+      "predicateObjectMap": [
+        {
+          "predicate": "phone",
+          "objectMap": {
+            "reference": "agency_phone",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "page",
+          "objectMap": {
+            "reference": "agency_url",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "timeZone",
+          "objectMap": {
+            "reference": "agency_timezone",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "fareUrl",
+          "objectMap": {
+            "reference": "agency_fare_url",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "name",
+          "objectMap": {
+            "reference": "agency_name",
+            "datatype": "string"
+          }
+        },
+        {
+          "predicate": "language",
+          "objectMap": {
+            "reference": "agency_lang",
+            "datatype": "string"
+          }
+        }
+      ]
+    }
+  ]
+}
