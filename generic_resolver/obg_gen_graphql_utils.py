@@ -275,7 +275,7 @@ class Resolver_Utils(object):
             query: sql query declared in logical source in the semantic mapping.
         return data in json
     '''
-    def get_mysql_data_with_filter(self, key_columns, filter_dict, constant_data, filter_lst_obj_tag, db_source, table_name, query):
+    def get_mysql_data_with_filter(self, key_columns, filter_dict, constant_data, template_data, filter_lst_obj_tag, db_source, table_name, query):
         hostname, port, schema_name, db_username, db_password = self.parse_db_config(db_source)
         db_connection_str = 'mysql+pymysql://{user}:{password}@{server}:{port}/{db}'.format(user=db_username,
                                                                                             password=db_password,
@@ -283,11 +283,16 @@ class Resolver_Utils(object):
                                                                                             port=port,
                                                                                             db=schema_name)
         constant_preds = []
+        template_preds = dict()
         if constant_data is not None:
             for (constant_pred, data, data_type) in constant_data:
                 constant_preds.append(constant_pred)
+        if template_data is not None:
+            for (template_pred, template, data_type) in template_data:
+                template_preds[template_pred] = template
         sql_query_str = ''
         constant_pred_filter = dict()
+        template_pred_filter = dict()
         sql_pred_filter = dict()
         if filter_dict is not None:
             for pred, filter_dict_value in filter_dict.items():
@@ -296,11 +301,13 @@ class Resolver_Utils(object):
                     pass
                 if pred in constant_preds:
                     constant_pred_filter[pred] = filter_dict_value
+                elif pred in template_preds.keys():
+                    template_pred_filter[pred] = filter_dict_value
                 else:
                     sql_pred_filter[pred] = filter_dict_value
             if filter_lst_obj_tag is False:
                 filter_str = ''
-                sql_filter_columns_num = len(sql_pred_filter)
+                sql_filter_columns_num = len(sql_pred_filter) + len(template_pred_filter)
                 i = 0
                 for pred, filter_dict_value in sql_pred_filter.items():
                     local_name = filter_dict_value['local_name']
@@ -317,6 +324,24 @@ class Resolver_Utils(object):
                     i += 1
                     if i < sql_filter_columns_num:
                         filter_str += ' AND '
+                for pred, filter_dict_value in template_pred_filter.items():
+                    local_name = filter_dict_value['local_name']
+                    attr_type = filter_dict_value['attribute_type']
+                    atom_filter_num = len(filter_dict_value['filter'])
+                    k = 0
+                    for atom_filter in filter_dict_value['filter']:
+                        template_str = template_preds[pred]
+                        new_atom_filter_value = atom_filter['value'][template_str.index('{'):]
+                        filter_str += self.generate_mysql_filter_str(local_name, atom_filter['operator'],
+                                                                     new_atom_filter_value, atom_filter['negation'],
+                                                                     attr_type)
+                        k += 1
+                        if k < atom_filter_num:
+                            filter_str += ' AND '
+                    i += 1
+                    if i < sql_filter_columns_num:
+                        filter_str += ' AND '
+
                 select_cols = self.convert_lst_strings(key_columns, ',')
                 if len(table_name) > 0:
                     if len(filter_str) > 0:
@@ -1026,7 +1051,7 @@ class Resolver_Utils(object):
     '''
         The entry to access underlying data sources
     '''
-    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, filter_lst_obj_tag=False, mapping_name=''):
+    def executor(self, logical_source, key_attrs, filter_flag=False, filter_dict=None, ref=None, constant_data=None, template_data=None, filter_lst_obj_tag=False, mapping_name=''):
         source_type = self.mu.get_logical_source_type(logical_source)
         result = []
         if source_type == 'ql:CSV':
@@ -1034,7 +1059,7 @@ class Resolver_Utils(object):
                 db_source, table_name, query = self.mu.get_db_source(logical_source)
                 if filter_flag is True:
                     result = self.get_mysql_data_with_filter(key_attrs, filter_dict,
-                                                             constant_data, filter_lst_obj_tag, db_source, table_name, query)
+                                                             constant_data, template_data, filter_lst_obj_tag, db_source, table_name, query)
                 else:
                     result = self.get_mysql_data_without_filter(key_attrs, db_source, table_name, query, mapping_name, ref)
 
@@ -1161,7 +1186,7 @@ class Resolver_Utils(object):
     '''
         Transform filter expressions based on underlying data sources' terminologies
     '''
-    def localize_filter(self, entity_type, pred_attr, filter_fields=None, filter_constant_field=None):
+    def localize_filter(self, entity_type, pred_attr, filter_fields=None, filter_constant_field=None, filter_template_field=None):
         schema_ast = self.schema_ast
         if len(filter_fields) == 0:
             return
@@ -1177,6 +1202,11 @@ class Resolver_Utils(object):
                         localized_filter_fields[key]['local_name'] = key
                         localized_filter_fields[key]['attribute_type'] = schema_ast[entity_type][key]['base_type']
                         localized_filter_fields[key]['filter'] = value
+                    if len(filter_template_field) > 0:
+                        localized_filter_fields[key]['local_name'] = filter_template_field[key][filter_template_field[key].index('{')+1:-1]
+                        localized_filter_fields[key]['attribute_type'] = 'String'
+                        localized_filter_fields[key]['filter'] = value
+
             return localized_filter_fields
 
     '''
@@ -1203,7 +1233,9 @@ class Resolver_Utils(object):
             poms = self.mu.get_poms_by_predicates(mapping, predicates)
             pred_attr = dict()
             constant_data = []
+            template_data = []
             filter_constant = []
+            filter_template = dict()
             for pom in poms:
                 predicate, object_map = self.mu.parse_pom(pom)
                 phi_predicate = self.phi(predicate)
@@ -1216,13 +1248,13 @@ class Resolver_Utils(object):
                     constant_data.append((phi_predicate, constant_value, constant_datatype))
                     filter_constant.append(phi_predicate)
                 elif object_map_type == 4:
-                    constant_template, constant_datatype = self.mu.get_constant_template(object_map)
-                    constant_data.append((phi_predicate, constant_template, constant_datatype))
-                    filter_constant.append(phi_predicate)
+                    template_str, template_datatype = self.mu.get_constant_template(object_map)
+                    template_data.append((phi_predicate, template_str, template_datatype))
+                    filter_template[predicate] = template_str
                 else:
                     pass
-            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant)
-            temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, filter_lst_obj_tag)
+            localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant, filter_template)
+            temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, template_data, filter_lst_obj_tag)
             if temp_result.empty is not True:
                 temp_result = self.refine_data_frame(temp_result, pred_attr, template, mapping_name)
                 result[mapping_name] = temp_result
