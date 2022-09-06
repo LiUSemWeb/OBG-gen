@@ -382,9 +382,15 @@ class Resolver_Utils(object):
                     sql_query_str = 'SELECT {select_cols} FROM {select_statement} GROUP BY {group_cols}  HAVING {having_statement}'.format(select_cols=group_by_cols, select_statement=select_statement, group_cols=group_by_cols, having_statement = having_str)
         else:
             if filter_lst_obj_tag is False:
-                sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+                if len(query) > 0:
+                    sql_query_str = query
+                else:
+                    sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
             else:
-                sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
+                if len(query) > 0:
+                    sql_query_str = query
+                else:
+                    sql_query_str = 'SELECT * FROM `{table}`'.format(table=table_name)
         df = pd.read_sql_query(text(sql_query_str), db_connection_str)
         if len(constant_data) > 0:
             for (constant_pred, data, data_type) in constant_data:
@@ -932,11 +938,24 @@ class Resolver_Utils(object):
 
     @staticmethod
     def parse_template(template):
+        to_replace = re.findall(r"{.*?}", template)
+        key_attrs = []
+        for to_replace_str in to_replace:
+            key_word = to_replace_str[1:-1]
+            key_attrs.append(key_word)
+            template = template.replace(key_word, '')
+        if len(key_attrs) > 1:
+            return key_attrs, template
+        else:
+            return key_attrs, template
+        '''
         start_pos = template.index('{')
         end_pos = template.index('}')
         key = template[start_pos + 1: end_pos]
         new_template = template.replace(key, '')
         return key, new_template
+        '''
+
 
     @staticmethod
     def generate_iri(template_str, data_record):
@@ -1084,10 +1103,12 @@ class Resolver_Utils(object):
         return result
 
     '''
-        Refine data frame's column names and add iri column
+        Refine data frame's column names and add iri column, 
+        this function needs to be changed if iri is generated based on multiple fields
     '''
     def refine_data_frame(self, df, pred_attr_dict, template, mapping_name):
-        key, template = self.parse_template(template)
+        temp_key, template = self.parse_template(template)
+        key = temp_key[0]
         new_column_name = mapping_name + '-' + key
         df[new_column_name] = df[key]
         df = df.assign(iri=[template.format(x) for x in df[key]])
@@ -1229,7 +1250,8 @@ class Resolver_Utils(object):
             logical_source = self.mu.get_logical_source_by_mapping(mapping)
             template = self.mu.get_subject_template_by_mapping(mapping)
             # may change if multiple key attributes
-            key_attrs = [self.parse_template(template)[0]]
+            #key_attrs = [self.parse_template(template)[0]]
+            key_attrs = self.parse_template(template)[0]
             poms = self.mu.get_poms_by_predicates(mapping, predicates)
             pred_attr = dict()
             constant_data = []
@@ -1412,7 +1434,8 @@ class Resolver_Utils(object):
         for mapping in mappings:
             logical_source = self.mu.get_logical_source_by_mapping(mapping)
             template = self.mu.get_subject_template_by_mapping(mapping)
-            key_attrs = [self.parse_template(template)[0]]
+            #key_attrs = [self.parse_template(template)[0]]
+            key_attrs = self.parse_template(template)[0]
             poms = self.mu.get_poms_by_predicates(mapping, predicates)
             attr_pred, constant_data = [], []
             ref_poms_pred_object_map = []
