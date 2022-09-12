@@ -115,7 +115,7 @@ input AgencyFilter{
 type Service {
   serviceRule: CalendarDateRule
   date: String
-  dateAddition: Boolean
+  dateAddition: Int
 }
 input ServiceFilter{
 	_and: [ServiceFilter]
@@ -123,7 +123,7 @@ input ServiceFilter{
 	_not: ServiceFilter
 	serviceRule: CalendarDateRuleFilter
   date: StringFilter
-  dateAddition: BooleanFilter
+  dateAddition: IntFilter
 }
 type Trip {
   shortName: String
@@ -222,14 +222,14 @@ input FeedFilter{
 }
 type CalendarDateRule {
   date: String
-  dateAddition: Boolean
+  dateAddition: Int
 }
 input CalendarDateRuleFilter{
 	_and: [CalendarDateRuleFilter]
 	_or: [CalendarDateRuleFilter]
 	_not: CalendarDateRuleFilter
 	date: StringFilter
-  dateAddition: BooleanFilter
+  dateAddition: IntFilter
 }
 input StringFilter{
 	_and: [StringFilter]

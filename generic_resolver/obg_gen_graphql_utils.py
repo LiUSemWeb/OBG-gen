@@ -1106,7 +1106,7 @@ class Resolver_Utils(object):
         Refine data frame's column names and add iri column, 
         this function needs to be changed if iri is generated based on multiple fields
     '''
-    def refine_data_frame(self, df, pred_attr_dict, template, mapping_name):
+    def refine_data_frame_old(self, df, pred_attr_dict, template, mapping_name):
         temp_key, template = self.parse_template(template)
         '''
         temp_key is a list may contain one key attribute used to generate iri or multiple attributes
@@ -1129,17 +1129,31 @@ class Resolver_Utils(object):
         df = df.drop([key], axis=1)
         return df
 
-    def refine_data_frame_test(self, df, pred_attr_dict, template, mapping_name):
-        keys, template = self.parse_template(template)
+    @staticmethod
+    def new_iri(template_str, df, keys):
+        iris = []
+        for i in df.index:
+            row_iri = template_str
+            for x in keys:
+                to_replace_str = '{' + x + '}'
+                row_iri = row_iri.replace(to_replace_str, str(df.at[i, x]))
+            iris.append(row_iri)
+        return iris
+
+    def refine_data_frame(self, df, pred_attr_dict, template, mapping_name):
+        keys, new_template = self.parse_template(template)
         '''
         temp_key is a list may contain one key attribute used to generate iri or multiple attributes
         '''
+        #df =df.assign(iri=template)
+        df = df.assign(iri=lambda x: self.new_iri(template, x[keys], keys))
         for key in keys:
             new_column_name = mapping_name + '-' + key
             df[new_column_name] = df[key]
-            start_pos = template.index('{')
-            df = df.assign(iri=[template.replace(template[start_pos:start_pos+2], str(x), 1) for x in df[key]])
+            #start_pos = template.index('{')
+            #df = df.assign(iri=[template.replace(template[start_pos:start_pos+2], str(x), 1) for x in df[key]])
             df = df.drop([key], axis=1)
+
         for pred, attr in pred_attr_dict.items():
             if attr in list(df.columns):
                 if pred != attr:
@@ -1304,7 +1318,7 @@ class Resolver_Utils(object):
             localized_filter = self.localize_filter(entity_type, pred_attr, filter_fields, filter_constant, filter_template)
             temp_result = self.executor(logical_source, key_attrs, True, localized_filter, None, constant_data, template_data, filter_lst_obj_tag)
             if temp_result.empty is not True:
-                temp_result = self.refine_data_frame_test(temp_result, pred_attr, template, mapping_name)
+                temp_result = self.refine_data_frame(temp_result, pred_attr, template, mapping_name)
                 result[mapping_name] = temp_result
         return result
 
