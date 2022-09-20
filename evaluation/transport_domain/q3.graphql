@@ -1,0 +1,9 @@
+{
+  StopList(filter: {locationType: {_eq: "http://transport.linkeddata.es/resource/LocationType/2"}}) {
+    locationType
+    description
+    lat
+    long
+    wheelchairAccessible
+  }
+}

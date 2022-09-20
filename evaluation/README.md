@@ -84,11 +84,11 @@
 * An example query is shown below.
 ```
     { 
-      UniversityList (filter:{nr:{_eq:973}}) { 
-        undergraduateDegreeObtainedBystudent{ 
-          advisor { 
-            worksFor{nr} 
-          } 
+      ShapeList { 
+        shapePoint { 
+          lat
+          long
+          pointSequence
         } 
       } 
     } 

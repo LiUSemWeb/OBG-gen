@@ -1,0 +1,9 @@
+{ 
+      ShapeList { 
+        shapePoint { 
+          lat
+          long
+          pointSequence
+        } 
+      } 
+    }

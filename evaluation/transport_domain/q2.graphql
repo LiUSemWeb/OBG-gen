@@ -1,0 +1,8 @@
+{
+  StopList(filter: {lat: {_gt: 40.41}}) {
+    description
+    wheelchairAccessible
+    lat
+    long
+  }
+}
