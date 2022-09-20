@@ -5,7 +5,7 @@
   <img src="../figures/evaluation-workflow.png" alt="workflow"/>
 </p>
 
-* We compare our tool, OBG-gen (Ontology-Based GraphQL Server Generation) in two versions (OBG-gen-rdb and OBG-gen-mix) wih three systems: morph-rdb, HyperGraphQL and UltraGraphQL.
+* We compare our tool, OBG-gen (Ontology-Based GraphQL Server Generation) in two versions (OBG-gen-rdb and OBG-gen-mix) wih three systems: Morph-rdb, Ontop HyperGraphQL and UltraGraphQL.
 
 ### Real Case Evaluation
 
@@ -55,7 +55,7 @@
 * Query Execution Time (QET) per query on materials dataset.
 ![entities](../figures/evaluation-md-QETs-per-query.png "The framework of OBG-gen")
 
-### Synthetic Evaluation
+### Synthetic Evaluation based on LinGBM
 
 * An example query is shown below.
 ```
@@ -79,6 +79,28 @@
     * [QS7](./university_domain/QT10) (QT10)
     * [QS8](./university_domain/QT11) (QT11)
 
-* Experimental examples for the real case evaluation and the evaluation based on LinGBM.
+### Synthetic Evaluation based on GTFS-Madrid-Bench
+
+* An example query is shown below.
+```
+    { 
+      UniversityList (filter:{nr:{_eq:973}}) { 
+        undergraduateDegreeObtainedBystudent{ 
+          advisor { 
+            worksFor{nr} 
+          } 
+        } 
+      } 
+    } 
+```
+* You can find all the 4 queries sets and data at [this folder](./transport_domain/README.md).
+    * [Q1](./transport_domain/q1.graphql) (Q1)
+    * [Q2](./transport_domain/q2.graphql) (Q2)
+    * [Q3](./transport_domain/q3.graphql) (Q3)
+    * [Q4](./transport_domain/q4.graphql) (Q4)
+
+
+* Experimental examples for the real case evaluation and evaluations based on LinGBM and GTFS-Madrid-Bench.
     * [real case evaluation](./materials_design_domain/README.md)
     * [evaluation based on LinGBM](./university_domain/README.md)
+    * [evaluation based on GTFS-Madrid-Bench](./transport_domain/README.md)
