@@ -5,7 +5,7 @@
   <img src="../figures/evaluation-workflow.png" alt="workflow"/>
 </p>
 
-* We compare our tool, OBG-gen (Ontology-Based GraphQL Server Generation) in two versions (OBG-gen-rdb and OBG-gen-mix) wih three systems: Morph-rdb, Ontop HyperGraphQL and UltraGraphQL.
+* We compare our tool, OBG-gen (Ontology-Based GraphQL Server Generation) in two versions (OBG-gen-rdb and OBG-gen-mix) wih three systems: Morph-rdb, Ontop, HyperGraphQL and UltraGraphQL.
 
 ### Real Case Evaluation
 
