@@ -1,0 +1,294 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ex: <http://example.com/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix rev: <http://purl.org/stuff/rev#> .
+@prefix bsbm: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/vocabulary/> .
+@prefix bsbm-inst: <http://www4.wiwiss.fu-berlin.de/bizer/bsbm/v01/instances/> .
+@base <http://mappingpedia.org/rdb2rdf/r2rml/tc/> .
+
+<TriplesMapMPCalculation>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_calculation"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/calculation/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#Calculation>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#ID> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "material_id"; ];
+    ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputCalculatedProperty> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapMPBandGap>;
+         rr:joinCondition [ rr:child "material_id" ; rr:parent "material_id" ; ]
+      ];
+   ];
+      rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputCalculatedProperty1> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapMPFormationEnergy>;
+         rr:joinCondition [ rr:child "material_id" ; rr:parent "material_id" ; ]
+      ];
+   ];
+   rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputStructure> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapMPStructure>;
+         rr:joinCondition [ rr:child "material_id" ; rr:parent "material_id" ; ]
+      ];
+   ];
+.
+
+<TriplesMapMPStructure>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_structure"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/structure/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#Structure>;
+	  ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#hasComposition> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapMPComposition>;
+         rr:joinCondition [ rr:child "material_id" ; rr:parent "material_id" ; ]
+      ];
+    ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#hasSpaceGroup> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapMPSpaceGroup>;
+         rr:joinCondition [ rr:child "material_id" ; rr:parent "material_id" ; ]
+      ];
+    ];
+.
+
+<TriplesMapMPComposition>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_composition"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/composition/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/structure#Composition>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#ReducedFormula> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "formula_pretty"; ];
+    ];
+.
+
+<TriplesMapMPSpaceGroup>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_spacegroup"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/spacegroup/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/structure#SpaceGroup>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#SpaceGroupSymbol> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "spacegroup"; ];
+    ];
+.
+
+<TriplesMapMPBandGap>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_bandgap"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/bandgap/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#CalculatedProperty>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
+      rr:objectMap    [ rr:constant "Band Gap"; ];
+    ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#numericalValue> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "band_gap"; ];
+    ];
+.
+
+<TriplesMapMPFormationEnergy>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "mp_16K_formationenergy"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/mp/formationenergy/{material_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#CalculatedProperty>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
+      rr:objectMap    [ rr:constant "Formation Energy"; ];
+    ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#numericalValue> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "energy"; ];
+    ];
+.
+
+<TriplesMapOQMDCalculation>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_calculation"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/calculation/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#Calculation>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#ID> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "calculation_id"; ];
+    ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputCalculatedProperty> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapOQMDBandGap>;
+         rr:joinCondition [ rr:child "calculation_id" ; rr:parent "calculation_id" ; ]
+      ];
+   ];
+      rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputCalculatedProperty1> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapOQMDFormationEnergy>;
+         rr:joinCondition [ rr:child "calculation_id" ; rr:parent "calculation_id" ; ]
+      ];
+   ];
+   rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#hasOutputStructure> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapOQMDStructure>;
+         rr:joinCondition [ rr:child "calculation_id" ; rr:parent "calculation_id" ; ]
+      ];
+   ];
+.
+
+<TriplesMapOQMDStructure>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_structure"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/structure/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#Structure>;
+	  ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#hasComposition> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapOQMDComposition>;
+         rr:joinCondition [ rr:child "calculation_id" ; rr:parent "calculation_id" ; ]
+      ];
+    ];
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#hasSpaceGroup> ];
+      rr:objectMap    [
+         rr:parentTriplesMap <TriplesMapOQMDSpaceGroup>;
+         rr:joinCondition [ rr:child "calculation_id" ; rr:parent "calculation_id" ; ]
+      ];
+    ];
+.
+
+<TriplesMapOQMDComposition>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_composition"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/composition/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/structure#Composition>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#ReducedFormula> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "name"; ];
+    ];
+.
+
+<TriplesMapOQMDSpaceGroup>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_spacegroup"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/spacegroup/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/structure#SpaceGroup>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/structure#SpaceGroupSymbol> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "spacegroup"; ];
+    ];
+.
+
+<TriplesMapOQMDBandGap>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_bandgap"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/bandgap/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#CalculatedProperty>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
+      rr:objectMap    [ rr:constant "Band Gap"; ];
+    ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#numericalValue> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "band_gap"; ];
+    ];
+.
+
+<TriplesMapOQMDFormationEnergy>
+    a rr:TriplesMap;
+
+    rr:logicalTable [rr:tableName "oqmd_16K_formationenergy"];
+
+    rr:subjectMap [ a rr:Subject;
+      rr:template "http://odgsg.com/oqmd/formationenergy/{calculation_id}";
+      rr:termType rr:IRI;
+      rr:class <http://w3id.org/mdo/core#CalculatedProperty>;
+	  ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#PropertyName> ];
+      rr:objectMap    [ rr:constant "Formation Energy"; ];
+    ];
+
+    rr:predicateObjectMap [
+      rr:predicateMap [ rr:constant <http://w3id.org/mdo/core#numericalValue> ];
+      rr:objectMap    [ rr:termType rr:Literal; rr:column "delta_e"; ];
+    ];
+.
