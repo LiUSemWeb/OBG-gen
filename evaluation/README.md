@@ -93,7 +93,7 @@
       } 
     } 
 ```
-* You can find all the 4 queries sets and data at [this folder](./transport_domain/README.md).
+* You can find all the 4 queries and data at [this folder](./transport_domain/README.md).
     * [Q1](./transport_domain/q1.graphql) (Q1)
     * [Q2](./transport_domain/q2.graphql) (Q2)
     * [Q3](./transport_domain/q3.graphql) (Q3)
