@@ -50,10 +50,12 @@
     * [Q12](./materials_design_domain/OBG-gen/query12.graphql) (List all the structures that contain Si element.)
 
 
-* Query Execution Time (QET) per data size on materials dataset.
-![entities](../figures/evaluation-md-QETs-per-dataset.png "per-dataset")
+* Query Execution Time (QET) per data size on materials dataset for queries without filter conditions (Q1-Q5).
+![entities](../figures/evaluation-md-QETs-per-dataset-1_5.png "per-dataset-1_5")
+* Query Execution Time (QET) per data size on materials dataset for queries with filter conditions (Q6-Q12).
+![entities](../figures/evaluation-md-QETs-per-dataset-6_12.png "per-dataset-6_12")
 * Query Execution Time (QET) per query on materials dataset.
-![entities](../figures/evaluation-md-QETs-per-query.png "The framework of OBG-gen")
+![entities](../figures/evaluation-md-QETs-per-query.png "per-query")
 
 ### Synthetic Evaluation based on LinGBM
 
