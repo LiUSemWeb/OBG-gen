@@ -17,13 +17,3 @@ title: "Ontology-Based GraphQL Server Generation for Data Access and Data Integr
 version: 1.0.0
 date-released: 2022-12-16
 url: "https://github.com/LiUSemWeb/OBG-gen"
-preferred-citation:
-  type: book
-  authors:
-  - family-names: "Li"
-    given-names: "Huanyu"
-    orcid: "https://orcid.org/0000-0003-1881-3969"
-  doi: "10.3384/9789179292683"
-  title: "Ontology-Driven Data Access and Data Integration with an Application in the Materials Design Domain"
-  school: "PhD thesis, Linköping University, Sweden"
-  year: 2022
