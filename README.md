@@ -77,3 +77,7 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 ## Evaluation
 
 You can find more details regarding the evaluation of the framework in [this folder](evaluation/README.md).
+
+## Publication
+
+- Huanyu Li, [Ontology-Driven Data Access and Data Integration with an Application in the Materials Design Domain](https://doi.org/10.3384/9789179292683), PhD thesis, Linköping University, Sweden, 2022.
