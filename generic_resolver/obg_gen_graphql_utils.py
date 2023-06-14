@@ -27,7 +27,7 @@ class Resolver_Utils(object):
         self.interfaces = []
         self.interface_query_entries = []
         with open(o2graphql_file) as f:
-            # Update may needs here for translate
+            # Update may need here for translate
             self.ontology2GraphQL_schema = json.load(f)
             self.GraphQL_schema2ontology = self.ontology2GraphQL_schema
 
@@ -592,9 +592,9 @@ class Resolver_Utils(object):
         for pred, filter_dict_value in filter_dict.items():
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
+
             for atom_filter in filter_dict_value['filter']:
-                filter_str = self.generate_df_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],
-                                                         atom_filter['value'], atom_filter['negation'], attr_type)
+
                 if attr_type == 'Int':
                     if df.dtypes[local_name] != 'int64':
                         df = df.astype({local_name: int})
@@ -603,6 +603,9 @@ class Resolver_Utils(object):
                         df = df.astype({local_name: float})
                 else:
                     pass
+                filter_str = self.generate_df_filter_str(local_name, df.dtypes[local_name], atom_filter['operator'],
+                                                         atom_filter['value'], atom_filter['negation'], attr_type)
+
                 if atom_filter['operator'] not in ['_like', '_nlike']:
                     df = df.query(filter_str)
                 else:
@@ -620,9 +623,6 @@ class Resolver_Utils(object):
             local_name = filter_dict_value['local_name']
             attr_type = filter_dict_value['attribute_type']
             for atom_filter in filter_dict_value['filter']:
-                filter_lambda_func = self.generate_filter_lambda_func(local_name, df.dtypes[local_name],
-                                                                      atom_filter['operator'], atom_filter['value'],
-                                                                      atom_filter['negation'], attr_type)
                 if attr_type == 'Int':
                     if df.dtypes[local_name] != 'int64':
                         df = df.astype({local_name: int})
@@ -631,6 +631,10 @@ class Resolver_Utils(object):
                         df = df.astype({local_name: float})
                 else:
                     pass
+                filter_lambda_func = self.generate_filter_lambda_func(local_name, df.dtypes[local_name],
+                                                                      atom_filter['operator'], atom_filter['value'],
+                                                                      atom_filter['negation'], attr_type)
+
                 df = df.groupby(key_attrs).filter(filter_lambda_func)
         return df
 
@@ -700,7 +704,7 @@ class Resolver_Utils(object):
         elif operator_str in ['_like', '_nlike']:
             filter_str = self.generate_regex_str(value_str)
         else:
-            if attr_type == 'String' or 'ID':
+            if attr_type == 'String' or attr_type == 'ID':
                 if column_type == 'int64':
                     new_value = int(value_str)
                     filter_str = "{column} {operator} {value} ".format(column=attribute_name, operator=new_operator,
@@ -912,7 +916,7 @@ class Resolver_Utils(object):
     '''
         Generate the AST of the GraphQL query
     '''
-    def generate_query_ast(self, query_info):
+    def generate_query_ast(self, query_info, pagination_dict):
         schema_ast = self.schema_ast
         query_field_nodes = query_info.field_nodes
         query_ast = self.parse_query_fields('Query', query_field_nodes)
@@ -922,6 +926,10 @@ class Resolver_Utils(object):
         query_ast['fields'][0]['wrapping_label'] = schema_ast['Query'][query_entry_name]['wrapping_label']
         # query_ast is changed inside fill_return_type
         self.fill_return_type(query_ast['fields'][0], schema_ast, query_ast['fields'][0]['type'])
+        if 'limit' in pagination_dict.keys():
+            query_ast['limit'] = pagination_dict['limit']
+        #if 'offset' in pagination_dict.keys():
+        query_ast['offset'] = pagination_dict['offset']
         return query_ast
 
     @staticmethod
@@ -1062,8 +1070,9 @@ class Resolver_Utils(object):
                             temp_result['type'] = resolve_type
                             fields.append(temp_result)
                 else:
-                    field = {'name': qfn.name.value, 'type': '', 'fields': []}
-                    fields.append(field)
+                    if(qfn.name.value != '__typename'):
+                        field = {'name': qfn.name.value, 'type': '', 'fields': []}
+                        fields.append(field)
         result['fields'] = fields
         return result
 
@@ -1500,29 +1509,53 @@ class Resolver_Utils(object):
                     print('Unknown object map type')
             if root_type_flag is True:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, mapping['name'])
+                if 'offset' in query_ast.keys():
+                    offset = query_ast['offset']
+                    if offset >= len(temp_result):
+                        temp_result = []
+                    else:
+                        if 'limit' in query_ast.keys():
+                            limit = query_ast['limit']
+                            temp_result = temp_result[offset:limit+offset]
+                        else:
+                            temp_result = temp_result[offset:]
             else:
                 temp_result = self.executor(logical_source, None, False, None, ref, None, False, '')
 
-            if root_type_flag is True and self.sql_flag is False:
-                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True,
-                                               mapping['name'], key_attrs, self.filtered_object_iri)
-            else:
-                temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False,'', key_attrs)
+            '''
+            if 'offset' in query_ast.keys():
+                offset = query_ast['offset']
+                if offset >= len(temp_result):
+                    temp_result = []
+                else:
+                    if 'limit' in query_ast.keys():
+                        limit = query_ast['limit']
+                        temp_result = temp_result[offset:limit+offset]
+                    else:
+                        temp_result = temp_result[offset:]
+            
+            '''
+            if len(temp_result) > 0:
+                if root_type_flag is True and self.sql_flag is False:
+                    temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, True,
+                                                   mapping['name'], key_attrs, self.filtered_object_iri)
+                else:
+                    temp_result = self.refine_json(temp_result, attr_pred, constant_data, template, False,'', key_attrs)
 
-            self.sql_flag = False
-            for (phi_predicate, object_map) in ref_poms_pred_object_map:
-                new_query_ast = self.get_sub_ast(query_ast, phi_predicate)
-                parent_mapping, join_condition = self.mu.parse_rom(object_map)
-                child_field, parent_field = self.mu.parse_join_condition(join_condition)
-                child_data = [{child_field: record[child_field]} for record in temp_result]
-                ref_data = [x[child_field] for x in child_data]
-                ref_data = list(set(ref_data))
-                new_ref = (ref_data, parent_field)
-                parent_data = self.query_evaluator(new_query_ast, parent_mapping, new_ref)
-                new_ref = None
-                result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
-            if len(result_join) > 0:
-                temp_result = self.incremental_optimized_join(temp_result, result_join)
+                self.sql_flag = False
+                for (phi_predicate, object_map) in ref_poms_pred_object_map:
+                    new_query_ast = self.get_sub_ast(query_ast, phi_predicate)
+                    parent_mapping, join_condition = self.mu.parse_rom(object_map)
+                    child_field, parent_field = self.mu.parse_join_condition(join_condition)
+                    child_data = [{child_field: record[child_field]} for record in temp_result]
+                    ref_data = [x[child_field] for x in child_data]
+                    ref_data = list(set(ref_data))
+                    new_ref = (ref_data, parent_field)
+                    parent_data = self.query_evaluator(new_query_ast, parent_mapping, new_ref)
+                    new_ref = None
+                    result_join[phi_predicate].append((parent_data, join_condition, new_query_ast['wrapping_label']))
+                if len(result_join) > 0:
+                    temp_result = self.incremental_optimized_join(temp_result, result_join)
             result += temp_result
         return result
 
@@ -1602,18 +1635,32 @@ class Resolver_Utils(object):
                         result.append(new_record)
         return result
 
+    @staticmethod
+    def parse_argument(argument_dict):
+        filter_dict = defaultdict()
+        pagination_dict = defaultdict()
+        pagination_dict['offset'] = 0
+        argument_keys = argument_dict.keys()
+        if 'filter' in argument_keys:
+            filter_dict['filter'] = argument_dict['filter']
+        if 'limit' in argument_keys:
+            pagination_dict['limit'] = argument_dict['limit']
+        if 'offset' in argument_keys:
+            pagination_dict['offset'] = argument_dict['offset']
+        return filter_dict, pagination_dict
     '''
         Generic Resolver Function
         info:
         filter_condition:
         return: a list of json objects
     '''
-    def generic_resolver_func(self, info, filter_condition):
+    def generic_resolver_func(self, info, arguments):
         from generic_resolver.filter_utils import Filter_Utils
         result = []
-        if len(filter_condition) > 0:
+        filter_condition_dict, pagination_dict = self.parse_argument(arguments)
+        if len(filter_condition_dict) > 0:
             fu = Filter_Utils()
-            fu.parse_cond(filter_condition)
+            fu.parse_cond(filter_condition_dict)
             dnf_lst = fu.simplify()
             self.set_symbol_field_maps(fu.field_exp_symbol, fu.symbol_field_exp)
             query_entry = info.field_nodes[0].name.value
@@ -1643,7 +1690,7 @@ class Resolver_Utils(object):
 
             if len(self.filtered_object_iri.keys()) > 0:
                 self.filtered_object_iri['filter'] = True
-                query_ast = self.generate_query_ast(info)
+                query_ast = self.generate_query_ast(info, pagination_dict)
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True, self.filtered_object_iri.keys())
         else:
             self.filtered_object_iri['filter'] = False
@@ -1658,9 +1705,19 @@ class Resolver_Utils(object):
                     temp_result = self.query_evaluator(inline_query_ast, None, None, True)
                     result += temp_result
             else:
-                query_ast = self.generate_query_ast(info)
+                query_ast = self.generate_query_ast(info, pagination_dict)
                 result = self.query_evaluator(query_ast['fields'][0], None, None, True)
         self.reinitialize_ru_object()
+        if 'offset' in pagination_dict.keys():
+            offset = pagination_dict['offset']
+            if offset >= len(result):
+                result = []
+            else:
+                if 'limit' in pagination_dict.keys():
+                    limit = pagination_dict['limit']
+                    result = result[offset:limit+offset]
+                else:
+                    result = result[offset:]
         return result
 
 
