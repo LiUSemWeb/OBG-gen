@@ -79,4 +79,4 @@ Then the GraphQL server can be accessed via http://127.0.0.1:5000/graphql as sho
 You can find more details regarding the evaluation of the framework in [this folder](evaluation/README.md).
 
 ## Publication
-Li H, Hartig O, Armiento R, Lambrix P. Ontology-based GraphQL server generation for data access and data integration. Semantic Web. 2024. DOI:[10.3233/SW-233550](http://doi.org/10.3233/SW-233550)
+Li H, Hartig O, Armiento R, Lambrix P. Ontology-based GraphQL server generation for data access and data integration. Semantic Web. 2024. DOI: [10.3233/SW-233550](http://doi.org/10.3233/SW-233550)
